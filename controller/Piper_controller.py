@@ -35,7 +35,7 @@ class PiperController(ArmController):
                                    joint.joint_state.joint_4, joint.joint_state.joint_5, joint.joint_state.joint_6])*0.001 / 180 * 3.1415926
         state["qpos"] = np.array([eef.end_pose.X_axis, eef.end_pose.Y_axis, eef.end_pose.Z_axis, \
                                   eef.end_pose.RX_axis, eef.end_pose.RY_axis, eef.end_pose.RZ_axis])*0.001 / 1000
-        state["gripper"] = self.controller.GetArmGripperMsgs()gripper_state.grippers_angle*0.001 / 70
+        state["gripper"] = self.controller.GetArmGripperMsgs().gripper_state.grippers_angle*0.001 / 70
         return state
 
     # 单位为米
