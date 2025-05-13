@@ -68,6 +68,9 @@ pip install Robotic_Arm
 cd ~/control_your_robot/
 pip install -r requirements.txt
 
+# 松灵机械臂安装SDK请参考:https://github.com/agilexrobotics
+# 睿尔曼机械臂SDK请参考:https://develop.realman-robotics.com/robot/summarize/
+
 ```
 ## 如何控制你的机器人?
 本项目将机器人的部件分为两类:  

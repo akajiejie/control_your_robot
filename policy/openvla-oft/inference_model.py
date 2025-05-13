@@ -6,36 +6,44 @@
 """
 import json
 import sys
-import jax
 import numpy as np
-from openpi.models import model as _model
-from openpi.policies import aloha_policy
-from openpi.policies import policy_config as _policy_config
-from openpi.shared import download
-from openpi.training import config as _config
-from openpi.training import data_loader as _data_loader
+
 
 import cv2
 from PIL import Image
 
-from openpi.models import model as _model
-from openpi.policies import policy_config as _policy_config
-from openpi.shared import download
-from openpi.training import config as _config
-from openpi.training import data_loader as _data_loader
+import pickle
+from experiments.robot.libero.run_libero_eval import GenerateConfig
+from experiments.robot.openvla_utils import get_action_head, get_processor, get_proprio_projector, get_vla, get_vla_action
+from prismatic.vla.constants import NUM_ACTIONS_CHUNK, PROPRIO_DIM
 
-class PI0_DUAL:
-    # def __init__(self, task_name,train_config_name,model_name,checkpoint_id):
+class OPENVLA_OFT_ALOHA:
     def __init__(self, model_path, task_name):
         self.task_name = task_name
 
-        path = Path(model_path)
-        train_config_name = path.parts[-3]
-        config = _config.get_config(train_config_name)
+        cfg = GenerateConfig(
+            pretrained_checkpoint = f"policy/openvla-oft/checkpoints/{model_path}",
+            use_l1_regression = True,
+            use_diffusion = False,
+            use_film = False,
+            num_images_in_input = 3,
+            use_proprio = True,
+            load_in_8bit = False,
+            load_in_4bit = False,
+            center_crop = True,
+            num_open_loop_steps = NUM_ACTIONS_CHUNK,
+            unnorm_key = "libero_spatial_no_noops",
+        )
+        self.vla = get_vla(cfg)
+        self.processor = get_processor(cfg) 
+        
+        # Load MLP action head to generate continuous actions (via L1 regression)
+        self.action_head = get_action_head(cfg, llm_dim=vla.llm_dim)
 
-        self.policy = _policy_config.create_trained_policy(config, model_path)
-        print("loading model success!")
-        self.img_size = (224,224)
+        # Load proprio projector to map proprio to language embedding space
+        self.proprio_projector = get_proprio_projector(cfg, llm_dim=vla.llm_dim, proprio_dim=PROPRIO_DIM)
+
+        self.img_size = (256,256)
         self.observation_window = None
         self.random_set_language()
 
@@ -80,17 +88,33 @@ class PI0_DUAL:
         self.observation_window = None
         print("successfully unset obs and language intruction")
 
-class PI0_SINGLE:
-    def __init__(self, task_name,train_config_name,model_name,checkpoint_id):
-        self.train_config_name = train_config_name
+class OPENVLA_OFT_LIBERO:
+    def __init__(self, model_path, task_name):
         self.task_name = task_name
-        self.model_name = model_name
-        self.checkpoint_id = checkpoint_id
 
-        config = _config.get_config(self.train_config_name)
-        self.policy = _policy_config.create_trained_policy(config, f"policy/openpi/checkpoints/{self.train_config_name}/{self.model_name}/{self.checkpoint_id}")
-        print("loading model success!")
-        self.img_size = (224,224)
+        cfg = GenerateConfig(
+            pretrained_checkpoint = f"policy/openvla-oft/checkpoints/{model_path}",
+            use_l1_regression = True,
+            use_diffusion = False,
+            use_film = False,
+            num_images_in_input = 2,
+            use_proprio = True,
+            load_in_8bit = False,
+            load_in_4bit = False,
+            center_crop = True,
+            num_open_loop_steps = NUM_ACTIONS_CHUNK,
+            unnorm_key = "libero_spatial_no_noops",
+        )
+        self.vla = get_vla(cfg)
+        self.processor = get_processor(cfg) 
+        
+        # Load MLP action head to generate continuous actions (via L1 regression)
+        self.action_head = get_action_head(cfg, llm_dim=vla.llm_dim)
+
+        # Load proprio projector to map proprio to language embedding space
+        self.proprio_projector = get_proprio_projector(cfg, llm_dim=vla.llm_dim, proprio_dim=PROPRIO_DIM)
+
+        self.img_size = (256,256)
         self.observation_window = None
         self.random_set_language()
 
@@ -110,27 +134,26 @@ class PI0_SINGLE:
     
     # Update the observation window buffer
     def update_observation_window(self, img_arr, state):
-        img_front, img_right = img_arr[0], img_arr[1]
-        # (480,640,3) -> (3,480,640)
+        img_front, img_wrist, puppet_arm = img_arr[0], img_arr[1], state
         img_front = np.transpose(img_front, (2, 0, 1))
-        img_right = np.transpose(img_right, (2, 0, 1))
-        img_left = np.zeros_like(img_front)
-        state = np.pad(state, (0, 8), mode='constant', constant_values=0)
+        img_wrist = np.transpose(img_wrist, (2, 0, 1))
+
         self.observation_window = {
             "state": state,
             "images": {
                 "cam_high": img_front,
-                "cam_left_wrist": img_left,
-                "cam_right_wrist": img_right,
+                "cam_lwrist": img_wrist,
             },
             "prompt": self.instruction,
         }
+        # print(state)
 
     def get_action(self):
         assert (self.observation_window is not None), "update observation_window first!"
-        return self.policy.infer(self.observation_window)["actions"][:,:8]
+        return self.policy.infer(self.observation_window)["actions"]
 
     def reset_obsrvationwindows(self):
         self.instruction = None
         self.observation_window = None
         print("successfully unset obs and language intruction")
+

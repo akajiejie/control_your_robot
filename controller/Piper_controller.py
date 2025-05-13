@@ -32,10 +32,10 @@ class PiperController(ArmController):
         joint = self.controller.GetArmJointMsgs()
         # 获取对应信息
         state["joint"] = np.array([joint.joint_state.joint_1, joint.joint_state.joint_2, joint.joint_state.joint_3,\
-                                   joint.joint_state.joint_4, joint.joint_state.joint_5, joint.joint_state.joint_6])*0.001 / 180 * 3.1415926
+                                   joint.joint_state.joint_4, joint.joint_state.joint_5, joint.joint_state.joint_6]) * 0.001 / 180 * 3.1415926
         state["qpos"] = np.array([eef.end_pose.X_axis, eef.end_pose.Y_axis, eef.end_pose.Z_axis, \
-                                  eef.end_pose.RX_axis, eef.end_pose.RY_axis, eef.end_pose.RZ_axis])*0.001 / 1000
-        state["gripper"] = self.controller.GetArmGripperMsgs().gripper_state.grippers_angle*0.001 / 70
+                                  eef.end_pose.RX_axis, eef.end_pose.RY_axis, eef.end_pose.RZ_axis]) * 0.001 / 1000
+        state["gripper"] = self.controller.GetArmGripperMsgs().gripper_state.grippers_angle * 0.001 / 70
         return state
 
     # 单位为米
@@ -54,8 +54,7 @@ class PiperController(ArmController):
 
     # 输入的是0~1的张合度
     def set_gripper(self, gripper):
-        # 不知道piper是支持open/close还是设置张合度?
-        gripper = int(gripper*70*1000)
+        gripper = int(gripper * 70 * 1000)
         self.controller.GripperCtrl(gripper, 1000, 0x01, 0)
 
     def __del__(self):
@@ -118,4 +117,3 @@ if __name__=="__main__":
     time.sleep(1)
     print(controller.get_gripper())
     print(controller.get_state())
-
