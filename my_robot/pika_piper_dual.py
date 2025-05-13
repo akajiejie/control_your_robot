@@ -73,8 +73,8 @@ class PikaPiper:
         self.set_collect_type(["joint","qpos","gripper"],["color"])
 
         # pika
-        self.teleoperation_controller["left_pika"].set_up("/l_gripper_pose",self.left_move)
-        self.teleoperation_controller["right_pika"].set_up("/r_gripper_pose",self.right_move)
+        self.teleoperation_controller["left_pika"].set_up("/l_gripper_pose","/l_gripper/joint_state",self.left_move)
+        self.teleoperation_controller["right_pika"].set_up("/r_gripper_pose","r_gripper/joint_state",self.right_move)
 
         print("set up success!")
 
@@ -86,11 +86,7 @@ class PikaPiper:
 
     def is_start(self):
         return True
-        # if max(abs(self.arm_controllers["left_arm"].get_state()["joint"] - START_POSITION_ANGLE_LEFT_ARM), abs(self.arm_controllers["right_arm"].get_state()["joint"] - START_POSITION_ANGLE_RIGHT_ARM)) > 0.01:
-        #     return True
-        # else:
-        #     return False
-
+    
     def get(self):
         controller_data = {}
         if self.arm_controllers is not None:    
@@ -117,8 +113,8 @@ class PikaPiper:
         self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=True)
 
     def left_move(self, move_data):
-        self.arm_controllers["left_arm"].move(move_data["left_arm"],is_delta=True)
+        self.arm_controllers["left_arm"].move(move_data,is_delta=True)
 
     def right_move(self, move_data):
-        self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=True)
+        self.arm_controllers["right_arm"].move(move_data,is_delta=True)
     

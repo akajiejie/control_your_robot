@@ -5,14 +5,10 @@ echo "CONFIG_FILE_PATH: $CONFIG_FILE"
 ### ===============================
 
 export NCCL_IB_HCA=mlx5_0:1,mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_7:1,mlx5_8:1,mlx5_9:1
-export NCCL_IB_DISABLE=0
-export NCCL_SOCKET_IFNAME=bond0
-export NCCL_DEBUG=INFO
 # export CUDA_VISIBLE_DEVICES=1,2,3,5
 export NCCL_NVLS_ENABLE=0
 export NCCL_DEBUG=info
 export NCCL_SOCKET_IFNAME=eth0
-export NCCL_IB_DISABLE=1
 export TEXT_ENCODER_NAME="google/t5-v1_1-xxl"
 export VISION_ENCODER_NAME="../weights/RDT/siglip-so400m-patch14-384"
 export CFLAGS="-I/usr/include"
