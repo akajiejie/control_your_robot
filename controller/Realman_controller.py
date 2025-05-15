@@ -1,3 +1,6 @@
+import sys
+sys.path.append("./")
+
 from Robotic_Arm.rm_robot_interface import *
 import time
 import numpy as np

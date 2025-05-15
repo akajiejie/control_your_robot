@@ -394,7 +394,7 @@ _CONFIGS = [
             ),
         ),
         freeze_filter=pi0.Pi0Config(
-            action_dim=14,paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+            action_dim=7,paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
         ).get_freeze_filter(),
         batch_size=32, # the total batch_size not pre_gpu batch_size
         weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_base/params"),
@@ -413,7 +413,7 @@ _CONFIGS = [
             ),
         ),
         freeze_filter=pi0_fast.Pi0FASTConfig(
-            action_dim=14, action_horizon=10, max_token_len=300, paligemma_variant="gemma_2b_lora"
+            action_dim=7, action_horizon=10, max_token_len=300, paligemma_variant="gemma_2b_lora"
         ).get_freeze_filter(),
         batch_size=32,
         weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_fast_base/params"),
@@ -432,7 +432,7 @@ _CONFIGS = [
             ),
         ),
         freeze_filter=pi0.Pi0Config(
-            action_dim=14,paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+            action_dim=7
         ).get_freeze_filter(),
         batch_size=32, # the total batch_size not pre_gpu batch_size
         weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_base/params"),
@@ -458,6 +458,7 @@ _CONFIGS = [
         num_train_steps=30000,
         fsdp_devices=4, # refer line 359
     ),
+    
     #======= dual arm ========#
     # pi0_base by lora
     TrainConfig(
@@ -558,7 +559,7 @@ _CONFIGS = [
             ),
         ),
         freeze_filter=pi0.Pi0Config(
-            action_dim=14,paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+            action_dim=14
         ).get_freeze_filter(),
         batch_size=32, # the total batch_size not pre_gpu batch_size
         weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_base/params"),
