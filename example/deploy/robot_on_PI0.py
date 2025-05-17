@@ -42,7 +42,8 @@ if __name__ == "__main__":
 
         # 开始逐条推理运行
         while step < max_step:
-            img_arr, state = robot.get_observation()
+            data = robot.get()
+            img_arr, state = transform_data(data)
             action_chunk = model.update_observation_window(img_arr, state)
             for action in action_chunk:
                 robot.move(action)
