@@ -47,8 +47,3 @@ if __name__ == "__main__":
         if robot_process.is_alive():
             robot_process.join()
             robot_process.close()
-
-
-        
-
-        

@@ -60,7 +60,8 @@ class RealsenseSensor(VisionSensor):
             if not color_frame:
                 raise RuntimeError("Failed to get color frame.")
             color_image = np.asanyarray(color_frame.get_data()).copy()
-            image["color"] = color_image
+            # BGR -> RGB
+            image["color"] = color_image[:,:,::-1]
 
         if "depth" in self.collect_info:
             depth_frame = frame.get_depth_frame()
