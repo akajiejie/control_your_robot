@@ -6,6 +6,11 @@ import time
 import numpy as np
 from controller.arm_controller import ArmController
 
+'''
+RealMan base code from:
+https://develop.realman-robotics.com/robot/apipython/getStarted/
+'''
+
 class RealmanController(ArmController):
     def __init__(self, name):
         super().__init__()

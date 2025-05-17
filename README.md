@@ -29,7 +29,8 @@
 | 机械臂         | 底盘               | 灵巧手       | 其他       |
 |----------------|--------------------|--------------|------------|
 | Agilex Piper   | Agilex Tracer2.0   | 🚧 开发中    | 📦 待补充  |
-| RealMan        | 📦 待补充          | 📦 待补充    | 📦 待补充  |
+| RealMan 65B    | 📦 待补充          | 📦 待补充    | 📦 待补充  |
+| daran aloha    | 📦 待补充          | 📦 待补充    | 📦 待补充  |
 
 **🚧 准备支持**
 | 机械臂    | 底盘       | 灵巧手     | 其他       |
@@ -73,6 +74,7 @@ pip install -r requirements.txt
 
 # 松灵机械臂安装SDK请参考:https://github.com/agilexrobotics
 # 睿尔曼机械臂SDK请参考:https://develop.realman-robotics.com/robot/summarize/
+# 大然机械臂SDK请参考:
 # 所有机械臂如果涉及到原声代码编译或链接，会统一放置到./third_party/目录下
 ```
 ## 如何控制你的机器人?

@@ -7,10 +7,14 @@ from controller.teleoperation_controller import TeleoperationController
 
 from geometry_msgs.msg import PoseStamped
 from sensor_tools import Gripper
-
 from utils.ros_subscriber import ROSSubscriber 
 
 from typing import Callable, Optional
+
+'''
+Pika base code(ROS) from:
+https://github.com/agilexrobotics/pika_ros.git
+'''
 
 class PikaController(TeleoperationController):
     def __init__(self,name):

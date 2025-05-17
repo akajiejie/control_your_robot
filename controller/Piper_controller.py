@@ -7,6 +7,11 @@ from piper_sdk import *
 import numpy as np
 import time
 
+'''
+Piper base code from:
+https://github.com/agilexrobotics/piper_sdk.git
+'''
+
 class PiperController(ArmController):
     def __init__(self, name):
         super().__init__()

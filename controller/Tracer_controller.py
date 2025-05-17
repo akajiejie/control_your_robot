@@ -14,6 +14,11 @@ from geometry_msgs.msg import Twist
 
 import threading
 
+'''
+Tracer base code(ROS) from:
+https://github.com/agilexrobotics/tracer_ros.git
+'''
+
 class TracerController(MobileController):
     def __init__(self, name):
         super().__init__()
