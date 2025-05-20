@@ -177,6 +177,21 @@ python scripts/convert2lerobot.py  datasets/task_1 repo_id
 python scripts/convert2lerobot.py  datasets/my_task repo_id True
 ```
 
+### TFDS数据格式
+**注意**
+与lerobot相同,您需要先转化为RDT支持的hdf5格式!  
+
+转化TFDS格式比较特殊,可以参考`./policy/rlds_dataset_builder`中的一些转化示例.
+需要如下格式:
+```bash
+├── ${my_dataset_example}
+|   ├── ${my_dataset_example}_dataset_builder
+|   |   ├── lass ${my_dataset_example}
+|   ├── CITATION.bib
+|   ├── __init__.py   
+```
+其中`__init__.py`和`CITATION.bib`是直接复制粘贴即可.
+
 ## 如何训练模型
 目前项目的`policy/`已经提供了`openpi`与`RDT`官方的训练脚本, 并进行了一些修改, 便于进行训练, 里面都提供了详细的操作, 请参考里面的需求进行配置.
 ### RDT
