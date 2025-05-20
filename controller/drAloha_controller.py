@@ -74,6 +74,7 @@ class DrAlohaController(ArmController):
     def reset(self, start_state):
         # 调用set_position或set_joint就行
         pass
+    
     # 返回单位为米
     def get_state(self):
         state = {}
@@ -93,22 +94,25 @@ class DrAlohaController(ArmController):
         state["qpos"]=np.array(eef)
         state["gripper"]=gripper*0.001*50
         return state
+    
     # 单位为米
     def set_position(self, position,theta,speed=10,param=10,mode=1):
         self.controller.set_pose(x_y_z=position,theta_4_5_6=theta,speed=speed,param=param,mode=mode)#运动到指定位置和姿态
         self.controller.pose_done()#等待关节运动到位
-        pass
+    
     def set_joint(self, joint,speed=1.0):
         joint[1]=joint[1]+90#dr Aloha第二个关节电机角度与模型角度有-90度相位差，例如：第二关节逆时针旋转60度，应输入150度，读出无误差
         self.controller.set_joints(angle_list=joint,speed=speed)#控制1~6关节运动
         self.controller.pose_done()#等待关节运动到位
         time.sleep(1)
+    
     # 输入的是0~1的张合度
     def set_gripper(self, gripper):
         gripper=int(gripper*50)
         self.controller.grasp(wideth=gripper,speed=10,force=120)
         self.controller.pose_done()#等待关节运动到位
         time.sleep(1)
+    
     def __del__(self):
         try:
             if hasattr(self, 'controller'):
@@ -116,6 +120,7 @@ class DrAlohaController(ArmController):
                 pass
         except:
             pass
+    
 if __name__=="__main__":
     controller=DrAlohaController("test Dr")
     controller.set_up("/dev/ttyACM0")

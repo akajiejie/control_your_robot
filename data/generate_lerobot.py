@@ -62,10 +62,11 @@ class MyLerobotDataset:
             frame = {}
             for key, value in base_frame.items():
                 frame[key] = value[i]   
-            # 这个是最新版lerobot数据集格式才可以的, openpi版本的lerobot不支持strshuju,智能在save episode中写入
+            # 这个是最新版lerobot数据集格式才可以的, openpi版本的lerobot不支持str,只能在save episode中写入
             frame["task"] = instruction  
             self.dataset.add_frame(frame)
         self.dataset.save_episode()
+        # 这一行是使用openpi的lerobt1.8版本使用的
         # self.dataset.save_episode(task=instruction)
     
     # 新版lerobot没有该函数

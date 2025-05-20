@@ -71,10 +71,3 @@ if __name__=="__main__":
     tracer.set_move_velocity([0,0,0,0,0,0]) 
     tracer.get_subscriber()
     tracer.stop()
-
-
-
-        
-
-
-    

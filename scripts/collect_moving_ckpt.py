@@ -10,6 +10,9 @@ import numpy as np
 from my_robot.agilex_piper_single import PiperSingle
 from data.collect_any import CollectAny
 
+from utils.time_scheduler import TimeScheduler
+from utils.robot_worker import RobotWorker
+
 ARM_INFO_NAME = ["qpos", "gripper"]
 
 condition = {
@@ -57,11 +60,11 @@ class PathCollector:
         self.episode_index += 1
 
     def play(self, robot, episode_index, is_block=False):
+        path = os.path.join(self.condition['save_path'], f"{self.condition['task_name']}/{episode_index}.json")
         try:
-            with open(os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/{episode_index}.json"), "r") as f:
+            with open(path, "r") as f:
                 json_data = json.load(f)
         except:
-            path = os.path.join(self.condition['save_path'], f"{self.condition['task_name']}/{episode_index}.json")
             print(f"{path} does not exist!")
             return
         
@@ -74,6 +77,9 @@ class PathCollector:
             # 如果是非阻塞,当停止运动后进行下一步动作
             if not is_block:
                 time.sleep(2)
+            # 如果是阻塞的，可以添加一个等待时间，或阻塞完成直接继续
+            if is_block:
+                continue
         print("play finished!")
             
 if __name__ == "__main__":
@@ -101,5 +107,43 @@ if __name__ == "__main__":
         else:
             print("无效输入，请重新输入！")
 
-    # 测试运行
+    # 测试运行，执行第0条轨迹
     collector.play(robot, 0, is_block=False)
+
+    '''
+    # 如果你机械臂只能在单个脚本中建立通讯,那么在本脚本中你可以添加一组数据采集器,注释上面的collector.play()
+    
+    is_start = False
+        
+    # 重置进程
+    time_lock = Semaphore(0)
+    start_event = Event()
+    finish_event = Event()
+    robot_process = Process(target=RobotWorker, args=(PiperSingle, time_lock, start_event, finish_event, "robot_worker"))
+    time_scheduler = TimeScheduler([time_lock], time_interval=10) # 可以给多个进程同时上锁
+
+    robot_process.start()
+
+    while not is_start:
+        time.sleep(0.01)
+        if is_enter_pressed():
+            is_start = True
+            start_event.set()
+        else:
+            time.sleep(1)
+    
+    collector.play(robot, 0, is_block=False)
+
+    time_scheduler.start()
+    while is_start:
+        time.sleep(0.01)
+        if is_enter_pressed():
+            finish_event.set()  
+            time_scheduler.stop()  
+            is_start = False
+    
+    # 销毁多进程
+    if robot_process.is_alive():
+        robot_process.join()
+        robot_process.close()
+    '''
