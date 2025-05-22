@@ -1,6 +1,7 @@
 import sapien.core as sapien
 from sapien.utils.viewer import Viewer
 import numpy as np
+import cv2
 
 import sys
 sys.path.append("./")
@@ -53,18 +54,62 @@ class ArmRobotController:
         self.left_end_effort_name = "fl_link6"
         self.right_end_effort_name = "fr_link6"
 
-        # # 用于IK求解的link
-        # self.left_base_link = self.get_link_by_name(left_base_link_name)
-        # self.right_base_link = self.get_link_by_name(right_base_link_name)
-        # self.left_end_effort_link = self.get_link_by_name(left_end_effort_name)
-        # self.right_end_effort_link = self.get_link_by_name(right_end_effort_name)
+        self.left_camera_link_name = "left_camera"
+        self.right_camera_link_name = "right_camera"
+        self.front_camera_link_name = "camera_link2"
 
+        self.left_wrist_camera = self._setup_camera()
+        self.right_wrist_camera = self._setup_camera()
+        self.front_camera = self._setup_camera()
 
-    def get_link_by_name(self, name: str):
+    def _get_link_by_name(self, name: str):
         for link in self.robot.get_links():
+            print(link.get_name())
             if link.get_name() == name:
                 return link
         raise ValueError(f"Link '{name}' not found")
+
+    def _update_camera(self):
+        left_wrist_pos_link = self._get_link_by_name(self.left_camera_link_name)
+        left_wrist_pos = left_wrist_pos_link.get_pose()
+
+        self.left_wrist_camera.set_pose(left_wrist_pos)
+
+        right_wrist_pos_link = self._get_link_by_name(self.right_camera_link_name)
+        right_wrist_pos = right_wrist_pos_link.get_pose()
+
+        self.right_wrist_camera.set_pose(right_wrist_pos)
+
+    def _setup_camera(self):
+        near, far = 0.1, 100
+        width, height, fovy = 640, 480, 37
+        camera = self.scene.add_camera(
+            name="wrist_camera",
+            width=width,
+            height=height,
+            fovy=np.deg2rad(fovy),
+            near=near,
+            far=far
+        )
+        # camera.set_pose(sapien.Pose(p=[0.05, 0, 0], q=[1, 0, 0, 0]))
+        return camera
+
+    def take_picture(self):
+        self.left_wrist_camera.take_picture()
+
+        # 获取 RGBA 图像，float32, (H, W, 4), [0, 1]
+        rgba = self.left_wrist_camera.get_picture("Color")
+        rgb_uint8 = (rgba[:, :, :3] * 255).astype(np.uint8)
+
+        # 获取 Position 图像 (H, W, 3)，取 Z 通道
+        position = self.left_wrist_camera.get_picture("Position")
+        depth = position[:, :, 2]
+
+        # 归一化深度为可视化图像
+        depth_vis = (depth - depth.min()) / (depth.max() - depth.min() + 1e-6)
+        depth_vis = (depth_vis * 255).astype(np.uint8)
+
+        return rgb_uint8, depth_vis
 
     def set_arm_qpos(self, left_angles=None, right_angles=None):
         qpos = self.robot.get_qpos()
@@ -97,8 +142,8 @@ class ArmRobotController:
         return np.array([qpos[i] for i in joint_indices])
 
     def get_relative_pose(self, base_link_name, end_link_name):
-        base = self.get_link_by_name(base_link_name)
-        end = self.get_link_by_name(end_link_name)
+        base = self._get_link_by_name(base_link_name)
+        end = self._get_link_by_name(end_link_name)
         return base.get_pose().inv() * end.get_pose()
 
     def loop(self):
@@ -130,7 +175,6 @@ class ArmRobotController:
         if left_result['status'] == "Fail":
             print("Plan Fail!")
         else:
-            print("Plan Success!")
             self.run_trajectory(self.left_arm_indices, left_result["position"])
     
     def right_move(self,delta_move):
@@ -145,7 +189,6 @@ class ArmRobotController:
         if right_result['status'] == "Fail":
             print("Plan Fail!")
         else:
-            print("Plan Success!")
             self.run_trajectory(self.right_arm_indices, right_result["position"])
     
     '''
@@ -190,11 +233,16 @@ class ArmRobotController:
 
 def main():
     controller = ArmRobotController(
-        urdf_path="/home/niantian/projects/aloha_maniskill_sim/urdf/arx5_description_isaac_package_keyword_replaced.urdf",
+        urdf_path="/home/niantian/projects/aloha_maniskill_sim/urdf/arx5_description_isaac.urdf",
         fix_root_link=True,
         balance_passive_force=True
     )
 
+    rgb, depth = controller.take_picture()
+    cv2.imwrite("rgb.jpg", rgb)
+    # cv2.imshow("depth", depth)
+    # cv2.waitKey(0.01)
+    
     # 设置初始角度
     controller.set_arm_qpos(left_angles=[0.0]*6, right_angles=[0.0]*6)
     # 单臂运动
