@@ -33,7 +33,7 @@ def move(self, message):
         right_action = action[-7:]
         move_data = {
             "left_arm":left_action,
-            "right_arm":ight_action,
+            "right_arm":right_action,
         }
         self.robot.move()
 
@@ -51,3 +51,7 @@ def move(self, message):
     def close(self):
         self.sender.close()
         self.receiver.close()
+
+
+if __name__ == "__main__":
+    pass

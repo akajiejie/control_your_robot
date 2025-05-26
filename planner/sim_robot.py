@@ -6,12 +6,12 @@ from pynput import keyboard
 import time
 import sys
 sys.path.append("./")
-from curobo_planner import CuroboPlanner
+from planner.curobo_planner import CuroboPlanner
 
 x, y, z =0.0, 0.0, 0.0
 move_type = 0
 
-class ArmRobotController:
+class SimRobot:
     def __init__(self, urdf_path: str, fix_root_link=True, balance_passive_force=True):
         # 设置curobo planner
         self.left_planner = CuroboPlanner(active_joints_name=["fl_joint1","fl_joint2","fl_joint3","fl_joint4","fl_joint5","fl_joint6"],\
@@ -176,7 +176,7 @@ class ArmRobotController:
             self.scene.update_render()
             self.viewer.render()
 
-    def left_move(self,delta_move,step_n=10):
+    def left_move(self,delta_move):
         current_left_joint_pose = self.get_joint_positions(self.left_arm_indices)
         current_left_end_effort_pose = self.get_relative_pose(self.left_base_link_name, self.left_end_effort_name)
         current_left_end_effort_pose = np.concatenate([current_left_end_effort_pose.p, current_left_end_effort_pose.q])
@@ -193,10 +193,11 @@ class ArmRobotController:
             print("left ik fail")
             return
         left_result = np.array(left_result.js_solution.position)[0][0]
+        step_n = self.compute_steps(current_left_joint_pose, left_result)
         left_path = np.linspace(current_left_joint_pose, left_result, step_n)
         self.run_trajectory(self.left_arm_indices, left_path)
     
-    def right_move(self,delta_move,step_n=10):
+    def right_move(self,delta_move):
         current_right_joint_pose = self.get_joint_positions(self.right_arm_indices)
         current_right_end_effort_pose = self.get_relative_pose(self.right_base_link_name, self.right_end_effort_name)
         current_right_end_effort_pose = np.concatenate([current_right_end_effort_pose.p, current_right_end_effort_pose.q])
@@ -213,10 +214,11 @@ class ArmRobotController:
             print("right ik fail")
             return
         right_result = np.array(right_result.js_solution.position)[0][0]
+        step_n = self.compute_steps(current_right_joint_pose, right_result)
         right_path = np.linspace(current_right_joint_pose, right_result, step_n)
         self.run_trajectory(self.right_arm_indices, right_path)
     
-    def move(self,left_delta_move, right_delta_move, step_n=30):
+    def move(self,left_delta_move, right_delta_move):
         current_left_joint_pose = self.get_joint_positions(self.left_arm_indices)
         current_left_end_effort_pose = self.get_relative_pose(self.left_base_link_name, self.left_end_effort_name)
         current_left_end_effort_pose = np.concatenate([current_left_end_effort_pose.p, current_left_end_effort_pose.q])
@@ -244,17 +246,23 @@ class ArmRobotController:
             print("right ik fail")
         else:
             right_result = np.array(right_result.js_solution.position.cpu())[0][0]
-
+        
+        step_n = max(self.compute_steps(current_left_joint_pose, left_result), self.compute_steps(current_right_joint_pose, right_result))
         left_path = np.linspace(current_left_joint_pose, left_result, step_n)
         right_path = np.linspace(current_right_joint_pose, right_result, step_n)
 
         end_time = time.time()
-        print(f"双臂推理: {end_time - start_time}s")
+        print(f"双臂推理: {end_time - start_time}s, 进行插值{step_n}步")
 
         full_path = np.hstack([left_path, right_path])
 
         # _full = np.hstack([left_result, right_result])
         self.run_trajectory((self.left_arm_indices + self.right_arm_indices) , full_path, steps_per_target=4)
+    
+    def compute_steps(self,q_start, q_target, min_steps=5, max_steps=50, threshold=np.pi/4):
+        delta = np.linalg.norm(q_target - q_start)
+        ratio = min(delta / threshold, 1.0) # 如果变化超过45度就达到差值上限
+        return int(min_steps + (max_steps - min_steps) * ratio)
 
     def pad_to_same_length(self, traj1, traj2):
         len1, len2 = len(traj1), len(traj2)
@@ -289,8 +297,7 @@ def on_release(key):
 
 def on_press(key):
     global x,y,z,move_type
-    x, y, z = 0.0, 0.0, 0.0
-    # delta_q = [0, 0, 0, 0]
+    # x, y, z = 0.0, 0.0, 0.0
     # 位移控制
     delta_move =0.01
     if key.char == 'w': x += delta_move
@@ -305,8 +312,8 @@ def on_press(key):
     elif key.char == '1': move_type = 1
     elif key.char == '2': move_type = 2
 
-def main():
-    controller = ArmRobotController(
+def test():
+    controller = SimRobot(
         urdf_path="/home/niantian/projects/aloha_maniskill_sim/urdf/arx5_description_isaac.urdf",
         fix_root_link=True,
         balance_passive_force=True
@@ -364,4 +371,4 @@ def main():
     controller.loop()
 
 if __name__ == '__main__':
-    main()
+    test()

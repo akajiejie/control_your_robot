@@ -3,6 +3,9 @@ import pyrealsense2 as rs
 import time
 from sensor.vision_sensor import VisionSensor
 
+from utils.data_handler import debug_print
+
+
 def find_device_by_serial(devices, serial):
     """Find device index by serial number"""
     for i, dev in enumerate(devices):
@@ -16,6 +19,7 @@ class RealsenseSensor(VisionSensor):
         self.name = name
     
     def set_up(self,CAMERA_SERIAL,is_depth = False):
+        self.is_depth = is_depth
         try:
             # Initialize RealSense context and check for connected devices
             self.context = rs.context()
@@ -63,12 +67,16 @@ class RealsenseSensor(VisionSensor):
             # BGR -> RGB
             image["color"] = color_image[:,:,::-1]
 
-        if "depth" in self.collect_info:
-            depth_frame = frame.get_depth_frame()
-            if not depth_frame:
-                raise RuntimeError("Failed to get depth frame.")
-            depth_image = np.asanyarray(depth_frame.get_data()).copy()
-            image["depth"] = depth_image
+        if "depth" in self.collect_inf:
+            if not self.is_depth:
+                debug_print(f"should use set_up(is_depth=True) to enable collecting depth image","ERROR")
+                raise ValueError
+            else:       
+                depth_frame = frame.get_depth_frame()
+                if not depth_frame:
+                    raise RuntimeError("Failed to get depth frame.")
+                depth_image = np.asanyarray(depth_frame.get_data()).copy()
+                image["depth"] = depth_image
 
         return image
 

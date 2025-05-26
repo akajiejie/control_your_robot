@@ -60,4 +60,7 @@ def get_files(directory, extension):
                 file_path = os.path.join(root, filename)
                 file_paths.append(file_path)
     return file_paths
-        
+
+def debug_print(info, INFO):
+    if INFO == "DEBUG" or INFO == "ERROR":
+        print(f"[{INFO}] {info}")     

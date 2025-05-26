@@ -23,7 +23,7 @@ class ROSPublisher:
         发布数据到指定的主题
         """
         if self.pub_msg is None:
-            # rospy.logwarn("No message to publish.")
+            rospy.logwarn("No message to publish.")
         if self.shutdown_flag:
             return
         else:
