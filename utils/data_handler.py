@@ -4,6 +4,8 @@ from pathlib import Path
 import numpy as np
 import os
 import fnmatch
+import sys
+import select
 
 def get_item(Dict_data: Dict, item):
     if isinstance(item, str):
@@ -63,4 +65,8 @@ def get_files(directory, extension):
 
 def debug_print(info, INFO):
     if INFO == "DEBUG" or INFO == "ERROR":
-        print(f"[{INFO}] {info}")     
+        print(f"[{INFO}] {info}") 
+
+def is_enter_pressed():
+    """非阻塞检测Enter键"""
+    return select.select([sys.stdin], [], [], 0)[0] and sys.stdin.read(1) == '\n'    

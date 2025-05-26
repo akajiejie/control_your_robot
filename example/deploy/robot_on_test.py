@@ -4,11 +4,13 @@ sys.path.append("./")
 from my_robot.test_robot import TestRobot
 
 import time
+import keyboard
 import numpy as np
 
-from policy.openpi.inference_model import PI0_DUAL
+from policy.test_policy.inference_model import TestModel
 
 from utils.data_handler import is_enter_pressed
+
 
 def input_transform(data):
     state = np.concatenate([
@@ -39,7 +41,7 @@ if __name__ == "__main__":
     robot = TestRobot(DoFs=6)
     robot.set_up()
     # load model
-    model = PI0_DUAL("model_path", "task_name")
+    model = TestModel("test")
     max_step = 1000
     num_episode = 10
 

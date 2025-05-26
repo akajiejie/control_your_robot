@@ -1,56 +1,77 @@
 import sys
-sys.path.append("../../")
+sys.path.append("./")
 
-from my_robot.realman_dual_3_camera import MyRobot
+from my_robot.test_robot import TestRobot
 
 import time
 import keyboard
+import numpy as np 
 
 from policy.RDT.inference_model import RDT
 
-import numpy as np 
+from utils.data_handler import is_enter_pressed
 
-def transform_data(data):
-    state = np.aray([data["left_arm"]["joint"], data["left_arm"]["gripper"], data["right_arm"]["joint"], data["right_arm"]["gripper"]])
-    img_arr = data["cam_head"]["color"], data["cam_right_wrist"]["color"], data["cam_left_wrist"]["color"]
+
+def input_transform(data):
+    state = np.concatenate([
+        np.array(data[0]["left_arm"]["joint"]).reshape(-1),
+        np.array(data[0]["left_arm"]["gripper"]).reshape(-1),
+        np.array(data[0]["right_arm"]["joint"]).reshape(-1),
+        np.array(data[0]["right_arm"]["gripper"]).reshape(-1)
+    ])
+
+
+    img_arr = data[1]["cam_head"]["color"], data[1]["cam_right_wrist"]["color"], data[1]["cam_left_wrist"]["color"]
     return img_arr, state
 
+def output_transform(data):
+    move_data = {
+        "left_arm":{
+            "joint":data[:6],
+            "gripper":data[6]
+        },
+        "right_arm":{
+            "joint":data[7:13],
+            "gripper":data[13]
+        }
+    }
+    return move_data
+
 if __name__ == "__main__":
-    robot = MyRobot()
+    robot = TestRobot(DoFs=6)
     robot.set_up()
     # load model
-    policy = RDT("model_path", "task_name")
+    model = RDT("model_path", "task_name")
     max_step = 1000
     num_episode = 10
+
     for i in range(num_episode):
         step = 0
-        while True:
-            if keyboard.is_pressed("enter"):
-                print("reset robot")
-                break
-            else:
-                print("waiting for command to reset robot")
-
+        # 重置所有信息
         robot.reset()
-        RDT.reset_obsrvationwindows()
-        RDT.random_set_language()
+        model.reset_obsrvationwindows()
+        model.random_set_language()
+
+        # 等待允许执行推理指令, 按enter开始
         is_start = False
         while not is_start:
-            if keyboard.is_pressed("enter"):
+            if is_enter_pressed():
                 is_start = True
                 print("start to inference...")
-        
+            else:
+                print("waiting for start command...")
+                time.sleep(1)
+
+        # 开始逐条推理运行
         while step < max_step:
-            # 更新robot的observation
             data = robot.get()
-            img_arr, state = transform_data(data)
-            policy.update_observation_window(img_arr, state)
-            # 进行推理
-            action_chunk = robot.get_action()
-            #执行推理结果
+            img_arr, state = input_transform(data)
+            model.update_observation_window(img_arr, state)
+            action_chunk = model.get_action()
             for action in action_chunk:
-                robot.move(action)
+                move_data = output_transform(action)
+                robot.move(move_data)
                 step += 1
                 time.sleep(1/robot.condition["save_interval"])
 
-        print(f"finish episode {i}")
+        print("finish episode", i)

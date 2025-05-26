@@ -16,17 +16,19 @@ condition = {
 }
 
 class TestRobot:
-    def __init__(self, INFO="DEBUG",start_episode=10):
+    def __init__(self, DoFs=6,INFO="DEBUG",start_episode=0):
         self.INFO = INFO
+        self.DoFs = DoFs
         self.arm_controllers = {
-            "left_arm": TestArmController("left_arm",DoFs=6,INFO=self.INFO),
-            "right_arm": TestArmController("right_arm",DoFs=6,INFO=self.INFO),
+            "left_arm": TestArmController("left_arm",DoFs=self.DoFs,INFO=self.INFO),
+            "right_arm": TestArmController("right_arm",DoFs=self.DoFs,INFO=self.INFO),
         }
         self.image_sensors = {
             "cam_head": TestVisonSensor("cam_head",INFO=self.INFO),
             "cam_left_wrist": TestVisonSensor("cam_left_wrist",INFO=self.INFO),
             "cam_right_wrist": TestVisonSensor("cam_right_wrist",INFO=self.INFO),
         }
+        self.condition = condition
         self.collection = CollectAny(condition, start_episode=start_episode)
     
     def reset(self):

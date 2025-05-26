@@ -52,6 +52,7 @@ class PiperDual:
             "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
             "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
         }
+        self.condition = condition
         self.collection = CollectAny(condition, start_episode=start_episode)
 
     def reset(self):

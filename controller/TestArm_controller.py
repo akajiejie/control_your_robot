@@ -93,6 +93,7 @@ if __name__=="__main__":
     controller.get()
 
     move_data = {
-        "joint":np.random.rand(6) * 3.1515926
+        "joint":np.random.rand(6) * 3.1515926,
+        "gripper":0.2
     }
     controller.move(move_data)

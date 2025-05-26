@@ -57,6 +57,7 @@ class PikaPiper:
             "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
             "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
         }
+        self.condition = condition
         self.collection = CollectAny(condition, start_episode=0)
 
     def reset(self):

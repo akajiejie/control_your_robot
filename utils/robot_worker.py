@@ -13,14 +13,14 @@ def debug_print(process_name, msg, Release=False):
     if DEBUG or Release:
         print(f"[{process_name}] {msg}")
 
-def RobotWorker(robot_class, 
+def RobotWorker(robot_class, start_episode,
                 time_lock: Semaphore, start_event: Event, finish_event: Event, process_name: str):
     """
     工作进程函数：
     - 通过 Semaphore 控制时间同步
     - 通过 Event 通知进程终止
     """
-    robot = robot_class()
+    robot = robot_class(start_episode=start_episode)
     robot.set_up()
     while not start_event.is_set():
         debug_print(process_name ,"Press Enter to start...",Release)
