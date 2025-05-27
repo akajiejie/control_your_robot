@@ -3,12 +3,15 @@ sys.path.append("./")
 
 import numpy as np
 import json
+
 from utils.data_handler import debug_print
 
 class TestModel:
-    def __init__(self,task_name,DoFs=14, INFO="DEBUG"):
+    def __init__(self,task_name,DoFs=14,is_dual=True, INFO="DEBUG"):
         self.task_name = task_name
         self.INFO = INFO
+
+        self.is_dual = is_dual
 
         self.DoFs = DoFs
 
@@ -48,13 +51,31 @@ class TestModel:
             },
             "prompt": self.instruction,
         }
+
+        if self.is_dual:
+            if state.shape[0] != 2 * (self.DoFs + 1):
+                debug_print(f"dual arm infer model iput dim should be 2*(DoFs + 1), but got dim {state.shape[0]}","ERROR")
+        else:
+            if state.shape[0] != (self.DoFs + 1):
+                debug_print(f"single arm infer model iput dim should be (DoFs + 1), but got dim {state.shape[0]}","ERROR")
         debug_print(f"model: update observation windows success", self.INFO)
         
-
     def get_action(self):
+        horizon = 3
         assert (self.observation_window is not None), "update observation_window first!"
-        action = np.random.rand(64, self.DoFs) * 3.1515926
-        debug_print(f"model: get action success \n {action}", self.INFO)
+        if self.is_dual:
+            action = np.concatenate([
+                np.random.rand(horizon, self.DoFs) * 3.1515926,  # 第一条手臂的关节
+                np.random.rand(horizon, 1),                      # 第一条手臂的夹爪
+                np.random.rand(horizon, self.DoFs) * 3.1515926,  # 第二条手臂的关节
+                np.random.rand(horizon, 1)                       # 第二条手臂的夹爪
+            ], axis=1)
+        else:
+            action = np.concatenate([
+                np.random.rand(horizon, self.DoFs) * 3.1515926,  # 第一条手臂的关节
+                np.random.rand(horizon, 1)])
+
+        debug_print(f"model: infer action success", self.INFO)
         return action
 
     def reset_obsrvationwindows(self):
@@ -63,6 +84,9 @@ class TestModel:
         debug_print(f"successfully unset obs and language intruction",self.INFO)
 
 if __name__ == "__main__":
+    import os
+    os.environ["INFO_LEVEL"] = "INFO"
+    
     DoFs = 14
     model = TestModel("test",DoFs=DoFs)
     height = 480

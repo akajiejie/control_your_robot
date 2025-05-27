@@ -3,15 +3,10 @@ import pickle
 from threading import Thread
 
 class Reciever:
-    def __init__(self, host: str, port: int, handler):
-        self.host = host
-        self.port = int(port)
+    def __init__(self, recieve_socket:socket, handler):
         self.handler = handler
         self.conn_closed = False
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # 允许重用地址，避免TIME_WAIT影响绑定
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind((self.host, self.port))
+        self.server = recieve_socket
         self.server.listen(1)
         self._running = True
         self._conn_thread = None
@@ -68,8 +63,13 @@ def handler(message):
 
 if __name__ == "__main__":
     import time
-
-    receiver = Reciever("127.0.0.1", 10000, handler=handler)
+    host = "127.0.0.1"
+    port = 10000
+    recieve_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    recieve_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    recieve_socket.connect((host, port))
+    print(f"[Sender] Connected to {host}:{port}")
+    receiver = Reciever(recieve_socket, handler=handler)
     receiver.start()
 
     while True:

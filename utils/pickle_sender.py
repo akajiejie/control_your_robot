@@ -2,16 +2,8 @@ import socket
 import pickle
 
 class Sender:
-    def __init__(self, host: str, port: int):
-        self.host = host
-        self.port = int(port)  # 确保端口是整数
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.socket.connect((self.host, self.port))
-            print(f"[Sender] Connected to {self.host}:{self.port}")
-        except Exception as e:
-            print(f"[Sender] Connection failed: {e}")
-            raise
+    def __init__(self, send_socket):
+        self.socket = send_socket
 
     def send(self, data):
         try:
@@ -33,8 +25,11 @@ class Sender:
 if __name__ == "__main__":
     import numpy as np
     import time
-
-    sender = Sender("127.0.0.1", "10000")
+    host = "127.0.0.1"
+    port = 10000
+    send_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    send_socket.connect((host, port))
+    sender = Sender(send_socket)
     try:
         for i in range(100):
             data = {

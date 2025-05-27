@@ -2,8 +2,9 @@ import sys
 sys.path.append('./')
 
 from my_robot.test_robot import TestRobot
-from utils.pickle_sender import Sender
-from utils.pickle_reciever import Reciever
+
+from utils.bisocket import BiSocket
+from utils.data_handler import debug_print
 
 import socket
 import time
@@ -39,14 +40,8 @@ class Client:
         self.robot = robot
         self.cntrol_freq = cntrol_freq
     
-    def set_up(self, send_ip, send_port, recieve_ip, reciever_port):
-        self.send_ip = send_ip
-        self.send_port = send_port
-
-        # self.sender = Sender(self.send_ip, self.send_port)
-
-        self.receiver = Reciever(recieve_ip, reciever_port,self.move)
-        self.receiver.start()
+    def set_up(self, bisocket:BiSocket):
+        self.bisocket = bisocket
 
     def move(self, message):
         action_chunk = message["action_chunk"]
@@ -57,9 +52,6 @@ class Client:
             self.robot.move(move_data)
 
     def play_once(self):
-        if not hasattr(self, 'sender'):
-            self.sender = Sender(self.send_ip, self.send_port)
-        
         raw_data = self.robot.get()
         img_arr, state = input_transform(raw_data)
         data_send = {
@@ -68,23 +60,34 @@ class Client:
         }
 
         # 发送数据
-        self.sender.send(data_send)
+        self.bisocket.send(data_send)
         time.sleep(1 / self.cntrol_freq)
 
     def close(self):
-        if hasattr(self,'sender'):
-            self.sender.close()
+        return
 
 if __name__ == "__main__":
+    import os
+    os.environ["INFO_LEVEL"] = "INFO"
+    
+    ip = "127.0.0.1"
+    port = 10000
+
     DoFs = 6
     robot = TestRobot(DoFs=DoFs, INFO="DEBUG")
     robot.set_up()
 
     client = Client(robot)
-    client.set_up("127.0.0.1","10000","127.0.0.1","10001")
+
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((ip, port))
+
+    bisocket = BiSocket(client_socket, client.move)
+    client.set_up(bisocket)
+
     for i in range(10):
         try:
-            print("play once")
+            print(f"play once:{i}")
             client.play_once()
             time.sleep(1)
         except:

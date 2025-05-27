@@ -59,7 +59,7 @@ class TestArmController(ArmController):
             if 1>gripper > 0:
                 debug_print(f"{self.name}: set gripper to {gripper}", self.INFO)
             else:
-                debug_print(f"{self.name}: gripper should be 0~1, but get {gripper}",self.INFO)
+                debug_print(f"{self.name}: gripper better be 0~1, but get number {gripper}","WARNING")
         else:
             debug_print(f"{self.name}: gripper should be a number 0~1","ERROR")
     
@@ -72,6 +72,9 @@ class TestArmController(ArmController):
             pass
 
 if __name__=="__main__":
+    import os
+    os.environ["INFO_LEVEL"] = "INFO"
+    
     controller = TestArmController("test_arm",DoFs=6,INFO="DEBUG")
 
     controller.set_collect_info(["joint","qpos","gripper"])

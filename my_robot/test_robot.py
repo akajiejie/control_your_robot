@@ -78,6 +78,9 @@ class TestRobot:
         self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=False)
 
 if __name__ == "__main__":
+    import os
+    os.environ["INFO_LEVEL"] = "INFO"
+    
     robot = TestRobot()
 
     robot.set_up()

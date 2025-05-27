@@ -45,6 +45,9 @@ class TestVisonSensor(VisionSensor):
         self.cleanup()
 
 if __name__ == "__main__":
+    import os
+    os.environ["INFO_LEVEL"] = "INFO"
+    
     cam = TestVisonSensor("test", INFO="DEBUG")
     cam.set_up()
     cam.set_collect_info(["color"])
