@@ -5,9 +5,9 @@ from typing import Callable, Optional
 class ROSSubscriber:
     def __init__(self, topic_name, msg_type,call: Optional[Callable] = None):
         """
-        初始化 ROS 订阅器
-        :param topic_name: 订阅的话题名称
-        :param msg_type: 消息类型
+        Initialize ROS subscriber
+        :param topic_name: Name of the topic to subscribe to
+        :param msg_type: Type of the message
         """
         self.topic_name = topic_name
         self.msg_type = msg_type
@@ -15,13 +15,12 @@ class ROSSubscriber:
         self.lock = threading.Lock()
         self.user_call = call
         
-        # 订阅话题
         self.subscriber = rospy.Subscriber(self.topic_name, self.msg_type, self.callback)
     
     def callback(self, msg):
         """
-        订阅回调函数，用于接收消息并更新最新的数据。
-        :param msg: 收到的消息
+        Subscriber callback function to receive messages and update the latest data.
+        :param msg: The received message
         """
         with self.lock:
             self.latest_msg = msg
@@ -29,10 +28,6 @@ class ROSSubscriber:
                 self.user_call(self.latest_msg)
 
     def get_latest_data(self):
-        """
-        获取最新的订阅数据，确保数据为最新
-        :return: 最新的数据（例如 PointCloud2 消息）
-        """
         with self.lock:
             return self.latest_msg
 

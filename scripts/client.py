@@ -59,7 +59,7 @@ class Client:
             "state": state
         }
 
-        # 发送数据
+        # send data
         self.bisocket.send(data_send)
         time.sleep(1 / self.cntrol_freq)
 

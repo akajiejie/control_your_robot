@@ -18,50 +18,47 @@ class TestArmController(ArmController):
         self.DoFs = DoFs
     
     def set_up(self):
-        debug_print(f"{self.name}: setup success",self.INFO)
+        debug_print(self.name, f"setup success",self.INFO)
 
     def reset(self, start_state):
         if start_state.shape[0] == self.DoFs:
-            debug_print(f"{self.name}: reset success, to start state \n {start_state}",self.INFO)
+            debug_print(self.name, f"reset success, to start state \n {start_state}",self.INFO)
         else:
-            debug_print(f"{self.name}: reset() input should be joint controll which dim is {self.DoFs}","ERROR")
+            debug_print(self.name, f"reset() input should be joint controll which dim is {self.DoFs}","ERROR")
 
-
-    # 返回单位为米
     def get_state(self):
         state = {}
         
-        # 获取对应信息
+        # randly return a vaild value  
         state["joint"] = np.random.rand(self.DoFs) * 3.1515926
         state["qpos"] = np.random.rand(6)
         state["gripper"] = np.random.rand(1)
-        debug_print(f"get state to \n {state}", self.INFO)
+        debug_print(self.name, f"get state to \n {state}", self.INFO)
         return state
 
-    # 单位为米
     def set_position(self, position):
         if position.shape[0] == 6:
-            debug_print(f"{self.name}: using EULER set position to \n {position}", self.INFO)
+            debug_print(self.name, f"using EULER set position to \n {position}", self.INFO)
         elif position.shape[0] == 7:
-            debug_print(f"{self.name}: using QUATERNION set position to \n {position}", self.INFO)
+            debug_print(self.name, f"using QUATERNION set position to \n {position}", self.INFO)
         else:
-            debug_print(f"{self.name}: set_position input size should be 6 -> EULER or 7 -> QUATERNION","ERROR")
+            debug_print(self.name, f"set_position input size should be 6 -> EULER or 7 -> QUATERNION","ERROR")
     
     def set_joint(self, joint):
         if joint.shape[0] != self.DoFs:
-            debug_print(f"{self.name}: set_joint() input size should be {self.DoFs}","ERROR")   
+            debug_print(self.name, f"set_joint() input size should be {self.DoFs}","ERROR")   
         else: 
-            debug_print(f"{self.name}: set joint to \n {joint}", self.INFO)
+            debug_print(self.name, f"set joint to \n {joint}", self.INFO)
 
-    # 输入的是0~1的张合度
+    # The input gripper value is in the range [0, 1], representing the degree of opening.
     def set_gripper(self, gripper):
         if isinstance(gripper, (int, float, complex)) and not isinstance(gripper, bool):
             if 1>gripper > 0:
-                debug_print(f"{self.name}: set gripper to {gripper}", self.INFO)
+                debug_print(self.name, f"set gripper to {gripper}", self.INFO)
             else:
-                debug_print(f"{self.name}: gripper better be 0~1, but get number {gripper}","WARNING")
+                debug_print(self.name, f"gripper better be 0~1, but get number {gripper}","WARNING")
         else:
-            debug_print(f"{self.name}: gripper should be a number 0~1","ERROR")
+            debug_print(self.name, f"gripper should be a number 0~1","ERROR")
     
     def __del__(self):
         try:

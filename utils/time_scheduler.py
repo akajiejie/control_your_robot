@@ -7,20 +7,19 @@ import numpy as np
 DEBUG = False
 Release = True
 
-def debug_print(process_name, msg, Release=False):
-    if DEBUG or Release:
-        print(f"[{process_name}] {msg}")
+from utils.data_handler import debug_print
 
 def worker(process_id: int, process_name: str, time_semaphore: Semaphore, result_array: Array, result_lock: Lock):
     while True:
-        time_semaphore.acquire()  # 阻塞直到 scheduler 发放“执行令牌”
-        debug_print(process_name, "received time slot")
+        # Block until the scheduler issues an "execution token"
+        time_semaphore.acquire()  
+        debug_print(process_name, "received time slot", "DEBUG")
 
-        # 模拟任务处理 + 数据写入（加锁）
+        # Simulate task processing + data writing (with locking)
         result = np.random.randn(5,5).flatten()
         with result_lock:
             result_array[process_id*25:(process_id+1)*25] = result
-        time.sleep(0.01)  # 模拟任务耗时
+        time.sleep(0.01) 
 
 class TimeScheduler:
     def __init__(self, time_semaphores: List[Semaphore], time_interval=10):
@@ -31,9 +30,10 @@ class TimeScheduler:
     def time_worker(self):
         while True:
             for sem in self.time_semaphores:
-                sem.release()  # 发放“时间片令牌”
-                debug_print(self.process_name, "released time slot to one worker")
-            time.sleep(1 / self.time_interval)  # 控制频率
+                # Issue "time slice token"
+                sem.release()  
+                debug_print(self.process_name, "released time slot to one worker", "DEBUG")
+            time.sleep(1 / self.time_interval)
 
     def start(self):
         self.time_locker = Process(target=self.time_worker)
@@ -54,19 +54,19 @@ if __name__ == "__main__":
     time_semaphores = [Semaphore(0) for _ in range(process_num)]
     result_lock = Lock()
 
-    # 启动 worker 进程
+    # start workers
     for i in range(process_num):
         process = Process(target=worker, args=(i, f"process_{i}", time_semaphores[i], result_array, result_lock))
         process.start()
         processes.append(process)
 
-    # 启动时间调度器
+    # start time scheduler
     time_scheduler = TimeScheduler(time_semaphores, time_interval=10)
     time_scheduler.start()
 
-    # 可选：主线程可用于读取结果
+    # (optional)
     try:
-        time.sleep(5)  # 主程序观察运行 5 秒
+        time.sleep(5)
         print("Sample result snapshot:", result_array[:])
     except KeyboardInterrupt:
         print("Main process interrupted.")

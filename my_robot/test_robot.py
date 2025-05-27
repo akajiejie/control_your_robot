@@ -9,10 +9,10 @@ from utils.data_handler import debug_print
 from data.collect_any import CollectAny
 
 condition = {
-    "save_path": "./save/", # 保存路径
-    "task_name": "test", # 任务名称
-    "save_format": "hdf5", # 保存格式
-    "save_interval": 10, # 保存频率
+    "save_path": "./save/", 
+    "task_name": "test", 
+    "save_format": "hdf5", 
+    "save_interval": 10,
 }
 
 class TestRobot:

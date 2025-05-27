@@ -63,33 +63,27 @@ def get_files(directory, extension):
                 file_paths.append(file_path)
     return file_paths
 
-def debug_print(info, level="INFO"):
-    # 定义日志等级权重（数字越大，级别越重要）
+def debug_print(name, info, level="INFO"):
     levels = {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40}
 
-    # 获取环境变量的日志级别，默认INFO
     env_level = os.getenv("INFO_LEVEL", "INFO").upper()
     env_level_value = levels.get(env_level, 20)
 
-    # 当前日志级别的权重
     msg_level_value = levels.get(level.upper(), 20)
 
-    # 如果消息等级低于环境变量等级，则不打印
     if msg_level_value < env_level_value:
         return
 
-    # 颜色定义
     colors = {
-        "DEBUG": "\033[94m",   # 蓝色
-        "INFO": "\033[92m",    # 绿色
-        "WARNING": "\033[93m", # 黄色
-        "ERROR": "\033[91m",   # 红色
+        "DEBUG": "\033[94m",   # blue
+        "INFO": "\033[92m",    # green
+        "WARNING": "\033[93m", # yellow
+        "ERROR": "\033[91m",   # red
         "ENDC": "\033[0m",
     }
     color = colors.get(level.upper(), "")
     endc = colors["ENDC"]
-    print(f"{color}[{level}] {info}{endc}")
+    print(f"{color}[{level}][{name}] {info}{endc}")
 
 def is_enter_pressed():
-    """非阻塞检测Enter键"""
     return select.select([sys.stdin], [], [], 0)[0] and sys.stdin.read(1) == '\n'    

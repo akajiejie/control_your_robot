@@ -86,7 +86,8 @@ class RealmanController(ArmController):
         state["gripper"] = self.get_gripper()
 
         return state
-
+    
+    # The input gripper value is in the range [0, 1], representing the degree of opening.
     def get_gripper(self):
         try:
             succ, gripper = self.controller.rm_get_gripper_state()
@@ -97,7 +98,11 @@ class RealmanController(ArmController):
             raise RuntimeError(f"Error getting gripper state: {str(e)}")
         return gripper
     
-    # 由于RealMan控制不像libero,Driod有独立的action,直接基于state控制,因此不需要这个函数
+    '''
+    Unlike Libero and Driod, which rely on separate action spaces, 
+    RealMan is controlled directly through state-based commands. 
+    Therefore, this function is unnecessary.
+    '''
     def get_action(self):
         raise NotImplementedError("get_action is not implemented")
     

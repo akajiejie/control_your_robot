@@ -11,7 +11,8 @@ from utils.data_handler import *
 import cv2
 
 '''
-双臂:
+dual-arm:
+
 map = {
     "cam_high": "cam_head.color",
     "cam_left_wrist": "cam_left_wrist.color",
@@ -19,7 +20,9 @@ map = {
     "qpos": ["left_arm.joint","left_arm.gripper","right_arm.joint","right_arm.gripper"],
     "action": ["left_arm.joint","left_arm.gripper","right_arm.joint","right_arm.gripper"],
 }
-单臂:
+
+single-arm:
+
 map = {
     # "cam_high": "cam_head.color",
     "cam_wrist": "cam_wrist.color",
@@ -62,7 +65,11 @@ def convert(hdf5_paths, output_path, start_index=0):
 
         with h5py.File(hdf5_output_path, "w") as f:
             obs = f.create_group("observations")
-            # 机械臂基础参数，如果使用的是joint，可以改名不叫qpos了避免弄混，但是记得在对应模型的数据读入阶段修改就行
+            '''
+            Basic robot arm parameters: if you’re using joint values, 
+            you can rename them to avoid confusion instead of calling them qpos, 
+            but remember to update the corresponding model’s data loading phase accordingly.
+            '''
             qpos = np.array(get_item(data, map["qpos"])).astype(np.float32)
             action = np.array(get_item(data, map["action"])).astype(np.float32)
 
@@ -71,7 +78,7 @@ def convert(hdf5_paths, output_path, start_index=0):
 
             images = obs.create_group("images")
             
-            # 根据你的视角名称，获取数据并进行编码压缩存储
+            # Retrieve data based on your camera/view names, then encode and compress it for storage.
 
             # cam_high = get_item(data, map["cam_high"])
             cam_wrist = get_item(data, map["cam_wrist"])

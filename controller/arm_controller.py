@@ -45,7 +45,7 @@ class ArmController(Controller):
                 elif key == "qpos":
                     self.set_position(np.array(value))
         
-        # 对于action与gripper不做delta处理, 统一操作
+        # For action and gripper, use absolute values instead of deltas
         for key, value in move_data.items():
             if key == "action":
                 self.set_action(value)

@@ -36,28 +36,11 @@ START_POSITION_ANGLE_RIGHT_ARM = [
     32    # Joint 7
 ]
 
-'''
-最终保存信息包含:
-condition = {
-    image_keys: list[str], # 视角名称 [front_image, left_wrist_image, right_wrist_image]
-    arm_type: str, # 机械臂类型
-    state_is_joint: bool, # 关节角度是否为state
-    is_action: bool, # 是否包含action
-    is_dual: bool, # 是否为双臂
-    save_right_now: bool, # 是否在当前时刻保存数据
-    save_depth: bool, # 是否保存深度图
-    save_path: str, # 保存路径
-    task_name: str, # 任务名称
-    save_format: str, # 保存格式
-    save_interval: int, # 保存频率
-}
-'''
-
 # 记录统一的数据操作信息, 相关配置信息由CollectAny补充并保存
 condition = {
-    "save_path": "./save/", # 保存路径
-    "task_name": "test", # 任务名称
-    "save_interval": 10, # 保存频率
+    "save_path": "./save/",
+    "task_name": "test", 
+    "save_interval": 10,
 }
 
 class MyRobot:
@@ -124,22 +107,8 @@ class MyRobot:
         self.arm_controllers["left_arm"].set_action(action)
         self.arm_controllers["right_arm"].set_action(action)
 
-# 编写你的机器人测试样例
 if __name__ == "__main__":
     robot = MyRobot()
-    # 初始化机器人
+
     robot.reset()
-    '''
-    测试接口:
-    1. 机械臂位置初始化
-    2. 机械臂是否运动判定
-    3. 机械臂获取数据
-    4. 机械臂运动
-    '''
-    #
-    print(robot.is_start())
-
-    print(robot.get())
-
-
     

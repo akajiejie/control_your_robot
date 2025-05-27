@@ -6,33 +6,28 @@ from typing import *
 
 from multiprocessing import Event, Semaphore
 
-DEBUG = False
-Release = True
-
-def debug_print(process_name, msg, Release=False):
-    if DEBUG or Release:
-        print(f"[{process_name}] {msg}")
+from utils.data_handler import debug_print
 
 def RobotWorker(robot_class, start_episode,
                 time_lock: Semaphore, start_event: Event, finish_event: Event, process_name: str):
     """
-    工作进程函数：
-    - 通过 Semaphore 控制时间同步
-    - 通过 Event 通知进程终止
+    Worker process function:
+    - Uses a Semaphore to control time synchronization
+    - Uses an Event to signal process termination
     """
     robot = robot_class(start_episode=start_episode)
     robot.set_up()
     while not start_event.is_set():
-        debug_print(process_name ,"Press Enter to start...",Release)
+        debug_print(process_name ,"Press Enter to start...","INFO")
         time.sleep(1)
     
-    debug_print(process_name, "Get start Event, start collecting...",Release)
-    debug_print(process_name, "To finish this episode, please press Enter. ",Release)
+    debug_print(process_name, "Get start Event, start collecting...","INFO")
+    debug_print(process_name, "To finish this episode, please press Enter. ","INFO")
     try:
         while not finish_event.is_set():
-            time_lock.acquire()  # 阻塞等待调度令牌
+            time_lock.acquire()  
             if finish_event.is_set():
-                break  # 防止在 acquire 之后立即退出之前处理数据
+                break  # Prevent exiting immediately after acquire before processing data
 
             debug_print(process_name, "Time lock acquired. Processing data...")
 
@@ -40,14 +35,13 @@ def RobotWorker(robot_class, start_episode,
                 data = robot.get()
                 robot.collect(data)
             except Exception as e:
-                debug_print(process_name, f"Error: {e}", Release)
+                debug_print(process_name, f"Error: {e}", "ERROR")
 
             debug_print(process_name, "Data processed. Waiting for next time slot.")
 
-        # 安全终止处理
-        debug_print(process_name, "Finish event triggered. Finalizing...",Release)
+        debug_print(process_name, "Finish event triggered. Finalizing...","INFO")
         robot.finish()
-        debug_print(process_name, "Writing success!",Release)
+        debug_print(process_name, "Writing success!","DEBUG")
         
     except KeyboardInterrupt:
         debug_print(process_name, "Worker terminated by user.")

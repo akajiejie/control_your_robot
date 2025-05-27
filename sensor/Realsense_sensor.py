@@ -69,7 +69,7 @@ class RealsenseSensor(VisionSensor):
 
         if "depth" in self.collect_inf:
             if not self.is_depth:
-                debug_print(f"should use set_up(is_depth=True) to enable collecting depth image","ERROR")
+                debug_print(self.name, f"should use set_up(is_depth=True) to enable collecting depth image","ERROR")
                 raise ValueError
             else:       
                 depth_frame = frame.get_depth_frame()

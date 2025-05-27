@@ -1,6 +1,4 @@
-### policy部分
-由于这部分是集成了多个优秀的开源项目,针对本项目进行修改与匹配后添加的,在此致敬.
-
+### policy part
 This part integrates several outstanding open-source projects. After making modifications and adaptations for this project, they were added here—with respect and acknowledgment.
 
 [RDT official](https://github.com/thu-ml/RoboticsDiffusionTransformer)

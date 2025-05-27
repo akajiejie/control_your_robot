@@ -64,7 +64,6 @@ def load_raw_images_per_camera(ep: h5py.File, cameras: list[str]) -> dict[str, n
             imgs_array = []
             for data in ep[f"/observations/images/{camera}"]:
                 data = np.frombuffer(data, np.uint8)
-                # img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)  # 解码为彩色图像
                 imgs_array.append(cv2.imdecode(data, cv2.IMREAD_COLOR))
             imgs_array = np.array(imgs_array)
 

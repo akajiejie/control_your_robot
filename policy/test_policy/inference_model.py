@@ -15,7 +15,7 @@ class TestModel:
 
         self.DoFs = DoFs
 
-        debug_print("model: loading model success", self.INFO)
+        debug_print("model", "loading model success", self.INFO)
 
         self.img_size = (224,224)
         self.observation_window = None
@@ -33,7 +33,7 @@ class TestModel:
         instructions = instruction_dict['instructions']
         instruction = np.random.choice(instructions)
         self.instruction = instruction
-        debug_print(f"successfully set instruction:{instruction}",self.INFO)
+        debug_print("model",f"successfully set instruction:{instruction}",self.INFO)
     
     # Update the observation window buffer
     def update_observation_window(self, img_arr, state):
@@ -54,11 +54,11 @@ class TestModel:
 
         if self.is_dual:
             if state.shape[0] != 2 * (self.DoFs + 1):
-                debug_print(f"dual arm infer model iput dim should be 2*(DoFs + 1), but got dim {state.shape[0]}","ERROR")
+                debug_print("model",f"dual arm infer model iput dim should be 2*(DoFs + 1), but got dim {state.shape[0]}","ERROR")
         else:
             if state.shape[0] != (self.DoFs + 1):
-                debug_print(f"single arm infer model iput dim should be (DoFs + 1), but got dim {state.shape[0]}","ERROR")
-        debug_print(f"model: update observation windows success", self.INFO)
+                debug_print("model",f"single arm infer model iput dim should be (DoFs + 1), but got dim {state.shape[0]}","ERROR")
+        debug_print("model",f"update observation windows success", self.INFO)
         
     def get_action(self):
         horizon = 3
@@ -75,13 +75,13 @@ class TestModel:
                 np.random.rand(horizon, self.DoFs) * 3.1515926,  # 第一条手臂的关节
                 np.random.rand(horizon, 1)])
 
-        debug_print(f"model: infer action success", self.INFO)
+        debug_print("model",f"infer action success", self.INFO)
         return action
 
     def reset_obsrvationwindows(self):
         self.instruction = None
         self.observation_window = None
-        debug_print(f"successfully unset obs and language intruction",self.INFO)
+        debug_print("model",f"successfully unset obs and language intruction",self.INFO)
 
 if __name__ == "__main__":
     import os

@@ -8,15 +8,22 @@ import json
 from utils.data_handler import *
 
 '''
-设置map, 用于将默认数据格式映射到lerobot的对应features中
-多层索引使用`.`分割
-多数据结合用List[str]表示
-例如:
+Define a mapping to translate default data format keys into corresponding LeRobot feature keys.
+
+Use `.` to indicate multi-level indexing (e.g., nested dictionaries or objects).
+Use `List[str]` to represent combinations of multiple features.
+
+Example:
 map = {
     "observation.images.cam_high": "observation.cam_head.color",
     "observation.images.cam_left_wrist": "observation.cam_left_wrist.color",
     "observation.images.cam_right_wrist": "observation.cam_right_wrist.color",
-    "observation.state": ["observation.left_arm.joint","observation.left_arm.gripper","observation.right_arm.joint","observation.right_arm.gripper"],
+    "observation.state": [
+        "observation.left_arm.joint",
+        "observation.left_arm.gripper",
+        "observation.right_arm.joint",
+        "observation.right_arm.gripper"
+    ],
 }
 '''
 
@@ -50,10 +57,10 @@ class MyLerobotDataset:
     def write(self, data: Dict,path=None):
         base_frame = {}
         if self.intruction_path is None:
-            # 多任务, 需要匹配对应任务的指令
+            # multi task need multi instruction
             instruction = self.get_random_intruction(path) 
         else:
-            # 单任务, 读取默认指令位置
+            # single task, read default instruction path
             instruction = self.get_random_intruction() 
         for key, value in self.map.items():
             base_frame[key] = np.array(get_item(data, value))
@@ -62,13 +69,13 @@ class MyLerobotDataset:
             frame = {}
             for key, value in base_frame.items():
                 frame[key] = value[i]   
-            # 这个是最新版lerobot数据集格式才可以的, openpi版本的lerobot不支持str,只能在save episode中写入
+            # for the lerobot 2.1
             frame["task"] = instruction  
             self.dataset.add_frame(frame)
         self.dataset.save_episode()
-        # 这一行是使用openpi的lerobt1.8版本使用的
+        # for lerobot 1.8 -> openpi
         # self.dataset.save_episode(task=instruction)
     
-    # 新版lerobot没有该函数
+    # only for lerobot 1.8
     def consolidate(self):
         self.dataset.consolidate()

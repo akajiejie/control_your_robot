@@ -21,11 +21,11 @@ class BiSocket:
             try:
                 packet = self.conn.recv(n - len(data))
             except Exception as e:
-                debug_print(f"Recv error: {e}", "ERROR")
+                debug_print("BiSocket", f"Recv error: {e}", "ERROR")
                 self.close()
                 return None
             if not packet:
-                debug_print("Remote side closed connection.", "WARNING")
+                debug_print("BiSocket","Remote side closed connection.", "WARNING")
                 self.close()
                 return None
             data += packet
@@ -46,22 +46,22 @@ class BiSocket:
                 try:
                     message = pickle.loads(data)
                 except Exception as e:
-                    debug_print(f"Unpickle error: {e}", "WARNING")
+                    debug_print("BiSocket",f"Unpickle error: {e}", "WARNING")
                     continue
 
                 if self.send_back:
                     try:
                         reply = self.handler(message)
                         self.send(reply)
-                        debug_print("Sent back response.", "DEBUG")
+                        debug_print("BiSocket","Sent back response.", "DEBUG")
                     except Exception as e:
-                        debug_print(f"Handler/send_back error: {e}", "ERROR")
+                        debug_print("BiSocket",f"Handler/send_back error: {e}", "ERROR")
                 else:
                     try:
                         if message is not None:
                             self.handler(message)
                     except Exception as e:
-                        debug_print(f"Handler error: {e}", "ERROR")
+                        debug_print("BiSocket",f"Handler error: {e}", "ERROR")
         finally:
             self.close()
 
@@ -70,7 +70,7 @@ class BiSocket:
             serialized = pickle.dumps(data)
             self.conn.sendall(len(serialized).to_bytes(4, 'big') + serialized)
         except Exception as e:
-            debug_print(f"Send failed: {e}", "ERROR")
+            debug_print("BiSocket",f"Send failed: {e}", "ERROR")
             self.close()
 
     def close(self):
@@ -81,4 +81,4 @@ class BiSocket:
             except Exception:
                 pass
             self.conn.close()
-            debug_print("Connection closed.", "INFO")
+            debug_print("BiSocket","Connection closed.", "INFO")

@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/中文-简体-blue)](./README.md)  
+[![English](https://img.shields.io/badge/English-English-green)](./README_EN.md)
+
 # 控制你的机器人!
 该项目旨在与帮助各位进入具身智能领域后能快速上手一整套从控制机械臂开始, 到数据采集, 到最终VLA模型的训练与部署的流程.
 

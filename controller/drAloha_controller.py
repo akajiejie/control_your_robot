@@ -1,13 +1,10 @@
 import sys
-import os
-
 sys.path.append("./")
-# 获取当前脚本的绝对路径（假设脚本在 controller/ 目录下）
+
+import os
 current_script_path = os.path.abspath(__file__)
 project_root = os.path.dirname(os.path.dirname(current_script_path))
 dr_path = os.path.join(project_root, "third_party", "dr")
-
-# 将 dr/ 目录的绝对路径添加到 sys.path 首位
 sys.path.insert(0, dr_path)  
 
 from controller.arm_controller import ArmController

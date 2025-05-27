@@ -7,7 +7,7 @@ from controller.Piper_controller import PiperController
 from sensor.Realsense_sensor import RealsenseSensor
 from data.collect_any import CollectAny
 
-# 组装你的控制器
+# setting your realsense serial
 CAMERA_SERIALS = {
     'head': '1111',  # Replace with actual serial number
     'left_wrist': '1111',   # Replace with actual serial number
@@ -35,10 +35,10 @@ START_POSITION_ANGLE_RIGHT_ARM = [
 ]
 
 condition = {
-    "save_path": "./save/", # 保存路径
-    "task_name": "test", # 任务名称
-    "save_format": "hdf5", # 保存格式
-    "save_interval": 10, # 保存频率
+    "save_path": "./save/",
+    "task_name": "test",
+    "save_format": "hdf5",
+    "save_interval": 10, 
 }
 
 class PiperDual:

@@ -99,7 +99,7 @@ class Camera:
 
 if __name__=="__main__":
     import time
-    robot = PiperSingle()
+    robot = Camera()
     robot.set_up()
     # 采集测试
     data_list = []

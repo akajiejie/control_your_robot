@@ -10,7 +10,7 @@ class Controller:
     def set_collect_info(self, collect_info:List[str]):
         self.collect_info = collect_info
 
-    # 用于调用controller获取信息
+    # get controller infomation
     def get(self):
         if self.collect_info is None:
             raise ValueError("collect_info is not set")
@@ -25,11 +25,11 @@ class Controller:
         except Exception as e:
             print(f"move error: {e}")
     
-   # 用于初始化controller
+   # init controller
     def set_up(self):
         raise NotImplementedError("This method should be implemented by the subclass")
     
-    # 用于打印controller
+    # print controller
     def __repr__(self):
         return f"Base Controller, can't be used directly \n \
                 name: {self.name} \n \

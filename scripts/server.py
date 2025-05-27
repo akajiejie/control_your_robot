@@ -18,7 +18,7 @@ class Server:
         self.model.reset_obsrvationwindows()
 
     def infer(self, message):
-        debug_print("Server: Inference triggered.", "INFO")
+        debug_print("Server","Inference triggered.", "INFO")
 
         img_arr, state = message["img_arr"], message["state"]
         self.model.update_observation_window(img_arr, state)
@@ -47,24 +47,23 @@ if __name__ == "__main__":
     server_socket.bind((ip, port))
     server_socket.listen(1)
 
-    debug_print(f"Server: Listening on {ip}:{port}","INFO")
+    debug_print("Server",f"Listening on {ip}:{port}","INFO")
 
     try:
         while True:
-            debug_print("Server: Waiting for client connection...", "INFO")
+            debug_print("Server","Waiting for client connection...", "INFO")
             conn, addr = server_socket.accept()
-            debug_print(f"Server: Connected by {addr}","INFO")
+            debug_print("Server",f"Connected by {addr}","INFO")
 
             bisocket = BiSocket(conn, server.infer, send_back=True)
             server.set_up(bisocket)
 
-            # 等待直到连接断开
             while bisocket.running.is_set():
                 time.sleep(0.5)
 
-            debug_print("Server: Client disconnected. Waiting for next client...","WANRING")
+            debug_print("Server","Client disconnected. Waiting for next client...","WANRING")
 
     except KeyboardInterrupt:
-        debug_print("Server: Shutting down.","WARNING")
+        debug_print("Server","Shutting down.","WARNING")
     finally:
         server_socket.close()
