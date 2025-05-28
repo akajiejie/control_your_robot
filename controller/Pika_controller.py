@@ -4,11 +4,11 @@ sys.path.append("./")
 import numpy as np
 
 from controller.teleoperation_controller import TeleoperationController
+from utils.ros_subscriber import ROSSubscriber 
 
 from geometry_msgs.msg import PoseStamped
 from sensor_tools import Gripper
-from utils.ros_subscriber import ROSSubscriber 
-
+from scipy.spatial.transform import Rotation as R
 from typing import Callable, Optional
 
 '''
@@ -35,13 +35,14 @@ class PikaController(TeleoperationController):
 
     def get_state(self):
         pos_msg = self.controller["pos_subscriber"].get_latest_data()
+        roll, pitch, yaw = R.from_quat([pos_msg.pose.orientation.x,pos_msg.pose.orientation.y, \
+                                        pos_msg.pose.orientation.z,pos_msg.pose.orientation.w])
         qpos = np.array([pos_msg.pose.position.x,
                 pos_msg.pose.position.y,
                 pos_msg.pose.position.z,
-                pos_msg.pose.orientation.x,
-                pos_msg.pose.orientation.y,
-                pos_msg.pose.orientation.z,
-                pos_msg.pose.orientation.w])
+                roll,
+                pitch,
+                yaw,])
         
         gripper_msg = self.controller["gripper_subscriber"].get_latest_data()
         # 归一化
@@ -54,13 +55,13 @@ class PikaController(TeleoperationController):
 
 if __name__ == "__main__":
     import time
-    pika_left = PiakController("left_pika")
-    pika_right = PiakController("right_pika")
+    pika_left = PikaController("left_pika")
+    pika_right = PikaController("right_pika")
 
-    pika_left.set_up("...","...")
-    pika_left.set_up("...","...")
+    pika_left.set_up("/gripper_pose_l","/gripper_l")
+    pika_left.set_up("/gripper_pose_r","/gripper_r")
 
-    while true:
-        print("left_pika:\n"pika_left.get_state())
-        print("right_pika:\n"pika_right.get_state())
+    while True:
+        print("left_pika:\n", pika_left.get_state())
+        print("right_pika:\n", pika_right.get_state())
         time.sleep(0.1)

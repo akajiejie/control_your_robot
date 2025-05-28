@@ -7,10 +7,7 @@ import argparse
 import numpy as np
 import time
 
-from policy.test_policy.inference_model import TestModel
 from utils.data_handler import debug_print, is_enter_pressed
-
-
 
 def input_transform(data):
     state = np.concatenate([
