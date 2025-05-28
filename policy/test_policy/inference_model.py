@@ -3,6 +3,7 @@ sys.path.append("./")
 
 import numpy as np
 import json
+import time
 
 from utils.data_handler import debug_print
 
@@ -75,6 +76,8 @@ class TestModel:
             action = np.concatenate([
                 np.random.rand(horizon, self.DoFs) * 3.1515926,  # 第一条手臂的关节
                 np.random.rand(horizon, 1)])
+            
+        time.sleep(np.random.rand()/10)
 
         debug_print("model",f"infer action success", self.INFO)
         return action
