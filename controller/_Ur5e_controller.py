@@ -3,7 +3,7 @@ sys.path.append("./")
 
 from controller.arm_controller import ArmController
 
-# 用于ros通讯
+# ros
 from utils.ros_publisher import ROSPublisher, start_publishing
 from utils.ros_subscriber import ROSSubscriber 
 
@@ -93,7 +93,7 @@ class UR5eController(ArmController):
             pass
 
 if __name__=="__main__":
-    controller = PiperController("test_ur5e")
+    controller = UR5eController("test_ur5e")
     controller.set_up()
     print(controller.get_state())
     

@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/中文-简体-blue)](./README.md)  
+[![English](https://img.shields.io/badge/English-English-green)](./README_EN.md)
+
 # 控制你的机器人!
 该项目旨在与帮助各位进入具身智能领域后能快速上手一整套从控制机械臂开始, 到数据采集, 到最终VLA模型的训练与部署的流程.
 
@@ -6,7 +9,9 @@
 ### 📅 更新记录
 | 日期       | 更新内容                          | 状态     |
 |------------|----------------------------------|----------|
-| 2025.5.15  | 💻 客户端-服务器通讯实现，远程推理与本地控制 | ❌测试中，待发布 |
+| 2025.5.27  | 🧪 添加完善测试样例, 便于程序调试与参考 | ✅ 已发布 |
+| 2025.5.26  | 💻 客户端-服务器通讯实现，远程推理与本地控制 | ✅ 已发布 |
+| 2025.5.22  | 🎭 通用Planner接入,通用IK逆解   | ✅ 已发布 |
 | 2025.5.10  | 🎭 Hybrid VLA，OpenVLA-oft正在路上 | ❌测试中，待发布 |
 | 2025.4.10  | 🎮 遥操设备接口封装，pika设备支持 | ✅ 已发布 |
 | 2025.4.3   | 🤖 agilex底盘控制与ROS接口封装    | ✅ 已发布 |
@@ -16,11 +21,11 @@
 | 2024.12.1  | 🧠 VLA模型训练框架规范化          | ✅ 已发布 |
 
 ### 🛣️ 正在路上
-- [ ] ⛓️‍💥 控制器与模型推理分开，支持远程部署与本地多脚本同步，解决环境兼容问题
+- [✅] ⛓️‍💥 控制器与模型推理分开，支持远程部署与本地多脚本同步，解决环境兼容问题
+- [✅] 🔢 curobo高效IK逆解器封装（需URDF支持）
 - [ ] 🕹️ pika遥操控制任意机械臂示例
 - [ ] 📦 更多控制器与传感器支持
 - [ ] 🧩 更多机器人模型集成
-- [ ] 🔢 CoRobo高效IK逆解器封装（需URDF支持）
 
 ### 🤖 设备支持情况
 
@@ -29,7 +34,8 @@
 | 机械臂         | 底盘               | 灵巧手       | 其他       |
 |----------------|--------------------|--------------|------------|
 | Agilex Piper   | Agilex Tracer2.0   | 🚧 开发中    | 📦 待补充  |
-| RealMan        | 📦 待补充          | 📦 待补充    | 📦 待补充  |
+| RealMan 65B    | 📦 待补充          | 📦 待补充    | 📦 待补充  |
+| daran aloha    | 📦 待补充          | 📦 待补充    | 📦 待补充  |
 
 **🚧 准备支持**
 | 机械臂    | 底盘       | 灵巧手     | 其他       |
@@ -73,8 +79,25 @@ pip install -r requirements.txt
 
 # 松灵机械臂安装SDK请参考:https://github.com/agilexrobotics
 # 睿尔曼机械臂SDK请参考:https://develop.realman-robotics.com/robot/summarize/
+# 大然机械臂SDK请参考:
 # 所有机械臂如果涉及到原声代码编译或链接，会统一放置到./third_party/目录下
 ```
+
+## 表格形式
+| 目录 | 说明 | 主要内容 |
+|------|------|----------|
+| **📂 controller** | 机器人控制器封装 | 机械臂、底盘等设备的控制 `class` |
+| **📂 sensor** | 传感器封装 | 目前仅 `RealSense` 相机封装 |
+| **📂 utils** | 工具函数库 | 辅助功能封装（如数学计算、日志等） |
+| **📂 data** | 数据采集模块 | 数据记录、处理的 `class` |
+| **📂 my_robot** | 机器人集成封装 | 完整机器人系统的组合 `class` |
+| **📂 policy** | VLA 模型策略 | Vision-Language-Action 模型相关代码 |
+| **📂 scripts** | 实例化脚本 | 主要运行入口、测试代码 |
+| **📂 third_party** | 第三方依赖 | 需要编译的外部库 |
+| **📂 planner** | 路径规划模块 | `curobo` 规划器封装 + 仿真机械臂代码 |
+| **📂 example** | 示例代码 | 数据采集、模型部署等示例 |
+| **📂 docs** | 文档索引 | 机器人相关文档链接 |
+
 ## 如何控制你的机器人?
 本项目将机器人的部件分为两类:  
 `controller`: 拥有控制功能的部件, 如机械臂, 灵巧手, 底盘等...  
@@ -111,6 +134,9 @@ if __name__=="__main__":
 ## 如何采集数据
 在实现你的机器人的时候, 其应该自带一个`self.collection = CollectAny()`, 方便我们根据一些配置来保存采集的数据.  
 在`example/collect`中已经提供了一个采集的示例, 你可以参考他来实现你的示例, 如果你已经通过了上面的基础数据采集测试,那么直接换成你的机器人就行啦.
+
+如果你没有遥操设备的话，可以考虑使用'scripts/collect_omving_skpt.py'的代码进行轨迹采集与复现。  
+不过有的设备可能不允许多个脚本建立通讯，那么你可以参考脚本中下面的注释进行多线程数据采集。
 
 ## 如何转化数据
 目前已经提供了转化lerobot格式与RDT需要的hdf5格式的脚本啦, 在`scripts/`中, 对于单臂/双臂, 请看对应文件的要求, 将对应参数正确映射.    
@@ -172,6 +198,21 @@ python scripts/convert2lerobot.py  datasets/task_1 repo_id
 python scripts/convert2lerobot.py  datasets/my_task repo_id True
 ```
 
+### TFDS数据格式
+**注意**
+与lerobot相同,您需要先转化为RDT支持的hdf5格式!  
+
+转化TFDS格式比较特殊,可以参考`./policy/rlds_dataset_builder`中的一些转化示例.
+需要如下格式:
+```bash
+├── ${my_dataset_example}
+|   ├── ${my_dataset_example}_dataset_builder
+|   |   ├── lass ${my_dataset_example}
+|   ├── CITATION.bib
+|   ├── __init__.py   
+```
+其中`__init__.py`和`CITATION.bib`是直接复制粘贴即可.
+
 ## 如何训练模型
 目前项目的`policy/`已经提供了`openpi`与`RDT`官方的训练脚本, 并进行了一些修改, 便于进行训练, 里面都提供了详细的操作, 请参考里面的需求进行配置.
 ### RDT
@@ -191,3 +232,7 @@ python scripts/encode_lang_batch_once.py task_name output_dir gpu_id
 
 ## 如何部署模型
 已经在`example/depoly`中提供了对应的部署脚本, 不过对于不同机械臂需要有一些修改.
+
+如果本地设备不支持推理, 本项目也支持了优秀的client&sever机制,启动`scripts/client.py`与`scripts/server.py`, 修改ip与port,将里面的robot与model替换为您的robot与model即可.
+
+你也可以通过设置`deploy.sh`中的参数, 来实现部署, 对应参数已给出示例, 模仿修改即可.

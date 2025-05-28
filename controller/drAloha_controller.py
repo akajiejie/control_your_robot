@@ -1,20 +1,17 @@
 import sys
-import os
-
 sys.path.append("./")
-# 获取当前脚本的绝对路径（假设脚本在 controller/ 目录下）
+
+import os
 current_script_path = os.path.abspath(__file__)
 project_root = os.path.dirname(os.path.dirname(current_script_path))
 dr_path = os.path.join(project_root, "third_party", "dr")
-
-# 将 dr/ 目录的绝对路径添加到 sys.path 首位
 sys.path.insert(0, dr_path)  
 
 from controller.arm_controller import ArmController
 import numpy as np
 import time
 
-from third_party.dr import aloha_robot as dr # from www.daran.tech
+from third_party.dr import aloha_robot as dr
 
 '''
 大然aloha机械臂初始化参数
@@ -74,6 +71,7 @@ class DrAlohaController(ArmController):
     def reset(self, start_state):
         # 调用set_position或set_joint就行
         pass
+    
     # 返回单位为米
     def get_state(self):
         state = {}
@@ -93,40 +91,25 @@ class DrAlohaController(ArmController):
         state["qpos"]=np.array(eef)
         state["gripper"]=gripper*0.001*50
         return state
+    
     # 单位为米
     def set_position(self, position,theta,speed=10,param=10,mode=1):
         self.controller.set_pose(x_y_z=position,theta_4_5_6=theta,speed=speed,param=param,mode=mode)#运动到指定位置和姿态
         self.controller.pose_done()#等待关节运动到位
-        pass
+    
     def set_joint(self, joint,speed=1.0):
         joint[1]=joint[1]+90#dr Aloha第二个关节电机角度与模型角度有-90度相位差，例如：第二关节逆时针旋转60度，应输入150度，读出无误差
         self.controller.set_joints(angle_list=joint,speed=speed)#控制1~6关节运动
         self.controller.pose_done()#等待关节运动到位
         time.sleep(1)
-    def gravity_compensation(self):
-        self.controller.set_torques(id_list=[1,2,3,4,5,6,7], torque_list=[0, 0, 0, 0, 0, 0, 0], param=0, mode=0) # 设置对应关节扭矩
-        angle_list = []
-        angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
-        if angle_speed_torque is None:
-            for i in range(4):
-                angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
-                print("angle_speed_torque retry:",i)
-                if angle_speed_torque is not None:
-                    break
-        if angle_speed_torque is None:
-            pass
-        else:
-            
-            for i in range(6):
-                angle_list.append(angle_speed_torque[i][0])
-            print(angle_list)
-            self.controller.gravity_compensation(angle_list=angle_list)
+    
     # 输入的是0~1的张合度
     def set_gripper(self, gripper):
         gripper=int(gripper*50)
         self.controller.grasp(wideth=gripper,speed=10,force=120)
         self.controller.pose_done()#等待关节运动到位
         time.sleep(1)
+    
     def __del__(self):
         try:
             if hasattr(self, 'controller'):
@@ -134,6 +117,7 @@ class DrAlohaController(ArmController):
                 pass
         except:
             pass
+    
 if __name__=="__main__":
     controller=DrAlohaController("test Dr")
     controller.set_up("/dev/ttyACM0")
@@ -143,5 +127,4 @@ if __name__=="__main__":
     state=controller.get_state()
     print(state)
     controller.set_position(position=[240,0,100],theta=[0,0,0])
-    controller.gravity_compensation()
 

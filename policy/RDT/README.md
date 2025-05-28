@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/中文-简体-blue)](./README.md)  
+[![English](https://img.shields.io/badge/English-English-green)](./README_EN.md)
+
 ## 1. 配置环境
 conda环境参考RDT官方环境:([RDT official documentation](https://github.com/thu-ml/RoboticsDiffusionTransformer)).
 

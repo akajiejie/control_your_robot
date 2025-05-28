@@ -10,6 +10,9 @@ import numpy as np
 from my_robot.agilex_piper_single import PiperSingle
 from data.collect_any import CollectAny
 
+from utils.time_scheduler import TimeScheduler
+from utils.robot_worker import RobotWorker
+
 ARM_INFO_NAME = ["qpos", "gripper"]
 
 condition = {
@@ -36,11 +39,10 @@ class PathCollector:
     def save(self):
         json_data = {}
 
-        # 遍历每个 episode，将 numpy 数组转换为列表
+        # transform numpy array to list
         for index, episode in enumerate(self.collecter.episode):
-            episode_data = episode.copy()  # 复制数据，以避免直接修改原数据
+            episode_data = episode.copy() 
             if isinstance(episode_data.get("left_arm", {}).get("qpos"), np.ndarray):
-                # 将 ndarray 转换为列表
                 episode_data["left_arm"]["qpos"] = episode_data["left_arm"]["qpos"].tolist()
             json_data[index] = episode_data
         
@@ -50,37 +52,42 @@ class PathCollector:
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         
-        # 保存到文件
+        # save data
         with open(os.path.join(save_path, f"{self.episode_index}.json"), "w") as f:
             json.dump(json_data, f, indent=4)
         self.collecter.episode = []
         self.episode_index += 1
 
     def play(self, robot, episode_index, is_block=False):
+        path = os.path.join(self.condition['save_path'], f"{self.condition['task_name']}/{episode_index}.json")
         try:
-            with open(os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/{episode_index}.json"), "r") as f:
+            with open(path, "r") as f:
                 json_data = json.load(f)
         except:
-            path = os.path.join(self.condition['save_path'], f"{self.condition['task_name']}/{episode_index}.json")
             print(f"{path} does not exist!")
             return
         
         i = 0 
         for episode in json_data.values():
-            # 对应controller根据采集数据进行行动
+            
             print(f"move {i}: {episode}")
             i += 1
             robot.move(episode)
-            # 如果是非阻塞,当停止运动后进行下一步动作
+            
             if not is_block:
                 time.sleep(2)
+            
+            if is_block:
+                continue
         print("play finished!")
             
 if __name__ == "__main__":
     robot = PiperSingle()
     robot.set_up()
-    # 只收集对应的坐标和夹爪状态
+
+    # setting collect info
     ARM_INFO_NAME = ["qpos", "gripper"]
+
     robot.set_collect_type(ARM_INFO_NAME, None) 
     collector = PathCollector(robot, condition, episode_index=0)
     '''
@@ -89,17 +96,56 @@ if __name__ == "__main__":
     保存的json文件可以删除不想要的ckpt,不会影响操作
     '''
     while True:
-        user_input = input("请输入 'c' 收集数据，'s' 保存数据，'q' 退出采集: ").strip().lower()  # 获取用户输入
+        user_input = input("input: 'c' collect data, 's' save data, 'q' exit :").strip().lower()  # get input
         if user_input == 'c':
-            collector.collect()  # 执行收集数据操作
+            collector.collect()  # collect once
         elif user_input == 's':
-            collector.save()  # 执行保存数据操作
+            collector.save()  # save the episode
             print("Collect finished!")
         elif user_input == 'q':
             print("Exiting...")
-            break  # 退出循环
+            break  # exit the loop
         else:
-            print("无效输入，请重新输入！")
+            print("invalid input!")
 
-    # 测试运行
+    # testing, run the first tarjectory
     collector.play(robot, 0, is_block=False)
+
+    '''
+    # If your robotic arm can only establish communication within a single script, 
+    # you can add a set of data collectors in this script and comment out the collector.play() above.
+    
+    is_start = False
+        
+    # reset process
+    time_lock = Semaphore(0)
+    start_event = Event()
+    finish_event = Event()
+    robot_process = Process(target=RobotWorker, args=(PiperSingle, time_lock, start_event, finish_event, "robot_worker"))
+    time_scheduler = TimeScheduler([time_lock], time_interval=10) # set lock
+
+    robot_process.start()
+
+    while not is_start:
+        time.sleep(0.01)
+        if is_enter_pressed():
+            is_start = True
+            start_event.set()
+        else:
+            time.sleep(1)
+    
+    collector.play(robot, 0, is_block=False)
+
+    time_scheduler.start()
+    while is_start:
+        time.sleep(0.01)
+        if is_enter_pressed():
+            finish_event.set()  
+            time_scheduler.stop()  
+            is_start = False
+    
+    # destory
+    if robot_process.is_alive():
+        robot_process.join()
+        robot_process.close()
+    '''

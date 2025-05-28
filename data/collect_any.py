@@ -1,7 +1,9 @@
-'''
-使用本函数将会一股脑存储数据, 不会按照任何条件进行筛选
-存储的格式和双臂机械臂的规定格式不同,一个controller / sensor 对应一个group
-'''
+"""
+This function stores all incoming data without any filtering or condition checks.
+The storage format differs from the standard format used for dual-arm robots:
+each controller/sensor corresponds to a separate group.
+"""
+
 import os
 import numpy as np
 import h5py
@@ -36,7 +38,6 @@ class CollectAny:
         if not os.path.exists(save_path):
             os.makedirs(save_path)
 
-        # 判断是否存在config.json, 不存在则创建并写入
         condition_path = os.path.join(save_path, "./config.json")
         if not os.path.exists(condition_path):
              for key in self.episode[0].keys():
@@ -53,7 +54,7 @@ class CollectAny:
                     data = self.get_item(controller_name, item)
                     controller_group.create_dataset(item, data=data)
         print(f"write to {hdf5_path}")
-        # 清空当前的episode, 开始新的episode
+        # reset the episode
         self.episode = []
         self.episode_index += 1
 

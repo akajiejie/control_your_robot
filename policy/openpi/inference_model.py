@@ -4,6 +4,15 @@
 """
 #!/usr/bin/python3
 """
+from pathlib import Path
+
+# get current workspace
+current_file = Path(__file__)
+
+import sys
+parent_dir = current_file.parent
+sys.path.append(str(parent_dir))
+
 import json
 import sys
 import jax

@@ -1,29 +1,69 @@
 import sys
 sys.path.append('./')
 
-from utils.pickle_sender import Sender
-from utils.pickle_reciever import Reciever
-
 import socket
 import time
 
-class server:
-    def __init__(self,model,cntrol_freq=10):
-        self.cntrol_freq = cntrol_freq
-        self.model = model
-    
-    def set_up(self, server_ip, server_port, recievee_ip, reciever_port):
-        self.sender = Sender(server_ip, server_port)
-        self.reciever = Reciever(recievee_ip, reciever_port,self.infer())       
+from utils.bisocket import BiSocket
+from policy.test_policy.inference_model import TestModel
+from utils.data_handler import debug_print
 
-        self.receiver.start()
-    
+class Server:
+    def __init__(self, model, control_freq=10):
+        self.control_freq = control_freq
+        self.model = model
+
+    def set_up(self, bisocket: BiSocket):
+        self.bisocket = bisocket
+        self.model.reset_obsrvationwindows()
+
     def infer(self, message):
+        debug_print("Server","Inference triggered.", "INFO")
+
         img_arr, state = message["img_arr"], message["state"]
-        self.model.update_observation_windows(img_arr, state)
+        self.model.update_observation_window(img_arr, state)
         action_chunk = self.model.get_action()
-        self.sender.send({"action_chunk":action_chunk})
-    
+        return {"action_chunk": action_chunk}
+
     def close(self):
-        self.sender.close()
-        self.receiver.close()
+        if hasattr(self, "bisocket"):
+            self.bisocket.close()
+
+
+if __name__ == "__main__":
+    import os
+    os.environ["INFO_LEVEL"] = "INFO"
+
+    ip = "127.0.0.1"
+    port = 10000
+
+    DoFs = 6
+    model = TestModel("path/to/mmodel","test", DoFs=DoFs, is_dual=True)
+
+    server = Server(model)
+
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind((ip, port))
+    server_socket.listen(1)
+
+    debug_print("Server",f"Listening on {ip}:{port}","INFO")
+
+    try:
+        while True:
+            debug_print("Server","Waiting for client connection...", "INFO")
+            conn, addr = server_socket.accept()
+            debug_print("Server",f"Connected by {addr}","INFO")
+
+            bisocket = BiSocket(conn, server.infer, send_back=True)
+            server.set_up(bisocket)
+
+            while bisocket.running.is_set():
+                time.sleep(0.5)
+
+            debug_print("Server","Client disconnected. Waiting for next client...","WANRING")
+
+    except KeyboardInterrupt:
+        debug_print("Server","Shutting down.","WARNING")
+    finally:
+        server_socket.close()

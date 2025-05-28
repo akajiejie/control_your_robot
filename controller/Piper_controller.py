@@ -7,6 +7,11 @@ from piper_sdk import *
 import numpy as np
 import time
 
+'''
+Piper base code from:
+https://github.com/agilexrobotics/piper_sdk.git
+'''
+
 class PiperController(ArmController):
     def __init__(self, name):
         super().__init__()
@@ -22,15 +27,18 @@ class PiperController(ArmController):
         self.controller = piper
 
     def reset(self, start_state):
-        # 调用set_position或set_joint就行
-        pass
+        try:
+            self.set_joint(start_state)
+        except e:
+            print(f"reset error: {e}")
+        return
 
     # 返回单位为米
     def get_state(self):
         state = {}
         eef = self.controller.GetArmEndPoseMsgs()
         joint = self.controller.GetArmJointMsgs()
-        # 获取对应信息
+        
         state["joint"] = np.array([joint.joint_state.joint_1, joint.joint_state.joint_2, joint.joint_state.joint_3,\
                                    joint.joint_state.joint_4, joint.joint_state.joint_5, joint.joint_state.joint_6]) * 0.001 / 180 * 3.1415926
         state["qpos"] = np.array([eef.end_pose.X_axis, eef.end_pose.Y_axis, eef.end_pose.Z_axis, \
@@ -38,7 +46,7 @@ class PiperController(ArmController):
         state["gripper"] = self.controller.GetArmGripperMsgs().gripper_state.grippers_angle * 0.001 / 70
         return state
 
-    # 单位为米
+    # All returned values are expressed in meters,if the value represents an angle, it is returned in radians
     def set_position(self, position):
         x, y, z, rx, ry, rz = position*1000*1000
         x, y, z, rx, ry, rz = int(x), int(y), int(z), int(rx), int(ry), int(rz)
@@ -52,7 +60,7 @@ class PiperController(ArmController):
         self.controller.MotionCtrl_2(0x01, 0x01, 100, 0x00)
         self.controller.JointCtrl(j1, j2, j3, j4, j5, j6)
 
-    # 输入的是0~1的张合度
+    # The input gripper value is in the range [0, 1], representing the degree of opening.
     def set_gripper(self, gripper):
         gripper = int(gripper * 70 * 1000)
         self.controller.GripperCtrl(gripper, 1000, 0x01, 0)
@@ -66,13 +74,8 @@ class PiperController(ArmController):
             pass
 
 def enable_fun(piper:C_PiperInterface_V2):
-    '''
-    使能机械臂并检测使能状态,尝试5s,如果使能超时则退出程序
-    '''
     enable_flag = False
-    # 设置超时时间（秒）
     timeout = 5
-    # 记录进入循环前的时间
     start_time = time.time()
     elapsed_time_flag = False
     while not (enable_flag):
@@ -84,20 +87,20 @@ def enable_fun(piper:C_PiperInterface_V2):
             piper.GetArmLowSpdInfoMsgs().motor_4.foc_status.driver_enable_status and \
             piper.GetArmLowSpdInfoMsgs().motor_5.foc_status.driver_enable_status and \
             piper.GetArmLowSpdInfoMsgs().motor_6.foc_status.driver_enable_status
-        print("使能状态:",enable_flag)
+        print("enable flag:",enable_flag)
         piper.EnableArm(7)
         piper.GripperCtrl(0,1000,0x01, 0)
+
         print("--------------------")
-        # 检查是否超过超时时间
         if elapsed_time > timeout:
-            print("超时....")
+            print("time out....")
             elapsed_time_flag = True
             enable_flag = True
             break
         time.sleep(1)
         pass
     if(elapsed_time_flag):
-        print("程序自动使能超时,退出程序")
+        print("time out, exit!")
         exit(0)
 
 if __name__=="__main__":

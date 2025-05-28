@@ -6,30 +6,34 @@ import json
 
 '''
 condition:
-    image_keys: list[str], 视角名称 [front_image, left_wrist_image, right_wrist_image]
-    arm_type: str, 机械臂类型
-    state_is_joint: bool, 关节角度是否为state
-    is_action: bool, 是否包含action
-    is_dual: bool, 是否为双臂
-    save_right_now: bool, 是否在当前时刻保存数据
-    save_depth: bool, 是否保存深度图
-    save_path: str, 保存路径
-    task_name: str, 任务名称
-    save_format: str, 保存格式
-    save_interval: int, 保存频率
-    
+    image_keys: list[str], Names of camera views to be saved (e.g., [front_image, left_wrist_image, right_wrist_image])
+    arm_type: str, Type of robotic arm
+    state_is_joint: bool, Whether the state is represented by joint angles
+    is_action: bool, Whether to include action data
+    is_dual: bool, Whether the robot is dual-armed
+    save_right_now: bool, Whether to save the data immediately at the current timestep
+    save_depth: bool, Whether to save depth images
+    save_path: str, Path to save the data
+    task_name: str, Name of the task
+    save_format: str, Format to save the data
+    save_interval: int, Frequency of saving (every n timesteps)
+
 image_map:
-    # if is_dual is True, 想要保存的完整三个视角必须全部正确设置,否则只设置你要的视角名称的映射就行
+    # If is_dual is True, all three standard views must be correctly mapped to be saved.
+    # Otherwise, only the views you specify in image_keys will be saved.
     "cam_head": "your image_key",
     "cam_left_wrist": "your image_key",
     "cam_right_wrist": "your image_key",
-    # if is_dual is False, 想要保存的完整两个视角必须正确设置,否则只设置你要的视角名称的映射就行
+    
+    # If is_dual is False, both required views must be correctly mapped.
+    # Otherwise, only the specified views in image_keys will be saved.
     "cam_head": "your image_key",
     "cam_wrist": "your image_key",
-    ......
-    # 允许额外设置映射, 如果设置便会存储
+
+    # Additional mappings are allowed. If provided, these will also be saved.
     "extra_image": "your image_key",
 '''
+
 DUAL_ARM_CAMERA_NAME = ["front_image", "left_wrist_image", "right_wrist_image"]
 SINGLE_ARM_CAMERA_NAME = ["front_image", "wrist_image"]
 
@@ -54,7 +58,6 @@ class collection:
         self.episode_index = start_episode
     
     def collect(self, data):
-        # 保存关节角度、位姿、夹爪状态
         if  not self.condition["is_dual"]:
             episode_data = {
                 "joint": data["joint"],
@@ -75,7 +78,7 @@ class collection:
             if self.condition["is_action"]:
                 episode_data["action_left"] = data["action_left"]
                 episode_data["action_right"] = data["action_right"]
-        # 保存图像
+        # save image
         for key in self.condition["image_keys"]:
             try:
                 episode_data[key+"_color"] = np.array(data[key+"_color"])
@@ -88,7 +91,6 @@ class collection:
         if self.condition["save_right_now"] == true:
             self.write(only_end=True)
     
-    # 根据映射图,将所有图像进行编码
     def encode_images(self):
         enc_images = {}
         for key in self.image_map.keys():
@@ -156,13 +158,13 @@ class collection:
             data = self.episode[-1]
             np.save(npy_path, data)
             return
-        # 直接存储为hdf5格式, 节省内存
+
         else:
             save_path = os.path.join(self.condition["save_path"], f"{self.condition["task_name"]}/{self.episode_index}.hdf5")
             if os.path.exists(save_path):
                 os.mkdir(save_path)
             state_joint, state_pose = self.get_state()
-            # 根据state_is_joint选择state
+            
             if self.condition["state_is_joint"]:
                 state = state_joint
             else:
@@ -171,7 +173,6 @@ class collection:
             if self.condition["is_action"]:
                 action = self.get_action()
             else:
-                # action 为当前state, 注意,对于单步推理的模型不能这样设置!!!
                 action = state
 
             enc_images_dict = self.encode_images()
@@ -184,21 +185,17 @@ class collection:
                     obs.create_dataset('qpos', data=state_joint)
                 else:
                     obs.create_dataset('qpos', data=state_pose)
-                # 存储着,保证信息没有丢失
                 obs.create_dataset('state_pose', data=state_pose)
                 obs.create_dataset('state_joint', data=state_joint)
                 for key in enc_images_dict.keys():
                     image.create_dataset(key, data=enc_images_dict[key]["enc_data"], dtype=f'S{enc_images_dict[key]["len"]}')
                      
-            # 清空当前的episode, 开始新的episode
+            # start new episode
             self.episode = []
             self.episode_index += 1
         return
 
 def get_images(episode: list[dict], image_key: str) -> list[np.ndarray]:
-    """
-    从episode中获取所有图像
-    """
     images = []
     if image_key not in episode[0].keys():
         print(f"image_key: {image_key} not in condition['image_keys']")
@@ -212,7 +209,6 @@ def images_encoding(imgs):
     encode_data = []
     max_len = 0
 
-    # 单次循环完成编码和最大长度计算
     for img in imgs:
         success, encoded_image = cv2.imencode('.jpg', img)
         if not success:
@@ -221,7 +217,6 @@ def images_encoding(imgs):
         encode_data.append(jpeg_data)
         max_len = max(max_len, len(jpeg_data))
 
-    # 填充数据
     padded_data = [data.ljust(max_len, b'\0') for data in encode_data]
 
     return padded_data, max_len

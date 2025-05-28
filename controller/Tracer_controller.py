@@ -5,7 +5,7 @@ from controller.mobile_controller import MobileController
 
 import rospy
 
-# 用于ros通讯
+# ros
 from utils.ros_publisher import ROSPublisher, start_publishing
 from utils.ros_subscriber import ROSSubscriber 
 
@@ -13,6 +13,11 @@ from tracer_msgs.msg import TracerRsStatus
 from geometry_msgs.msg import Twist
 
 import threading
+
+'''
+Tracer base code(ROS) from:
+https://github.com/agilexrobotics/tracer_ros.git
+'''
 
 class TracerController(MobileController):
     def __init__(self, name):
@@ -41,9 +46,9 @@ class TracerController(MobileController):
         vel_msg.angular.z = vel[5]
         self.controller["publisher"].update_msg(vel_msg)
     
-    # TODO:实现移动到指定位置?
+    # 
     def set_move_to(self, to):
-        pass
+        raise NotImplementedError ("set_move_to is not implemented")
 
     def get_subscriber(self):
         data = self.controller["subscriber"].get_latest_data()
@@ -66,10 +71,3 @@ if __name__=="__main__":
     tracer.set_move_velocity([0,0,0,0,0,0]) 
     tracer.get_subscriber()
     tracer.stop()
-
-
-
-        
-
-
-    

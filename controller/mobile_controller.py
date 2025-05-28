@@ -13,10 +13,10 @@ class MobileController(Controller):
     对于底盘移动,不进行is_delta的判断, 直接进行移动
     '''
     def move(self, move_data:Dict[str, Any]):
-        # 底盘相对移动
+        # moving by setting velocity for every joint
         if "move_velocity" in move_data.keys():
             self.set_move_velocity(move_data["move_velocity"])
-        # 底盘绝对移动
+        # moving by set position
         if "move_to" in move_data.keys():
             self.set_move_to(move_data["move_to"])
         

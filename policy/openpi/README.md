@@ -1,3 +1,6 @@
+[![中文](https://img.shields.io/badge/中文-简体-blue)](./README.md)  
+[![English](https://img.shields.io/badge/English-English-green)](./README_EN.md)
+
 ## 如何使用openpi进行训练
 1. 采集数据  
 可以使用提供的api进行数据采集, 使用CollectAny进行数据存储, 或者用自己的采集的数据.  
