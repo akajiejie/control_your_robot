@@ -1,16 +1,16 @@
-import sys
-sys.path.append("./")
 
 import numpy as np
 
 from controller.Piper_controller import PiperController
 from sensor.Realsense_sensor import RealsenseSensor
 from data.collect_any import CollectAny
+from controller.drAloha_controller import DrAlohaController
 
 # 组装你的控制器
 CAMERA_SERIALS = {
-    'head': '313522071698',  # Replace with actual serial number
-    'wrist': '948122073452',   # Replace with actual serial number
+    'head': '1111',  # Replace with actual serial number
+    'left_wrist': '1111',   # Replace with actual serial number
+    'right_wrist': '1111',   # Replace with actual serial number
 }
 
 # Define start position (in degrees)
@@ -34,45 +34,40 @@ START_POSITION_ANGLE_RIGHT_ARM = [
 ]
 
 condition = {
-    "robot":"piper_single",
-    "save_path": "./datasets/", # 保存路径
+    "save_path": "./save/", # 保存路径
     "task_name": "test", # 任务名称
     "save_format": "hdf5", # 保存格式
     "save_interval": 10, # 保存频率
 }
 
-
-class PiperSingle:
+class dr_Single:
     def __init__(self, start_episode=0):
-        self.condition = condition
         self.arm_controllers = {
-            "left_arm": PiperController("left_arm"),
+            "left_arm": DrAlohaController("left_arm"),
         }
         self.image_sensors = {
             "cam_head": RealsenseSensor("cam_head"),
             "cam_wrist": RealsenseSensor("cam_wrist"),
         }
         self.collection = CollectAny(condition, start_episode=0)
-
-    # ============== 初始化相关 ==============
-    def reset(self):
-        self.arm_controllers["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
-
+    #============== 初始化相关 ==============
     def set_up(self):
-        self.arm_controllers["left_arm"].set_up("can0")
-
+        self.arm_controllers["left_arm"].set_up("/dev/ttyACM0")
         self.image_sensors["cam_head"].set_up(CAMERA_SERIALS["head"])
-        self.image_sensors["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])
+        self.image_sensors["cam_wrist"].set_up(CAMERA_SERIALS["left_wrist"])
 
-        self.set_collect_type(["joint","qpos","gripper"],["color"])
+        #先不采集qpos
+        self.set_collect_type(["joint","gripper"],["color"])
         print("set up success!")
 
+    def reset(self):
+        self.arm_controllers["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
+    
     def set_collect_type(self,ARM_INFO_NAME,IMG_INFO_NAME):
         for controller in self.arm_controllers.values():
             controller.set_collect_info(ARM_INFO_NAME)
         for sensor in self.image_sensors.values():
             sensor.set_collect_info(IMG_INFO_NAME)
-
     # ============== 机械臂判定相关 ============== 
     def is_start(self):
         return True
@@ -80,7 +75,6 @@ class PiperSingle:
             return True
         else:
             return False
-        
     # ============== 数据操作相关 ==============
     def get(self):
         controller_data = {}
@@ -98,38 +92,10 @@ class PiperSingle:
     
     def finish(self):
         self.collection.write()
-    
     # ============== 运动操作相关 ==============
     def set_action(self, action):
         pass
     
     def move(self, move_data):  
         self.arm_controllers["left_arm"].move(move_data["left_arm"],is_delta=False)
-
-if __name__=="__main__":
-    import time
-    robot = PiperSingle()
-    robot.set_up()
-    #采集测试
-    data_list = []
-    for i in range(100):
-        print(i)
-        data = robot.get()
-        robot.collect(data)
-        time.sleep(0.1)
-    robot.finish()
     
-    # 运动测试
-    move_data = {
-        "left_arm":{
-        "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
-        "gripper":0.2,
-        },
-    }
-    robot.move(move_data)
-    move_data = {
-        "left_arm":{
-        "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
-        "gripper":0.2,
-        },
-    }

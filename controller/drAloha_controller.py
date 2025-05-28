@@ -14,7 +14,7 @@ from controller.arm_controller import ArmController
 import numpy as np
 import time
 
-from third_party.dr import aloha_robot as dr
+from third_party.dr import aloha_robot as dr # from www.daran.tech
 
 '''
 大然aloha机械臂初始化参数
@@ -103,6 +103,24 @@ class DrAlohaController(ArmController):
         self.controller.set_joints(angle_list=joint,speed=speed)#控制1~6关节运动
         self.controller.pose_done()#等待关节运动到位
         time.sleep(1)
+    def gravity_compensation(self):
+        self.controller.set_torques(id_list=[1,2,3,4,5,6,7], torque_list=[0, 0, 0, 0, 0, 0, 0], param=0, mode=0) # 设置对应关节扭矩
+        angle_list = []
+        angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
+        if angle_speed_torque is None:
+            for i in range(4):
+                angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
+                print("angle_speed_torque retry:",i)
+                if angle_speed_torque is not None:
+                    break
+        if angle_speed_torque is None:
+            pass
+        else:
+            
+            for i in range(6):
+                angle_list.append(angle_speed_torque[i][0])
+            print(angle_list)
+            self.controller.gravity_compensation(angle_list=angle_list)
     # 输入的是0~1的张合度
     def set_gripper(self, gripper):
         gripper=int(gripper*50)
@@ -125,4 +143,5 @@ if __name__=="__main__":
     state=controller.get_state()
     print(state)
     controller.set_position(position=[240,0,100],theta=[0,0,0])
+    controller.gravity_compensation()
 
