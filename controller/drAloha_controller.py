@@ -11,7 +11,7 @@ from controller.arm_controller import ArmController
 import numpy as np
 import time
 
-from third_party.dr import aloha_robot as dr
+from third_party.dr import aloha_robot as dr# from www.daran.tech
 
 '''
 大然aloha机械臂初始化参数

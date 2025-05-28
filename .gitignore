@@ -11,3 +11,4 @@ __pycache__/
 # datasets
 datasets/
 save/
+third_party/3D-ViTac_Tactile_Hardware/
