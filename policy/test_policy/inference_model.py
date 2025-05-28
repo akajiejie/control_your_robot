@@ -7,7 +7,8 @@ import json
 from utils.data_handler import debug_print
 
 class TestModel:
-    def __init__(self,task_name,DoFs=14,is_dual=True, INFO="DEBUG"):
+    def __init__(self,model_path, task_name,DoFs=6,is_dual=True, INFO="DEBUG"):
+        self.model_path = model_path
         self.task_name = task_name
         self.INFO = INFO
 
@@ -54,10 +55,10 @@ class TestModel:
 
         if self.is_dual:
             if state.shape[0] != 2 * (self.DoFs + 1):
-                debug_print("model",f"dual arm infer model iput dim should be 2*(DoFs + 1), but got dim {state.shape[0]}","ERROR")
+                debug_print("model",f"dual arm infer model iput dim should be 2*(DoFs + 1),now DoFs={self.DoFs}, but got dim {state.shape[0]}","ERROR")
         else:
             if state.shape[0] != (self.DoFs + 1):
-                debug_print("model",f"single arm infer model iput dim should be (DoFs + 1), but got dim {state.shape[0]}","ERROR")
+                debug_print("model",f"single arm infer model iput dim should be (DoFs + 1),now DoFs={self.DoFs}, but got dim {state.shape[0]}","ERROR")
         debug_print("model",f"update observation windows success", self.INFO)
         
     def get_action(self):
@@ -88,7 +89,7 @@ if __name__ == "__main__":
     os.environ["INFO_LEVEL"] = "INFO"
     
     DoFs = 14
-    model = TestModel("test",DoFs=DoFs)
+    model = TestModel("test",DoFs=DoFs, is_dual=True)
     height = 480
     width = 640
     img_arr = [np.random.randint(0, 256, size=(height, width, 3), \

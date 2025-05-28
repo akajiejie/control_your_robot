@@ -38,7 +38,7 @@ if __name__ == "__main__":
     port = 10000
 
     DoFs = 6
-    model = TestModel("test", DoFs=DoFs, is_dual=True)
+    model = TestModel("path/to/mmodel","test", DoFs=DoFs, is_dual=True)
 
     server = Server(model)
 

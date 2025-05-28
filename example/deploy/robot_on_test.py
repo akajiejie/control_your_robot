@@ -11,7 +11,6 @@ from policy.test_policy.inference_model import TestModel
 
 from utils.data_handler import is_enter_pressed
 
-
 def input_transform(data):
     state = np.concatenate([
         np.array(data[0]["left_arm"]["joint"]).reshape(-1),
@@ -19,7 +18,6 @@ def input_transform(data):
         np.array(data[0]["right_arm"]["joint"]).reshape(-1),
         np.array(data[0]["right_arm"]["gripper"]).reshape(-1)
     ])
-
 
     img_arr = data[1]["cam_head"]["color"], data[1]["cam_right_wrist"]["color"], data[1]["cam_left_wrist"]["color"]
     return img_arr, state
@@ -41,7 +39,7 @@ if __name__ == "__main__":
     robot = TestRobot(DoFs=6)
     robot.set_up()
     # load model
-    model = TestModel("test")
+    model = TestModel("path/to/mmodel","test",DoFs=6,is_dual=True)
     max_step = 1000
     num_episode = 10
 

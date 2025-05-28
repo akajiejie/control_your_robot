@@ -234,3 +234,5 @@ python scripts/encode_lang_batch_once.py task_name output_dir gpu_id
 已经在`example/depoly`中提供了对应的部署脚本, 不过对于不同机械臂需要有一些修改.
 
 如果本地设备不支持推理, 本项目也支持了优秀的client&sever机制,启动`scripts/client.py`与`scripts/server.py`, 修改ip与port,将里面的robot与model替换为您的robot与model即可.
+
+你也可以通过设置`deploy.sh`中的参数, 来实现部署, 对应参数已给出示例, 模仿修改即可.
