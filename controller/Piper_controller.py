@@ -27,6 +27,7 @@ class PiperController(ArmController):
         self.controller = piper
 
     def reset(self, start_state):
+        return
         try:
             self.set_joint(start_state)
         except e:
