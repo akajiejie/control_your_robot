@@ -61,7 +61,7 @@ if __name__ == "__main__":
             while bisocket.running.is_set():
                 time.sleep(0.5)
 
-            debug_print("Server","Client disconnected. Waiting for next client...","WANRING")
+            debug_print("Server","Client disconnected. Waiting for next client...","WARNING")
 
     except KeyboardInterrupt:
         debug_print("Server","Shutting down.","WARNING")

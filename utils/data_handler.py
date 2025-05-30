@@ -104,7 +104,9 @@ def get_files(directory, extension):
 
 def debug_print(name, info, level="INFO"):
     levels = {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40}
-
+    if level not in levels.keys():
+        debug_print("DEBUG_PRINT", f"level setting error : {level}", "ERROR")
+        return
     env_level = os.getenv("INFO_LEVEL", "INFO").upper()
     env_level_value = levels.get(env_level, 20)
 
