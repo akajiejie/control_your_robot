@@ -16,22 +16,22 @@ CAMERA_SERIALS = {
 
 # Define start position (in degrees)
 START_POSITION_ANGLE_LEFT_ARM = [
-    0,   # Joint 1
-    0,    # Joint 2
-    0,  # Joint 3
-    0,   # Joint 4
-    0,  # Joint 5
-    0,    # Joint 6
+    0.0,   # Joint 1
+    0.0,    # Joint 2
+    0.0,  # Joint 3
+    0.0,   # Joint 4
+    0.0,  # Joint 5
+    0.0,    # Joint 6
 ]
 
 # Define start position (in degrees)
 START_POSITION_ANGLE_RIGHT_ARM = [
-    0,   # Joint 1
-    0,    # Joint 2
-    0,  # Joint 3
-    0,   # Joint 4
-    0,  # Joint 5
-    0,    # Joint 6
+    0.0,   # Joint 1
+    0.0,    # Joint 2
+    0.0,  # Joint 3
+    0.0,   # Joint 4
+    0.0,  # Joint 5
+    0.0,    # Joint 6
 ]
 
 condition = {
@@ -56,9 +56,8 @@ class PiperDual:
         self.collection = CollectAny(condition, start_episode=start_episode)
 
     def reset(self):
-        return True
-        self.arm_controllers["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
-        self.arm_controllers["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
+        self.arm_controllers["left_arm"].reset(np.array(START_POSITION_ANGLE_LEFT_ARM))
+        self.arm_controllers["right_arm"].reset(np.array(START_POSITION_ANGLE_RIGHT_ARM))
 
     def set_up(self):
         self.arm_controllers["left_arm"].set_up("can_left")
@@ -114,12 +113,12 @@ if __name__=="__main__":
     robot.set_up()
     #采集测试
     data_list = []
-    for i in range(100):
-        print(i)
-        data = robot.get()
-        robot.collect(data)
-        time.sleep(0.1)
-    robot.finish()
+    # for i in range(100):
+    #     print(i)
+    #     data = robot.get()
+    #     robot.collect(data)
+    #     time.sleep(0.1)
+    # robot.finish()
     
     # 运动测试
     move_data = {
@@ -144,4 +143,5 @@ if __name__=="__main__":
         },
     }
     robot.move(move_data)
+    robot.reset()
     

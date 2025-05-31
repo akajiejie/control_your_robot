@@ -59,10 +59,18 @@ def enable_fun(piper:C_PiperInterface_V2, enable:bool):
 
 # 测试代码
 if __name__ == "__main__":
-    piper = C_PiperInterface_V2()
-    piper.ConnectPort()
+    piper_left = C_PiperInterface_V2(can_name="can_left")
+    piper_right = C_PiperInterface_V2(can_name="can_right")
+
+    piper_left.ConnectPort()
+    piper_right.ConnectPort()
+
     import time
-    flag = enable_fun(piper=piper, enable=False)
+    flag = enable_fun(piper=piper_left, enable=False)
+    if(flag == True):
+        print("失能成功!!!!")
+        # exit(0)
+    flag = enable_fun(piper=piper_right, enable=False)
     if(flag == True):
         print("失能成功!!!!")
         exit(0)

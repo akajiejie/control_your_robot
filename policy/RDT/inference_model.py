@@ -12,7 +12,6 @@ import json
 import sys
 parent_dir = current_file.parent
 sys.path.append(str(parent_dir))
-
 import os
 
 import argparse
@@ -27,7 +26,7 @@ import torch
 from PIL import Image as PImage
 import cv2
 
-from scripts.agilex_model import create_model
+from policy.RDT.scripts.agilex_model import create_model
 from models.multimodal_encoder.t5_encoder import T5Embedder
 global_path = parent_dir.parent
 
@@ -48,7 +47,7 @@ class RDT:
             'max_publish_step': 10000,  # Maximum number of action publishing steps
             'seed': None,              # Random seed
             'ctrl_freq': 25,           # The control frequency of the robot
-            'chunk_size': 64,          # Action chunk size
+            'chunk_size': 30,          # Action chunk size
             # 'disable_puppet_arm': False,  # Whether to disable the puppet arm
             'config_path': os.path.join(self.global_path,"RDT/configs/base.yaml"), 
             "pretrained_model_name_or_path": pretrained_model_name_or_path
@@ -84,7 +83,10 @@ class RDT:
     
     # set language randomly
     def random_set_language(self):
-        json_Path =f"task_instructions/{self.task_name}.json"
+        # json_Path =f"task_instructions/{self.task_name}.json"
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        json_Path = os.path.join(root_dir, "task_instructions", f"{self.task_name}.json")
+        print(json_Path)
         with open(json_Path, 'r') as f_instr:
             instruction_dict = json.load(f_instr)
         instructions = instruction_dict['instructions']
