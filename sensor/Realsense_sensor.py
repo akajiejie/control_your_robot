@@ -2,6 +2,7 @@ import numpy as np
 import pyrealsense2 as rs
 import time
 from sensor.vision_sensor import VisionSensor
+from copy import copy
 
 from utils.data_handler import debug_print
 

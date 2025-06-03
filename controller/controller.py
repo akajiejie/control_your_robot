@@ -22,7 +22,7 @@ class Controller:
         info = self.get_information()
         for collect_info in self.collect_info:
             if info[collect_info] is None:
-                debug_print(f"{self.name}", f"gripper information is None", "ERROR")
+                debug_print(f"{self.name}", f"{collect_info} information is None", "ERROR")
 
         return {collect_info: info[collect_info] for collect_info in self.collect_info}
 
