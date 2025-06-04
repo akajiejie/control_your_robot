@@ -17,8 +17,7 @@ def input_transform(data):
         np.array(data[0]["right_arm"]["joint"]).reshape(-1),
         np.array(data[0]["right_arm"]["gripper"]).reshape(-1)
     ])
-
-
+    
     img_arr = data[1]["cam_head"]["color"], data[1]["cam_right_wrist"]["color"], data[1]["cam_left_wrist"]["color"]
     return img_arr, state
 

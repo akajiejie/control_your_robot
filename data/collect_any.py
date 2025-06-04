@@ -57,8 +57,3 @@ class CollectAny:
         # reset the episode
         self.episode = []
         self.episode_index += 1
-
-
-
-    
-    
