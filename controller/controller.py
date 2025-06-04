@@ -1,5 +1,10 @@
+import sys
+sys.path.append("./")
+
 from typing import List
 import numpy as np
+
+from utils.data_handler import debug_print
 
 class Controller:
     def __init__(self):
@@ -15,6 +20,10 @@ class Controller:
         if self.collect_info is None:
             raise ValueError("collect_info is not set")
         info = self.get_information()
+        for collect_info in self.collect_info:
+            if info[collect_info] is None:
+                debug_print(f"{self.name}", f"{collect_info} information is None", "ERROR")
+
         return {collect_info: info[collect_info] for collect_info in self.collect_info}
 
     def move(self, move_data, is_delta=False):
