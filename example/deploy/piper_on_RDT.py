@@ -14,6 +14,7 @@ from utils.data_handler import is_enter_pressed
 import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
+import cv2
 # Define start position (in degrees)
 START_POSITION_ANGLE_LEFT_ARM = [
     0,   # Joint 1
@@ -34,12 +35,12 @@ START_POSITION_ANGLE_RIGHT_ARM = [
     0,    # Joint 6
 ]
 joint_limits_rad = [
-        (math.radians(-92), math.radians(92)),   # joint1
-        (math.radians(0), math.radians(170)),    # joint2
-        (math.radians(-160), math.radians(0)),   # joint3
-        (math.radians(-90), math.radians(90)),   # joint4
-        (math.radians(-75), math.radians(75)),   # joint5
-        (math.radians(-90), math.radians(90))    # joint6
+        (math.radians(-150), math.radians(150)),   # joint1
+        (math.radians(0), math.radians(180)),    # joint2
+        (math.radians(-170), math.radians(0)),   # joint3
+        (math.radians(-100), math.radians(100)),   # joint4
+        (math.radians(-70), math.radians(70)),   # joint5
+        (math.radians(-120), math.radians(120))    # joint6
     ]
 gripper_limit=[(0.00,0.07)]
 def input_transform(data):
@@ -152,13 +153,13 @@ class DataLogger:
         plt.close()
 
 if __name__ == "__main__":
-    logger = DataLogger()
+    # logger = DataLogger()
     robot = PiperDual()
     robot.set_up()
     # load model
-    model = RDT("output/RDT/checkpoint-50000/pytorch_model/mp_rank_00_model_states.pt", "stack_plates")
+    model = RDT("output/RDT/wenlong/6.4_10w/mp_rank_00_model_states_10w.pt", "stack_plates")
     max_step = 1000
-    num_episode = 1
+    num_episode = 10
 
     for i in range(num_episode):
         step = 0
@@ -166,7 +167,7 @@ if __name__ == "__main__":
         robot.reset()
         model.reset_obsrvationwindows()
         model.random_set_language()
-
+        
         # 等待允许执行推理指令, 按enter开始
         is_start = False
         while not is_start:
@@ -182,19 +183,21 @@ if __name__ == "__main__":
             data = robot.get()
             img_arr, state = input_transform(data)
             model.update_observation_window(img_arr, state)
+            print("get_action")
             action_chunk = model.get_action()
+            print("action_chunk", action_chunk.shape)
             for action in action_chunk:
                 move_data = output_transform(action)
                 # print(move_data)
                 robot.move(move_data)
-                logger.log(step, move_data)
+                # logger.log(step, move_data)
                 step += 1
                 time.sleep(1/robot.condition["save_interval"])
 
-        df = logger.save_to_csv(i)
-        logger.visualize(df, i)
-        logger.records = []
-        
+        # df = logger.save_to_csv(i)
+        # logger.visualize(df, i)
+        # logger.records = []
+        robot.reset()
         print("finish episode", i)
     robot.reset()
     

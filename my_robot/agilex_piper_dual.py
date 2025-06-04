@@ -38,7 +38,7 @@ condition = {
     "save_path": "./save/",
     "task_name": "test",
     "save_format": "hdf5",
-    "save_interval": 10, 
+    "save_interval": 50, 
 }
 
 class PiperDual:

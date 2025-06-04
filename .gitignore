@@ -21,3 +21,4 @@ execution_logs/
 output/
 data/check_data.json
 policy/weights
+realsense_captures/

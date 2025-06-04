@@ -1,15 +1,23 @@
 import sys
 sys.path.append("./")
 
-from my_robot.test_robot import TestRobot
+from my_robot.agilex_piper_dual import PiperDual
 
 import time
 import numpy as np
-
+import math
 from policy.openpi.inference_model import PI0_DUAL
 
 from utils.data_handler import is_enter_pressed
-
+joint_limits_rad = [
+        (math.radians(-150), math.radians(150)),   # joint1
+        (math.radians(0), math.radians(180)),    # joint2
+        (math.radians(-170), math.radians(0)),   # joint3
+        (math.radians(-100), math.radians(100)),   # joint4
+        (math.radians(-70), math.radians(70)),   # joint5
+        (math.radians(-120), math.radians(120))    # joint6
+    ]
+gripper_limit=[(0.00,0.07)]
 def input_transform(data):
     state = np.concatenate([
         np.array(data[0]["left_arm"]["joint"]).reshape(-1),
@@ -23,20 +31,38 @@ def input_transform(data):
     return img_arr, state
 
 def output_transform(data):
+    # 2. 安全限位处理函数
+    def clamp(value, min_val, max_val):
+        """将值限制在[min_val, max_val]范围内"""
+        return max(min_val, min(value, max_val))
+    left_joints = [
+        clamp(data[i], joint_limits_rad[i][0], joint_limits_rad[i][1])
+        for i in range(6)
+    ]
+    left_gripper = clamp(data[6], gripper_limit[0][0], gripper_limit[0][1])
+    
+    # 4. 处理右臂数据
+    right_joints = [
+        clamp(data[i+7], joint_limits_rad[i][0], joint_limits_rad[i][1])
+        for i in range(6)
+    ]
+    right_gripper = clamp(data[13], gripper_limit[0][0], gripper_limit[0][1])
+    
+    # 5. 构建输出结构
     move_data = {
-        "left_arm":{
-            "joint":data[:6],
-            "gripper":data[6]
+        "left_arm": {
+            "joint": left_joints,
+            "gripper": left_gripper
         },
-        "right_arm":{
-            "joint":data[7:13],
-            "gripper":data[13]
+        "right_arm": {
+            "joint": right_joints,
+            "gripper": right_gripper
         }
     }
     return move_data
 
 if __name__ == "__main__":
-    robot = TestRobot(DoFs=6)
+    robot = PiperDual()
     robot.set_up()
     # load model
     model = PI0_DUAL("ttit", "task_name")

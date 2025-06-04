@@ -47,7 +47,7 @@ class RDT:
             'max_publish_step': 10000,  # Maximum number of action publishing steps
             'seed': None,              # Random seed
             'ctrl_freq': 25,           # The control frequency of the robot
-            'chunk_size': 30,          # Action chunk size
+            'chunk_size': 64,          # Action chunk size
             # 'disable_puppet_arm': False,  # Whether to disable the puppet arm
             'config_path': os.path.join(self.global_path,"RDT/configs/base.yaml"), 
             "pretrained_model_name_or_path": pretrained_model_name_or_path
