@@ -86,7 +86,7 @@ class RDT:
         # json_Path =f"task_instructions/{self.task_name}.json"
         root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         json_Path = os.path.join(root_dir, "task_instructions", f"{self.task_name}.json")
-        print(json_Path)
+        # print(json_Path)
         with open(json_Path, 'r') as f_instr:
             instruction_dict = json.load(f_instr)
         instructions = instruction_dict['instructions']

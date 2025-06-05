@@ -9,6 +9,7 @@ import math
 from policy.openpi.inference_model import PI0_DUAL
 
 from utils.data_handler import is_enter_pressed
+
 joint_limits_rad = [
         (math.radians(-150), math.radians(150)),   # joint1
         (math.radians(0), math.radians(180)),    # joint2
@@ -65,17 +66,16 @@ if __name__ == "__main__":
     robot = PiperDual()
     robot.set_up()
     # load model
-    model = PI0_DUAL("ttit", "task_name")
+    model = PI0_DUAL("output/openpi/40000", "stack_plates")
     max_step = 1000
     num_episode = 10
-
+    
     for i in range(num_episode):
         step = 0
         # 重置所有信息
         robot.reset()
         model.reset_obsrvationwindows()
         model.random_set_language()
-
         # 等待允许执行推理指令, 按enter开始
         is_start = False
         while not is_start:
@@ -96,6 +96,6 @@ if __name__ == "__main__":
                 move_data = output_transform(action)
                 robot.move(move_data)
                 step += 1
-                time.sleep(1/robot.condition["save_interval"])
+                time.sleep(1/30)
 
         print("finish episode", i)

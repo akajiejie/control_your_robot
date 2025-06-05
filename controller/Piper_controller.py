@@ -64,9 +64,9 @@ class PiperController(ArmController):
         self.controller.MotionCtrl_2(0x01, 0x01, 100, 0x00)
         self.controller.JointCtrl(j1, j2, j3, j4, j5, j6)
 
-    # The input gripper value is in the range [0, 1], representing the degree of opening.6.0200000000000005
+    # The input gripper value is in the range [0, 1], representing the degree of opening.
     def set_gripper(self, gripper):
-        gripper = int(gripper * 1000 * 1000)
+        gripper = int(gripper * 70 * 1000)
         self.controller.GripperCtrl(gripper, 1000, 0x01, 0)
 
     def __del__(self):

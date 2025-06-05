@@ -65,6 +65,7 @@ def output_transform(data):
         for i in range(6)
     ]
     left_gripper = clamp(data[6], gripper_limit[0][0], gripper_limit[0][1])
+    left_gripper = left_gripper * 1000 / 70
     
     # 4. 处理右臂数据
     right_joints = [
@@ -72,6 +73,7 @@ def output_transform(data):
         for i in range(6)
     ]
     right_gripper = clamp(data[13], gripper_limit[0][0], gripper_limit[0][1])
+    right_gripper = right_gripper * 1000 / 70
     
     # 5. 构建输出结构
     move_data = {
@@ -157,8 +159,8 @@ if __name__ == "__main__":
     robot = PiperDual()
     robot.set_up()
     # load model
-    model = RDT("output/RDT/wenlong/6.4_10w/mp_rank_00_model_states_10w.pt", "stack_plates")
-    max_step = 1000
+    model = RDT("output/RDT/wenlong/6.5_12w/mp_rank_00_model_states_12w.pt", "fold_towels")
+    max_step = 3000
     num_episode = 10
 
     for i in range(num_episode):
@@ -183,9 +185,7 @@ if __name__ == "__main__":
             data = robot.get()
             img_arr, state = input_transform(data)
             model.update_observation_window(img_arr, state)
-            print("get_action")
             action_chunk = model.get_action()
-            print("action_chunk", action_chunk.shape)
             for action in action_chunk:
                 move_data = output_transform(action)
                 # print(move_data)
