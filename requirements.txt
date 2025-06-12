@@ -2,3 +2,4 @@ scipy
 numpy
 h5py
 pyrealsense2
+opencv-python
