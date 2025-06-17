@@ -7,6 +7,7 @@ from geometry_msgs.msg import Pose, Point, Quaternion
 from controller.arm_controller import ArmController
 from utils.ros_publisher import ROSPublisher, start_publishing
 from utils.ros_subscriber import ROSSubscriber
+from utils.data_handler import debug_print
 
 import threading
 import rospy
@@ -35,7 +36,7 @@ class RealmanRosController(ArmController):
         self.pub_thread["state"].start()
 
         # 初始化发布关节角的节点
-        joint_publisher = ROSPublisher(f"/{arm_name}/rm_driver/MoveJ_Cmd", MoveJ, continuous=True)
+        joint_publisher = ROSPublisher(f"/{arm_name}/rm_driver/MoveJ_Cmd", MoveJ, continuous=False)
         self.pub_thread["joint"] = threading.Thread(target=start_publishing, args=(joint_publisher,))
         self.pub_thread["joint"].start()
 
@@ -44,11 +45,26 @@ class RealmanRosController(ArmController):
         self.pub_thread["eef"] = threading.Thread(target=start_publishing, args=(eef_publisher,))
         self.pub_thread["eef"].start()
 
+        try:
+            from dh_gripper_msgs.msg import GripperCtrl 
+            if "right" in self.name:
+                gripper_publisher = ROSPublisher(f"/dh_right/gripper/ctrl", GripperCtrl , continuous=False)
+            elif "elft" in self.name:
+                gripper_publisher = ROSPublisher(f"/dh_left/gripper/ctrl", GripperCtrl , continuous=False)
+            else:
+                KeyError("if you want to use gripper, left / right should be keyword in name")
+            self.pub_thread["gripper"] = threading.Thread(target=start_publishing, args=(gripper_publisher,))
+            self.pub_thread["gripper"].start()
+        except:
+            gripper_publisher = None
+            debug_print(self.name, "unable initializing gripper!", "WARNING")
+
         self.controller = {
             "subscriber": subscriber,
             "state_publisher": state_publisher,
             "joint_publisher": joint_publisher,
             "eef_publisher": eef_publisher,
+            "gripper_publisher": gripper_publisher,
         }
 
     def get_state(self):
@@ -84,6 +100,19 @@ class RealmanRosController(ArmController):
 
         self.controller["eef_publisher"].update_msg(pos_msg)
 
+    def set_gripper(self, gripper):
+        if self.controller["gripper_publisher"] is None:
+            debug_print(self.name, "Initializing gripper failed!", "ERROR")
+            return
+        from dh_gripper_msgs.msg import GripperCtrl 
+        gripper = int(gripper*1000)
+        gripper_msg = GripperCtrl()
+        gripper_msg.initialize = False
+        gripper_msg.position = gripper
+        gripper_msg.force = 50.0
+        gripper_msg.speed = 10.0
+        self.controller["gripper_publisher"].update_msg(gripper_msg)
+
 if __name__=="__main__":
     import time
 
@@ -103,11 +132,14 @@ if __name__=="__main__":
     r = R.from_euler('xyz', [3.134000062942505, 1.5230000019073486, -3.075000047683716], degrees=False)
     quat = r.as_quat()
     rm_right.set_position(np.array([0.5109999775886536, -0.3499999940395355, 0.2709999978542328, quat[0], quat[1], quat[2], quat[3]]))
-    for i in range(100):
+    for i in range(10):
         x = 0.5
         x+= 0.001
         rm_right.set_position(np.array([x, -0.3499999940395355, 0.2709999978542328, 3.134000062942505, 1.5230000019073486, -3.075000047683716]))
         time.sleep(0.1)
     print("joint")
     rm_right.set_joint([0, 0, 0, 0, 0, 0])
-    time.sleep(5)
+    time.sleep(1)
+    print("gripper")
+    rm_right.set_gripper(0.1)
+    time.sleep(1)
