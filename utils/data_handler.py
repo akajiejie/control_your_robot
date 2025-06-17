@@ -9,6 +9,57 @@ import select
 
 from scipy.spatial.transform import Rotation
 
+def apply_fixed_transform(T_current, T_offset):
+    R_current = T_current[:3, :3]
+    t_current = T_current[:3, 3]
+
+    R_target = T_offset[:3, :3] @ R_current
+    t_target = T_offset[:3, 3] + t_current
+
+    T_target = np.eye(4)
+    T_target[:3, :3] = R_target
+    T_target[:3, 3] = t_target
+    return T_target
+
+def euler_to_matrix(euler, degrees=False):
+    """
+    将欧拉角 (roll, pitch, yaw) 和位置 (x, y, z) 转换为 4x4 齐次变换矩阵。
+
+    Args:
+        x, y, z: 位置坐标
+        roll, pitch, yaw: 欧拉角（按 'xyz' 顺序）
+        degrees: 是否使用角度单位，默认为 False（使用弧度）
+
+    Returns:
+        4x4 numpy 数组，表示变换矩阵
+    """
+    x, y, z, roll, pitch, yaw = euler
+    r = Rotation.from_euler('xyz', [roll, pitch, yaw], degrees=degrees)
+    rotation_matrix = r.as_matrix()  # 得到 3x3 旋转矩阵
+
+    transform_matrix = np.eye(4)
+    transform_matrix[:3, :3] = rotation_matrix
+    transform_matrix[:3, 3] = [x, y, z]
+
+    return transform_matrix
+
+def matrix_to_xyz_rpy(matrix):
+    # 确保是 numpy 数组
+    matrix = np.array(matrix)
+    
+    # 提取位置
+    x, y, z = matrix[0:3, 3]
+
+    # 提取旋转部分（前3x3）
+    rot_mat = matrix[0:3, 0:3]
+    
+    # 转换为 RPY (roll, pitch, yaw) 弧度制
+    rpy = Rotation.from_matrix(rot_mat).as_euler('xyz', degrees=False)
+
+    # 可选：返回角度制
+    # rpy = np.degrees(rpy)
+
+    return np.array([x, y, z, rpy[0], rpy[1], rpy[2]])
 
 def compute_rotate_matrix(pose):
     """将位姿 [x,y,z,roll,pitch,yaw] 转换为齐次变换矩阵 (XYZ欧拉角顺序)"""

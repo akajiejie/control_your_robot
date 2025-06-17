@@ -68,7 +68,7 @@ class RealsenseSensor(VisionSensor):
             # BGR -> RGB
             image["color"] = color_image[:,:,::-1]
 
-        if "depth" in self.collect_inf:
+        if "depth" in self.collect_info:
             if not self.is_depth:
                 debug_print(self.name, f"should use set_up(is_depth=True) to enable collecting depth image","ERROR")
                 raise ValueError

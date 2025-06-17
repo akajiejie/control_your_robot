@@ -3,7 +3,7 @@ class Sensor:
         self.name = "sensor"
         self.type = "sensor"
     
-    def set_collect_info(self, collect_info:list[str]):
+    def set_collect_info(self, collect_info):
        self.collect_info = collect_info
     
     def get(self):
