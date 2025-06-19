@@ -63,6 +63,7 @@ class PikaSensor(TeleoperationSensor):
         # else:
         # # 归一化
         #     gripper = (np.array([gripper_msg.position])[0] - 0.3) / 1.7
+
         qpos = compute_rotate_matrix(qpos)
         return {
             "end_pose":qpos,

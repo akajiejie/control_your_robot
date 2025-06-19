@@ -40,7 +40,7 @@ class RealmanRosController(ArmController):
         self.pub_thread["joint"] = threading.Thread(target=start_publishing, args=(joint_publisher,))
         self.pub_thread["joint"].start()
 
-        # 初始化发布末端位姿的节点 rostopic pub /rm_right/rm_driver/MoveJ_Cmd rm_msgs/MoveJ "joint: [0, 0, 0, 0, 0, 0] speed: 0.2"
+        # 初始化发布末端位姿的节点
         eef_publisher = ROSPublisher(f"/{arm_name}/rm_driver/MoveP_Fd_Cmd", CartePos , continuous=False)
         self.pub_thread["eef"] = threading.Thread(target=start_publishing, args=(eef_publisher,))
         self.pub_thread["eef"].start()
@@ -49,7 +49,7 @@ class RealmanRosController(ArmController):
             from dh_gripper_msgs.msg import GripperCtrl 
             if "right" in self.name:
                 gripper_publisher = ROSPublisher(f"/dh_right/gripper/ctrl", GripperCtrl , continuous=False)
-            elif "elft" in self.name:
+            elif "left" in self.name:
                 gripper_publisher = ROSPublisher(f"/dh_left/gripper/ctrl", GripperCtrl , continuous=False)
             else:
                 KeyError("if you want to use gripper, left / right should be keyword in name")
@@ -77,6 +77,7 @@ class RealmanRosController(ArmController):
     def set_joint(self, joint):
         if joint is None:
             return
+        debug_print(self.name, joint, "INFO")
         joint_msg = MoveJ()
         joint_msg.joint = joint
         joint_msg.speed = 0.2
@@ -138,7 +139,7 @@ if __name__=="__main__":
         rm_right.set_position(np.array([x, -0.3499999940395355, 0.2709999978542328, 3.134000062942505, 1.5230000019073486, -3.075000047683716]))
         time.sleep(0.1)
     print("joint")
-    rm_right.set_joint([0, 0, 0, 0, 0, 0])
+    rm_right.set_joint([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     time.sleep(1)
     print("gripper")
     rm_right.set_gripper(0.1)

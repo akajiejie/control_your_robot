@@ -19,24 +19,22 @@ CAMERA_SERIALS = {
 
 # Define start position (in degrees)
 START_POSITION_ANGLE_LEFT_ARM = [
-    65,   # Joint 1
-    38,    # Joint 2
-    -66,  # Joint 3
-    12,   # Joint 4
-    6,  # Joint 5
-    119,    # Joint 6
-    66    # Joint 7
+    -14,   # Joint 1
+    60,    # Joint 2
+    80,  # Joint 3
+    -20,   # Joint 4
+    -50,  # Joint 5
+    70,    # Joint 6
 ]
 
 # Define start position (in degrees)
 START_POSITION_ANGLE_RIGHT_ARM = [
-    -59,   # Joint 1
-    38,    # Joint 2
-    -123,  # Joint 3
-    -9,   # Joint 4
-    -10,  # Joint 5
-    -120,    # Joint 6
-    32    # Joint 7
+    7,   # Joint 1
+    56,    # Joint 2
+    86,  # Joint 3
+    12,   # Joint 4
+    -60,  # Joint 5
+    -70,    # Joint 6
 ]
 
 # 记录统一的数据操作信息, 相关配置信息由CollectAny补充并保存
@@ -92,8 +90,8 @@ class MyRobot:
         self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=False)
     
     def reset(self):
-        self.arm_controllers["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
-        self.arm_controllers["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
+        self.arm_controllers["left_arm"].set_joint((np.array(START_POSITION_ANGLE_LEFT_ARM)/180*3.1415826).tolist())
+        self.arm_controllers["right_arm"].set_joint((np.array(START_POSITION_ANGLE_RIGHT_ARM)/180*3.1415826).tolist())
 
     def finish(self):
         self.collection.write()
@@ -124,6 +122,9 @@ if __name__ == "__main__":
 
     robot = MyRobot()
     robot.set_up()
+
+    robot.reset()
+    time.sleep(3)
     # 等待数据稳定
     while True:
         data = robot.get()
@@ -132,18 +133,26 @@ if __name__ == "__main__":
             break
         else:
             time.sleep(0.1)
+    
+    print("start teleop")
+
+    time.sleep(3)
+
     left_transform_matrix = euler_to_matrix(data[0]["left_arm"]["qpos"])
     right_transform_matrix = euler_to_matrix(data[0]["right_arm"]["qpos"])
     print(left_transform_matrix)
     print(right_transform_matrix)
+    
     # 遥操
-
     while True:
         try:
             data = robot.get()
 
             left_pose = data[1]["pika_left"]["end_pose"]
             right_pose = data[1]["pika_right"]["end_pose"]
+
+            # print("left:", left_pose)
+            # print("right:", right_pose)
 
             left_wrist_mat = apply_fixed_transform(left_pose, left_transform_matrix)
             right_wrist_mat = apply_fixed_transform(right_pose, right_transform_matrix)
@@ -160,11 +169,11 @@ if __name__ == "__main__":
                 "right_arm": {
                     "qpos":r_data},
             }
-            print(move_data)
-            print(data[0]["left_arm"]["qpos"])
-            print(data[0]["right_arm"]["qpos"])
+            # print(move_data)
+            # print(data[0]["left_arm"]["qpos"])
+            # print(data[0]["right_arm"]["qpos"])
             robot.move(move_data)
-            time.sleep(0.01)
+            time.sleep(0.02)
         except:
             print("data is none")
             time.sleep(0.1)
