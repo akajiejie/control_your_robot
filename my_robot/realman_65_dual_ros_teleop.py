@@ -1,13 +1,13 @@
 import sys
 sys.path.append("./")
+
 from controller.RealmanRos_controller import RealmanRosController
-# from sensor.Realsense_sensor import RealsenseSensor
+from sensor.Realsense_sensor import RealsenseSensor
 from sensor.Pika_sensor import PikaSensor
 from data.collect_any import CollectAny
+from utils.data_handler import debug_print, matrix_to_xyz_rpy, apply_local_delta_pose 
+
 from Robotic_Arm.rm_robot_interface import rm_thread_mode_e
-
-from utils.data_handler import matrix_to_xyz_rpy, euler_to_matrix, apply_fixed_transform
-
 import numpy as np
 
 # 组装你的控制器
@@ -50,39 +50,51 @@ class MyRobot:
             "left_arm": RealmanRosController("left_arm"),
             "right_arm": RealmanRosController("right_arm"),
         }
-        # self.image_sensors = {
-        #     "cam_head": RealsenseSensor("cam_head"),
-        #     "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
-        #     "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
-        # }
+
+        self.image_sensors = {
+            "cam_head": RealsenseSensor("cam_head"),
+            "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
+            "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
+        }
+
         self.pika_sensors = {
             "pika_left": PikaSensor("left_pika"),
             "pika_right": PikaSensor("right_pika"),
-
         }
+
         self.condition = condition
-        self.collection = CollectAny(condition, start_episode=0)
+        self.collection = CollectAny(condition, start_episode=start_episode)
 
     def set_up(self):
         self.arm_controllers["left_arm"].set_up("rm_left")
         self.arm_controllers["right_arm"].set_up("rm_right")
-        # self.image_sensors["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
-        # self.image_sensors["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
-        # self.image_sensors["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
+
+        self.image_sensors["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
+        self.image_sensors["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
+        self.image_sensors["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
+
         self.pika_sensors["pika_left"].set_up("/pika_pose_l","/gripper_l/joint_states")
         self.pika_sensors["pika_right"].set_up("/pika_pose_r","/gripper_r/joint_states")
-        self.set_collect_type(["joint","qpos"],["end_pose"])
-        print("set up success!")
+
+        self.set_collect_type(["joint","qpos"],["color"], ["end_pose"])
+        debug_print("robot", "set up success!", "INFO")
         
     def get(self):
         controller_data = {}
+        sensor_data = {}
+
         if self.arm_controllers is not None:    
             for controller_name, controller in self.arm_controllers.items():
                 controller_data[controller_name] = controller.get()
-        sensor_data = {}
+        
         if self.pika_sensors is not None:  
             for sensor_name, sensor in self.pika_sensors.items():
                 sensor_data[sensor_name] = sensor.get()
+        
+        if self.image_sensors is not None:  
+            for sensor_name, sensor in self.image_sensors.items():
+                sensor_data[sensor_name] = sensor.get()
+
         return [controller_data, sensor_data]
     
     def move(self, move_data):
@@ -96,11 +108,15 @@ class MyRobot:
     def finish(self):
         self.collection.write()
     
-    def set_collect_type(self,ARM_INFO_NAME,IMG_INFO_NAME):
+    def set_collect_type(self,ARM_INFO_NAME,IMG_INFO_NAME, PIKA_INFO_NAME):
         for controller in self.arm_controllers.values():
             controller.set_collect_info(ARM_INFO_NAME)
-        for sensor in self.pika_sensors.values():
+        
+        for sensor in self.image_sensors.values():
             sensor.set_collect_info(IMG_INFO_NAME)
+
+        for sensor in self.pika_sensors.values():
+            sensor.set_collect_info(PIKA_INFO_NAME)
 
     def is_start(self):
         if max(abs(self.arm_controllers["left_arm"].get_state()["joint"] - START_POSITION_ANGLE_LEFT_ARM), abs(self.arm_controllers["right_arm"].get_state()["joint"] - START_POSITION_ANGLE_RIGHT_ARM)) > 0.01:
@@ -138,24 +154,22 @@ if __name__ == "__main__":
 
     time.sleep(3)
 
-    left_transform_matrix = euler_to_matrix(data[0]["left_arm"]["qpos"])
-    right_transform_matrix = euler_to_matrix(data[0]["right_arm"]["qpos"])
-    print(left_transform_matrix)
-    print(right_transform_matrix)
+    left_base_pose = data[0]["left_arm"]["qpos"]
+    right_base_pose = data[0]["right_arm"]["qpos"]
     
     # 遥操
     while True:
         try:
             data = robot.get()
 
-            left_pose = data[1]["pika_left"]["end_pose"]
-            right_pose = data[1]["pika_right"]["end_pose"]
+            left_delta_pose = matrix_to_xyz_rpy(data[1]["pika_left"]["end_pose"])
+            right_delta_pose = matrix_to_xyz_rpy(data[1]["pika_right"]["end_pose"])
 
             # print("left:", left_pose)
             # print("right:", right_pose)
 
-            left_wrist_mat = apply_fixed_transform(left_pose, left_transform_matrix)
-            right_wrist_mat = apply_fixed_transform(right_pose, right_transform_matrix)
+            left_wrist_mat = apply_local_delta_pose(left_base_pose, left_delta_pose)
+            right_wrist_mat = apply_local_delta_pose(right_base_pose, right_delta_pose)
 
             l_data = matrix_to_xyz_rpy(left_wrist_mat)
             r_data = matrix_to_xyz_rpy(right_wrist_mat)
@@ -169,9 +183,7 @@ if __name__ == "__main__":
                 "right_arm": {
                     "qpos":r_data},
             }
-            # print(move_data)
-            # print(data[0]["left_arm"]["qpos"])
-            # print(data[0]["right_arm"]["qpos"])
+            
             robot.move(move_data)
             time.sleep(0.02)
         except:

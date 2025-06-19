@@ -1,8 +1,9 @@
 import sys
 sys.path.append("./")
-from controller.RealmanRos_controller import RealmanRosController
+from controller.Realman_controller import RealmanController
 from sensor.Realsense_sensor import RealsenseSensor
 from data.collect_any import CollectAny
+from Robotic_Arm.rm_robot_interface import rm_thread_mode_e
 
 import numpy as np
 
@@ -10,7 +11,7 @@ import numpy as np
 CAMERA_SERIALS = {
     'head': '111',  # Replace with actual serial number
     'left_wrist': '111',   # Replace with actual serial number
-    'right_wrist': '336222070133',   # Replace with actual serial number
+    'right_wrist': '111',   # Replace with actual serial number
 }
 
 # Define start position (in degrees)
@@ -45,23 +46,24 @@ condition = {
 class MyRobot:
     def __init__(self, start_episode=0):
         self.arm_controllers = {
-            "left_arm": RealmanRosController("left_arm"),
-            "right_arm": RealmanRosController("right_arm"),
+            "left_arm": RealmanController("left_arm"),
+            "right_arm": RealmanController("right_arm"),
         }
         self.image_sensors = {
-            # "cam_head": RealsenseSensor("cam_head"),
-            # "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
+            "cam_head": RealsenseSensor("cam_head"),
+            "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
             "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
         }
         self.condition = condition
-        self.collection = CollectAny(condition, start_episode=0)
+        self.collection = CollectAny(condition, start_episode=start_episode)
 
     def set_up(self):
-        self.arm_controllers["left_arm"].set_up("rm_left")
-        self.arm_controllers["right_arm"].set_up("rm_right")
-
+        self.arm_controllers["left_arm"].set_up("192.168.80.18", rm_thread_mode_e.RM_TRIPLE_MODE_E)
+        self.arm_controllers["right_arm"].set_up("192.168.80.19", rm_thread_mode_e.RM_TRIPLE_MODE_E)
+        self.image_sensors["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
+        self.image_sensors["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
         self.image_sensors["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
-        self.set_collect_type(["joint","qpos"],["color"])
+        self.set_collect_type(["joint","qpos","gripper"],["color"])
         print("set up success!")
         
     def get(self):
@@ -106,48 +108,7 @@ class MyRobot:
         self.arm_controllers["right_arm"].set_action(action)
 
 if __name__ == "__main__":
-    import time
-    import rospy
-    rospy.init_node("rm_controller_node", anonymous=True)
-
     robot = MyRobot()
 
-    robot.set_up()
-    time.sleep(3)
-    # get state
-    for i in range(10):
-        print(robot.get()[0])
-        time.sleep(0.1)
-    
-    # qpos
-    move_data = {
-        "left_arm": {
-            # "qpos":np.array([0.46, 0.156, 0.3, -2., 0.3 ,-1.87]),
-            "joint": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-            },
-        "right_arm": {
-            # "qpos":np.array([0.40, -0.40, 0.11, -2.6, 1.0, 2.72]),
-            "joint": np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-            },
-    }
-
-    robot.move(move_data)
-    
-    time.sleep(0.01)
-
-    move_data = {
-        "left_arm": {
-            # "qpos":np.array([0.46, 0.156, 0.3, -2., 0.3 ,-1.87]),
-            "joint": np.array([0.0, 0.0, 0.10, 0.10, 0.0, 0.0])
-            },
-        "right_arm": {
-            # "qpos":np.array([0.40, -0.40, 0.11, -2.6, 1.0, 2.72]),
-            "joint": np.array([0.0, 0.0, 0.10, 0.10, 0.0, 0.0])
-            },
-    }
-
-    robot.move(move_data)
-
-
-    time.sleep(5)
+    robot.reset()
     

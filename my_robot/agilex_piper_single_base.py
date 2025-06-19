@@ -51,7 +51,7 @@ class PiperSingle:
             "cam_head": RealsenseSensor("cam_head"),
             "cam_wrist": RealsenseSensor("cam_wrist"),
         }
-        self.collection = CollectAny(condition, start_episode=0)
+        self.collection = CollectAny(condition, start_episode=start_episode)
 
     # ============== init ==============
     def reset(self):

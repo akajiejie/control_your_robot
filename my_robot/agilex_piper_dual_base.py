@@ -3,11 +3,11 @@ sys.path.append("./")
 
 import numpy as np
 
-from controller.Pika_controller import PikaController
 from controller.Piper_controller import PiperController
 from sensor.Realsense_sensor import RealsenseSensor
 from data.collect_any import CollectAny
 
+# setting your realsense serial
 CAMERA_SERIALS = {
     'head': '1111',  # Replace with actual serial number
     'left_wrist': '1111',   # Replace with actual serial number
@@ -36,17 +36,13 @@ START_POSITION_ANGLE_RIGHT_ARM = [
 
 condition = {
     "save_path": "./save/",
-    "task_name": "test", 
+    "task_name": "test",
     "save_format": "hdf5",
-    "save_interval": 10,
+    "save_interval": 10, 
 }
 
-class PikaPiper:
+class PiperDual:
     def __init__(self, start_episode=0):
-        self.teleoperation_controllers = {
-            "left_pika":PikaController("left_pika"),
-            "right_pika":PikaController("right_pika"),
-        }
         self.arm_controllers = {
             "left_arm": PiperController("left_arm"),
             "right_arm": PiperController("right_arm"),
@@ -57,7 +53,7 @@ class PikaPiper:
             "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
         }
         self.condition = condition
-        self.collection = CollectAny(condition, start_episode=0)
+        self.collection = CollectAny(condition, start_episode=start_episode)
 
     def reset(self):
         return True
@@ -71,11 +67,6 @@ class PikaPiper:
         self.image_sensors["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
         self.image_sensors["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
         self.set_collect_type(["joint","qpos","gripper"],["color"])
-
-        # pika
-        self.teleoperation_controller["left_pika"].set_up("/l_gripper_pose","/l_gripper/joint_state",self.left_move)
-        self.teleoperation_controller["right_pika"].set_up("/r_gripper_pose","r_gripper/joint_state",self.right_move)
-
         print("set up success!")
 
     def set_collect_type(self,ARM_INFO_NAME,IMG_INFO_NAME):
@@ -86,7 +77,11 @@ class PikaPiper:
 
     def is_start(self):
         return True
-    
+        # if max(abs(self.arm_controllers["left_arm"].get_state()["joint"] - START_POSITION_ANGLE_LEFT_ARM), abs(self.arm_controllers["right_arm"].get_state()["joint"] - START_POSITION_ANGLE_RIGHT_ARM)) > 0.01:
+        #     return True
+        # else:
+        #     return False
+
     def get(self):
         controller_data = {}
         if self.arm_controllers is not None:    
@@ -109,12 +104,38 @@ class PikaPiper:
         self.arm_controllers["right_arm"].set_action(action)
     
     def move(self, move_data):
-        self.arm_controllers["left_arm"].move(move_data["left_arm"],is_delta=True)
-        self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=True)
+        self.arm_controllers["left_arm"].move(move_data["left_arm"],is_delta=False)
+        self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=False)
 
-    def left_move(self, move_data):
-        self.arm_controllers["left_arm"].move(move_data,is_delta=True)
+def teleop():
+    pass
 
-    def right_move(self, move_data):
-        self.arm_controllers["right_arm"].move(move_data,is_delta=True)
+if __name__ == "__main__":
+    import time
     
+    robot = PiperDual()
+    robot.set_up()
+
+    # collection test
+    data_list = []
+    for i in range(100):
+        print(i)
+        data = robot.get()
+        robot.collect(data)
+        time.sleep(0.1)
+    robot.finish()
+    
+    # moving test
+    move_data = {
+        "left_arm":{
+        "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0, 0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
+        "gripper":0.2,
+        },
+    }
+    
+    move_data = {
+        "left_arm":{
+        "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0, 0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
+        "gripper":0.2,
+        },
+    }
