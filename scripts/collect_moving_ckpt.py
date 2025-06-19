@@ -7,7 +7,7 @@ import time
 import select
 import numpy as np
 
-from my_robot.agilex_piper_single import PiperSingle
+from my_robot.test_robot import TestRobot
 from data.collect_any import CollectAny
 
 from utils.time_scheduler import TimeScheduler
@@ -82,7 +82,7 @@ class PathCollector:
         print("play finished!")
             
 if __name__ == "__main__":
-    robot = PiperSingle()
+    robot = TestRobot(DoFs=6,INFO="DEBUG",start_episode=0)
     robot.set_up()
 
     # setting collect info

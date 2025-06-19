@@ -96,6 +96,35 @@ def compute_local_delta_pose(base_pose, target_pose):
     
     return np.concatenate([delta_xyz, delta_rpy])
 
+def apply_local_delta_pose(base_pose, delta_pose):
+    """
+    将局部坐标系下的增量位姿应用到 base_pose，恢复出 target_pose（全局位姿）
+    参数:
+        base_pose: 基准位姿 [x, y, z, roll, pitch, yaw]
+        delta_pose: 增量位姿 [delta_x, delta_y, delta_z, delta_roll, delta_pitch, delta_yaw]
+    返回:
+        target_pose: 目标位姿 [x, y, z, roll, pitch, yaw]
+    """
+    assert len(base_pose) == 6 and len(delta_pose) == 6, "输入位姿必须是6维"
+
+    # 转换为 numpy 数组
+    base_pose = np.asarray(base_pose, dtype=np.float64)
+    delta_pose = np.asarray(delta_pose, dtype=np.float64)
+
+    # 构建 base 的旋转
+    base_rot = Rotation.from_euler('XYZ', base_pose[3:])
+    delta_rot = Rotation.from_euler('XYZ', delta_pose[3:])
+    
+    # 计算目标旋转（全局）
+    target_rot = base_rot * delta_rot
+    target_rpy = target_rot.as_euler('XYZ', degrees=False)
+    
+    # 计算目标位置（全局）
+    delta_xyz_world = base_rot.apply(delta_pose[:3])
+    target_xyz = base_pose[:3] + delta_xyz_world
+
+    # 拼接结果
+    return np.concatenate([target_xyz, target_rpy])
 
 def get_item(Dict_data: Dict, item):
     if isinstance(item, str):
