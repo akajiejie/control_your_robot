@@ -18,7 +18,7 @@ class Controller:
     # get controller infomation
     def get(self):
         if self.collect_info is None:
-            raise ValueError("collect_info is not set")
+            raise ValueError(f"{self.name}: collect_info is not set")
         info = self.get_information()
         for collect_info in self.collect_info:
             if info[collect_info] is None:

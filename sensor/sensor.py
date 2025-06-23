@@ -1,3 +1,8 @@
+import sys
+sys.path.append("./")
+
+from utils.data_handler import debug_print
+
 class Sensor:
     def __init__(self):
         self.name = "sensor"
@@ -8,7 +13,7 @@ class Sensor:
     
     def get(self):
         if self.collect_info is None:
-            print("collect_info is not set")
+            debug_print({self.name},f"collect_info is not set, if only collecting controller data, forget this warning", "WARNING")
             return None
         info = self.get_information()
         return {collect_info: info[collect_info] for collect_info in self.collect_info}

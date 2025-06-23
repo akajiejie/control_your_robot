@@ -9,7 +9,7 @@ import numpy as np
 
 from policy.test_policy.inference_model import TestModel
 
-from utils.data_handler import is_enter_pressed
+from utils.data_handler import is_enter_pressed, debug_print
 
 def input_transform(data):
     state = np.concatenate([
@@ -36,6 +36,9 @@ def output_transform(data):
     return move_data
 
 if __name__ == "__main__":
+    import os
+    os.environ["INFO_LEVEL"] = "INFO" # DEBUG , INFO, ERROR
+
     robot = TestRobot(DoFs=6)
     robot.set_up()
     # load model
@@ -55,9 +58,10 @@ if __name__ == "__main__":
         while not is_start:
             if is_enter_pressed():
                 is_start = True
-                print("start to inference...")
+                debug_print("main", "start inference!", "INFO")
+
             else:
-                print("waiting for start command...")
+                debug_print("main", "Press Enter to start...", "INFO")
                 time.sleep(1)
 
         # 开始逐条推理运行
@@ -71,5 +75,7 @@ if __name__ == "__main__":
                 robot.move(move_data)
                 step += 1
                 time.sleep(1/robot.condition["save_interval"])
+                if step%50 ==0:
+                    debug_print("main", f"now step: {step}/{max_step}", "INFO")
 
         print("finish episode", i)

@@ -44,6 +44,14 @@ class PathCollector:
             episode_data = episode.copy() 
             if isinstance(episode_data.get("left_arm", {}).get("qpos"), np.ndarray):
                 episode_data["left_arm"]["qpos"] = episode_data["left_arm"]["qpos"].tolist()
+            if isinstance(episode_data.get("left_arm", {}).get("gripper"), np.ndarray):
+                episode_data["left_arm"]["gripper"] = episode_data["left_arm"]["gripper"].tolist()
+
+            if isinstance(episode_data.get("right_arm", {}).get("qpos"), np.ndarray):
+                episode_data["right_arm"]["qpos"] = episode_data["right_arm"]["qpos"].tolist()
+            if isinstance(episode_data.get("right_arm", {}).get("gripper"), np.ndarray):
+                episode_data["right_arm"]["gripper"] = episode_data["right_arm"]["gripper"].tolist()
+            
             json_data[index] = episode_data
         
         print(json_data)
@@ -82,6 +90,8 @@ class PathCollector:
         print("play finished!")
             
 if __name__ == "__main__":
+    os.environ["INFO_LEVEL"] = "DEBUG"
+
     robot = TestRobot(DoFs=6,INFO="DEBUG",start_episode=0)
     robot.set_up()
 

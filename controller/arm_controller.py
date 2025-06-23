@@ -48,9 +48,9 @@ class ArmController(Controller):
         # For action and gripper, use absolute values instead of deltas
         for key, value in move_data.items():
             if key == "action":
-                self.set_action(value)
+                self.set_action(np.array(value))
             if key == "gripper":
-                self.set_gripper(value)
+                self.set_gripper(np.array(value))
             if key == "velocity":
                 self.set_velocity(np.array(value))
             if key == "force":
