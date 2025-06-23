@@ -173,7 +173,7 @@ if __name__ == "__main__":
     import time
     for i in range(10):
         start  = time.time()
-        result = planner.plan_path(curr_joint_pos, target_gripper_pose)
+        result = planner.ik(curr_joint_pos, target_gripper_pose)
         # result = planner.ik(target_gripper_pose)
         end = time.time()
         print(f"time cost:{end - start}s")
