@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime
 import cv2
+from scipy.interpolate import CubicSpline
 # Define start position (in degrees)
 START_POSITION_ANGLE_LEFT_ARM = [
     0,   # Joint 1
@@ -64,6 +65,8 @@ def output_transform(data):
         clamp(data[i], joint_limits_rad[i][0], joint_limits_rad[i][1])
         for i in range(6)
     ]
+    if data[6]>0.00 and data[6]<0.015:
+        data[6]=0.001
     left_gripper = clamp(data[6], gripper_limit[0][0], gripper_limit[0][1])
     left_gripper = left_gripper * 1000 / 70
     
@@ -72,6 +75,8 @@ def output_transform(data):
         clamp(data[i+7], joint_limits_rad[i][0], joint_limits_rad[i][1])
         for i in range(6)
     ]
+    if data[13]>0.00 and data[13]<0.015:
+        data[13]=0.001
     right_gripper = clamp(data[13], gripper_limit[0][0], gripper_limit[0][1])
     right_gripper = right_gripper * 1000 / 70
     
@@ -87,7 +92,51 @@ def output_transform(data):
         }
     }
     return move_data
-
+def smooth_trajectory(action_chunk):
+    """仅平滑处理12个关节数据（左右臂各6个），跳过夹爪数据"""
+    num_points = len(action_chunk)
+    time_original = np.linspace(0, 1, num_points)
+    
+    # 存储平滑后的关节数据（只处理12个关节）
+    smoothed_actions = []
+    
+    # 对12个关节单独处理（左右臂各6个）
+    for joint_idx in range(12):
+        # 计算正确的数据索引位置
+        if joint_idx < 6:  # 左臂关节（索引0-5）
+            data_idx = joint_idx
+        else:  # 右臂关节（索引6-11 → 对应原始数据索引7-12）
+            data_idx = joint_idx + 1  # 跳过左臂夹爪（索引6）
+        
+        # 提取该关节的原始轨迹
+        joint_traj = [act[data_idx] for act in action_chunk]
+        
+        # 创建三次样条插值器[1,2](@ref)
+        cs = CubicSpline(time_original, joint_traj)
+        
+        # 生成平滑轨迹（100点）并降采样[7](@ref)
+        time_dense = np.linspace(0, 1, 100)
+        smoothed_traj = cs(time_dense)[::5]  # 直接降采样到20点
+        
+        smoothed_actions.append(smoothed_traj)
+    
+    # 重组数据结构（保持原始夹爪值不变）
+    new_action_chunk = []
+    for i in range(num_points):
+        new_action = []
+        # 左臂6个关节
+        for j in range(6):
+            new_action.append(smoothed_actions[j][i])
+        new_action.append(action_chunk[i][6])  # 左臂夹爪（原始值）
+        
+        # 右臂6个关节
+        for j in range(6, 12):
+            new_action.append(smoothed_actions[j][i])
+        new_action.append(action_chunk[i][13])  # 右臂夹爪（原始值）
+        
+        new_action_chunk.append(new_action)
+    
+    return new_action_chunk
 class DataLogger:
     def __init__(self):
         self.records = []
@@ -159,8 +208,8 @@ if __name__ == "__main__":
     robot = PiperDual()
     robot.set_up()
     # load model
-    model = RDT("output/RDT/wenlong/6.5_12w/mp_rank_00_model_states_12w.pt", "fold_towels")
-    max_step = 3000
+    model = RDT("output/RDT/lantian/6.6_1w/mp_rank_00_model_states_lantian_1w.pt", "stack_plates")
+    max_step = 1000
     num_episode = 10
 
     for i in range(num_episode):
@@ -186,6 +235,8 @@ if __name__ == "__main__":
             img_arr, state = input_transform(data)
             model.update_observation_window(img_arr, state)
             action_chunk = model.get_action()
+            action_chunk = action_chunk[:20] 
+            action_chunk = smooth_trajectory(action_chunk)
             for action in action_chunk:
                 move_data = output_transform(action)
                 # print(move_data)
@@ -193,6 +244,7 @@ if __name__ == "__main__":
                 # logger.log(step, move_data)
                 step += 1
                 time.sleep(1/robot.condition["save_interval"])
+            print(f"Episode {i}, Step {step}/{max_step} completed.")
 
         # df = logger.save_to_csv(i)
         # logger.visualize(df, i)
@@ -200,4 +252,5 @@ if __name__ == "__main__":
         robot.reset()
         print("finish episode", i)
     robot.reset()
+    
     

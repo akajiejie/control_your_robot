@@ -11,7 +11,7 @@ from data.collect_any import CollectAny
 CAMERA_SERIALS = {
     'head': '313522071698',  # Replace with actual serial number
     'left_wrist': '948122073452',   # Replace with actual serial number
-    'right_wrist': '231522071782',   # Replace with actual serial number
+    'right_wrist': '338622074268',   # Replace with actual serial number
 }
 
 # Define start position (in degrees)
@@ -38,7 +38,7 @@ condition = {
     "save_path": "./save/",
     "task_name": "test",
     "save_format": "hdf5",
-    "save_interval": 64, 
+    "save_interval": 20, 
 }
 
 class PiperDual:
@@ -121,25 +121,27 @@ if __name__=="__main__":
     # robot.finish()
     
     # 运动测试
+  
     move_data = {
         "left_arm":{
         "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
-        "gripper":0.2,
+        "gripper":0.8,
         },
         "right_arm":{
         "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
-        "gripper":0.2,
+        "gripper":0.8,
         },
     }
     robot.move(move_data)
+    time.sleep(2)
     move_data = {
         "left_arm":{
         "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
-        "gripper":0.2,
+        "gripper":0.0,
         },
         "right_arm":{
         "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
-        "gripper":0.2,
+        "gripper":0.0,
         },
     }
     robot.move(move_data)
