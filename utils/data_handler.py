@@ -9,17 +9,13 @@ import select
 
 from scipy.spatial.transform import Rotation
 
-def apply_fixed_transform(T_current, T_offset):
-    R_current = T_current[:3, :3]
-    t_current = T_current[:3, 3]
-
-    R_target = T_offset[:3, :3] @ R_current
-    t_target = T_offset[:3, 3] + t_current
-
-    T_target = np.eye(4)
-    T_target[:3, :3] = R_target
-    T_target[:3, 3] = t_target
-    return T_target
+def apply_local_offset_to_global_pose(T_offset, T_current):
+    """
+    在当前末端位姿 T_current(全局坐标)上，应用局部坐标下的变换 T_offset。
+    结果是偏移后的全局位姿 T_target。
+    等价于 T_target = T_current @ T_offset
+    """
+    return T_current @ T_offset
 
 def euler_to_matrix(euler, degrees=False):
     """
