@@ -17,7 +17,7 @@ Pika base code(ROS) from:
 https://github.com/agilexrobotics/pika_ros.git
 '''
 
-class PikaSensor(TeleoperationSensor):
+class PikaRosSensor(TeleoperationSensor):
     def __init__(self,name):
         super().__init__()
         self.name = name
@@ -87,8 +87,8 @@ class PikaSensor(TeleoperationSensor):
 if __name__ == "__main__":
     import time
     import rospy
-    pika_left = PikaSensor("left_pika")
-    pika_right = PikaSensor("right_pika")
+    pika_left = PikaRosSensor("left_pika")
+    pika_right = PikaRosSensor("right_pika")
 
     pika_left.set_up("/pika_pose_l","/gripper_l/joint_states")
     pika_right.set_up("/pika_pose_r","/gripper_r/joint_states")

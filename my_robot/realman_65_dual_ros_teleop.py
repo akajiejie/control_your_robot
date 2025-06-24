@@ -3,7 +3,7 @@ sys.path.append("./")
 
 from controller.RealmanRos_controller import RealmanRosController
 from sensor.Realsense_sensor import RealsenseSensor
-from sensor.Pika_sensor import PikaSensor
+from control_your_robot.sensor.PikaRos_sensor import PikaRosSensor
 from data.collect_any import CollectAny
 from utils.data_handler import debug_print, matrix_to_xyz_rpy, apply_local_delta_pose 
 
@@ -58,8 +58,8 @@ class MyRobot:
         }
 
         self.pika_sensors = {
-            "pika_left": PikaSensor("left_pika"),
-            "pika_right": PikaSensor("right_pika"),
+            "pika_left": PikaRosSensor("left_pika"),
+            "pika_right": PikaRosSensor("right_pika"),
         }
 
         self.condition = condition
