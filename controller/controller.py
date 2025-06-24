@@ -23,16 +23,16 @@ class Controller:
         for collect_info in self.collect_info:
             if info[collect_info] is None:
                 debug_print(f"{self.name}", f"{collect_info} information is None", "ERROR")
-
+        
+        debug_print(f"{self.name}", f"get data:\n{info} ", "DEBUG")
         return {collect_info: info[collect_info] for collect_info in self.collect_info}
 
     def move(self, move_data, is_delta=False):
-        # if not set(move_data.keys()).issubset(self.collect_info):
-        #     raise ValueError(f"Invalid keys in move_data. Valid keys are: {self.collect_info}")
+        debug_print(f"{self.name}", f"get move data:\n{move_data} ", "DEBUG")
         try:
             self.move_controller(move_data, is_delta)
         except Exception as e:
-            print(f"move error: {e}")
+            debug_print(self.name, f"move error: {e}", "WARNING")
     
    # init controller
     def set_up(self):

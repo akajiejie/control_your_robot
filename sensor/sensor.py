@@ -16,6 +16,11 @@ class Sensor:
             debug_print({self.name},f"collect_info is not set, if only collecting controller data, forget this warning", "WARNING")
             return None
         info = self.get_information()
+        for collect_info in self.collect_info:
+            if info[collect_info] is None:
+                debug_print(f"{self.name}", f"{collect_info} information is None", "ERROR")
+        # 由于sensor数据比较高维, 所以不输出, 只调试信息是否为None
+        # debug_print(f"{self.name}", f"get data:\n{info} ", "DEBUG")
         return {collect_info: info[collect_info] for collect_info in self.collect_info}
 
     def __repr__(self):

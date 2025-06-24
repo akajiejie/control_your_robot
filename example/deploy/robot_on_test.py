@@ -37,7 +37,7 @@ def output_transform(data):
 
 if __name__ == "__main__":
     import os
-    os.environ["INFO_LEVEL"] = "INFO" # DEBUG , INFO, ERROR
+    os.environ["INFO_LEVEL"] = "DEBUG" # DEBUG , INFO, ERROR
 
     robot = TestRobot(DoFs=6)
     robot.set_up()
@@ -65,12 +65,16 @@ if __name__ == "__main__":
                 time.sleep(1)
 
         # 开始逐条推理运行
-        while step < max_step:
+        while step < max_step and is_start:
             data = robot.get()
             img_arr, state = input_transform(data)
             model.update_observation_window(img_arr, state)
             action_chunk = model.get_action()
             for action in action_chunk:
+                if is_enter_pressed():
+                    debug_print("main", "Moving interrupted!", "WARNING")
+                    is_start = False
+                    break
                 move_data = output_transform(action)
                 robot.move(move_data)
                 step += 1

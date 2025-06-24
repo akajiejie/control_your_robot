@@ -12,6 +12,7 @@ from data.collect_any import CollectAny
 
 from utils.time_scheduler import TimeScheduler
 from utils.robot_worker import RobotWorker
+from utils.data_handler import debug_print
 
 ARM_INFO_NAME = ["qpos", "gripper"]
 
@@ -54,8 +55,6 @@ class PathCollector:
             
             json_data[index] = episode_data
         
-        print(json_data)
-        
         save_path = os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/")
         if not os.path.exists(save_path):
             os.makedirs(save_path)
@@ -72,13 +71,13 @@ class PathCollector:
             with open(path, "r") as f:
                 json_data = json.load(f)
         except:
-            print(f"{path} does not exist!")
+            debug_print("path_controller", f"{path} does not exist!", "ERROR")
             return
         
         i = 0 
         for episode in json_data.values():
             
-            print(f"move {i}: {episode}")
+            debug_print("path_controller", f"move {i}: {episode}", "INFO")
             i += 1
             robot.move(episode)
             
@@ -87,7 +86,7 @@ class PathCollector:
             
             if is_block:
                 continue
-        print("play finished!")
+        debug_print("path_controller","play finished!", "INFO")
             
 if __name__ == "__main__":
     os.environ["INFO_LEVEL"] = "DEBUG"
