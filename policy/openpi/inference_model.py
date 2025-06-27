@@ -23,7 +23,7 @@ from openpi.policies import policy_config as _policy_config
 from openpi.shared import download
 from openpi.training import config as _config
 from openpi.training import data_loader as _data_loader
-
+import os
 import cv2
 from PIL import Image
 
@@ -38,10 +38,9 @@ class PI0_DUAL:
     def __init__(self, model_path, task_name):
         self.task_name = task_name
 
-        path = Path(model_path)
-        train_config_name = path.parts[-3]
+        train_config_name = "pi0_base_aloha_robotwin_lora"
         config = _config.get_config(train_config_name)
-
+        print("get config success!")
         self.policy = _policy_config.create_trained_policy(config, model_path)
         print("loading model success!")
         self.img_size = (224,224)
@@ -54,7 +53,9 @@ class PI0_DUAL:
     
     # set language randomly
     def random_set_language(self):
-        json_Path =f"datasets/instructions/{self.task_name}.json"
+        # json_Path =f"datasets/instructions/{self.task_name}.json"
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        json_Path = os.path.join(root_dir, "task_instructions", f"{self.task_name}.json")
         with open(json_Path, 'r') as f_instr:
             instruction_dict = json.load(f_instr)
         instructions = instruction_dict['instructions']

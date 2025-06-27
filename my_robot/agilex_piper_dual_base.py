@@ -9,9 +9,9 @@ from data.collect_any import CollectAny
 
 # setting your realsense serial
 CAMERA_SERIALS = {
-    'head': '313522071698',  # Replace with actual serial number
-    'left_wrist': '948122073452',   # Replace with actual serial number
-    'right_wrist': '231522071782',   # Replace with actual serial number
+    'head': '1111',  # Replace with actual serial number
+    'left_wrist': '1111',   # Replace with actual serial number
+    'right_wrist': '1111',   # Replace with actual serial number
 }
 
 # Define start position (in degrees)
@@ -61,8 +61,8 @@ class PiperDual:
         self.arm_controllers["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
 
     def set_up(self):
-        self.arm_controllers["left_arm"].set_up("can_left")
-        self.arm_controllers["right_arm"].set_up("can_right")
+        self.arm_controllers["left_arm"].set_up("can0")
+        self.arm_controllers["right_arm"].set_up("can1")
         self.image_sensors["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
         self.image_sensors["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
         self.image_sensors["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
@@ -106,13 +106,17 @@ class PiperDual:
     def move(self, move_data):
         self.arm_controllers["left_arm"].move(move_data["left_arm"],is_delta=False)
         self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=False)
-    
 
-if __name__=="__main__":
+def teleop():
+    pass
+
+if __name__ == "__main__":
     import time
+    
     robot = PiperDual()
     robot.set_up()
-    #采集测试
+
+    # collection test
     data_list = []
     for i in range(100):
         print(i)
@@ -121,27 +125,17 @@ if __name__=="__main__":
         time.sleep(0.1)
     robot.finish()
     
-    # 运动测试
+    # moving test
     move_data = {
         "left_arm":{
-        "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
-        "gripper":0.2,
-        },
-        "right_arm":{
-        "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
+        "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0, 0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
         "gripper":0.2,
         },
     }
-    robot.move(move_data)
-    move_data = {
-        "left_arm":{
-        "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
-        "gripper":0.2,
-        },
-        "right_arm":{
-        "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
-        "gripper":0.2,
-        },
-    }
-    robot.move(move_data)
     
+    move_data = {
+        "left_arm":{
+        "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0, 0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
+        "gripper":0.2,
+        },
+    }
