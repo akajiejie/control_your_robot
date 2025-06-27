@@ -8,7 +8,7 @@ import numpy as np
 
 from policy.openpi.inference_model import PI0_DUAL
 
-from utils.data_handler import is_enter_pressed
+from utils.data_handler import is_enter_pressed, debug_print
 
 def input_transform(data):
     state = np.concatenate([
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     robot = TestRobot(DoFs=6)
     robot.set_up()
     # load model
-    model = PI0_DUAL("ttit", "task_name")
+    model = PI0_DUAL("model_path", "task_name")
     max_step = 1000
     num_episode = 10
 
@@ -67,6 +67,10 @@ if __name__ == "__main__":
             model.update_observation_window(img_arr, state)
             action_chunk = model.get_action()
             for action in action_chunk:
+                if is_enter_pressed():
+                    debug_print("main", "Moving interrupted!", "WARNING")
+                    is_start = False
+                    break
                 move_data = output_transform(action)
                 robot.move(move_data)
                 step += 1
