@@ -12,7 +12,6 @@ import json
 import sys
 parent_dir = current_file.parent
 sys.path.append(str(parent_dir))
-
 import os
 
 import argparse
@@ -27,7 +26,7 @@ import torch
 from PIL import Image as PImage
 import cv2
 
-from scripts.agilex_model import create_model
+from policy.RDT.scripts.agilex_model import create_model
 from models.multimodal_encoder.t5_encoder import T5Embedder
 global_path = parent_dir.parent
 
@@ -84,7 +83,10 @@ class RDT:
     
     # set language randomly
     def random_set_language(self):
-        json_Path =f"task_instructions/{self.task_name}.json"
+        # json_Path =f"task_instructions/{self.task_name}.json"
+        root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        json_Path = os.path.join(root_dir, "task_instructions", f"{self.task_name}.json")
+        # print(json_Path)
         with open(json_Path, 'r') as f_instr:
             instruction_dict = json.load(f_instr)
         instructions = instruction_dict['instructions']

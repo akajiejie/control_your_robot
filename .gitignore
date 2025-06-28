@@ -10,4 +10,18 @@ __pycache__/
 
 # datasets
 datasets/
-save/
+
+# third_party
+third_party/3D-ViTac_Tactile_Hardware
+save/test/0.hdf5
+save/test/config.json
+data/episode1
+
+execution_logs/
+output/
+data/check_data.json
+policy/weights
+realsense_captures/
+piper_scripts/can_config.sh
+piper_scripts/can_config.sh
+third_party/test.py

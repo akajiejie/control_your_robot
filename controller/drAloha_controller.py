@@ -11,7 +11,7 @@ from controller.arm_controller import ArmController
 import numpy as np
 import time
 
-from third_party.dr import aloha_robot as dr
+from third_party.dr import aloha_robot as dr# from www.daran.tech
 
 '''
 大然aloha机械臂初始化参数
@@ -66,7 +66,7 @@ class DrAlohaController(ArmController):
         draloha.set_pid_joint(5,  P=12, I=5, D=0.1)
         draloha.set_pid_joint(6,  P=12, I=5, D=0.096)
 
-        draloha.torque_factors = [1, 0.2, 0.5, 1, 1, 1] # 于调节模型扭矩与电机扭矩的比例关系，当重力补偿或零力拖动效果不佳时可用该参数调节
+        draloha.torque_factors = [1, 0.2, 0.7, 0.5, 1, 0.5] # 于调节模型扭矩与电机扭矩的比例关系，当重力补偿或零力拖动效果不佳时可用该参数调节
         self.controller=draloha
     def reset(self, start_state):
         # 调用set_position或set_joint就行
@@ -117,14 +117,39 @@ class DrAlohaController(ArmController):
                 pass
         except:
             pass
-    
+        #Zero Gravity Model
+    def zero_gravity(self):
+        self.controller.set_torques(id_list=[1,2,3,4,5,6,7], torque_list=[0, 0, 0, 0, 0, 0, 0], param=0, mode=0) # 设置对应关节扭矩
+        angle_list = []
+        angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
+        if angle_speed_torque is None:
+            for i in range(4):
+                angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
+                print("angle_speed_torque retry:",i)
+                if angle_speed_torque is not None:
+                    break
+        if angle_speed_torque is None:
+            pass
+        else:
+            for i in range(6):
+                angle_list.append(angle_speed_torque[i][0])
+            print(angle_list)
+            self.controller.gravity_compensation(angle_list=angle_list)
 if __name__=="__main__":
+    fps=30
     controller=DrAlohaController("test Dr")
     controller.set_up("/dev/ttyACM0")
     init_joint_position = [0.0,60.0, -150.0, 0.0, 0.0, 0.0] 
     controller.set_joint(init_joint_position)
     controller.set_gripper(0)
     state=controller.get_state()
-    print(state)
-    controller.set_position(position=[240,0,100],theta=[0,0,0])
+    controller.zero_gravity()
+    tele_time=30
+    start_time = time.time()
+    while True:
+        if time.time() - start_time > tele_time:
+            break
+        state = controller.get_state()
+        print(state)
+        time.sleep(1/fps)
 
