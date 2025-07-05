@@ -27,10 +27,9 @@ class PiperController(ArmController):
         self.controller = piper
 
     def reset(self, start_state):
-        # return
         try:
             self.set_joint(start_state)
-        except Exception as e:
+        except e:
             print(f"reset error: {e}")
         return
 
@@ -44,10 +43,7 @@ class PiperController(ArmController):
                                    joint.joint_state.joint_4, joint.joint_state.joint_5, joint.joint_state.joint_6]) * 0.001 / 180 * 3.1415926
         state["qpos"] = np.array([eef.end_pose.X_axis, eef.end_pose.Y_axis, eef.end_pose.Z_axis, \
                                   eef.end_pose.RX_axis, eef.end_pose.RY_axis, eef.end_pose.RZ_axis]) * 0.001 / 1000
-        # state["gripper"] = self.controller.GetArmGripperMsgs().gripper_state.grippers_angle * 0.001 / 70
-        state["gripper"] = self.controller.GetArmGripperMsgs().gripper_state.grippers_angle * 0.001 *0.001
-
-
+        state["gripper"] = self.controller.GetArmGripperMsgs().gripper_state.grippers_angle * 0.001 / 70
         return state
 
     # All returned values are expressed in meters,if the value represents an angle, it is returned in radians
@@ -109,22 +105,18 @@ def enable_fun(piper:C_PiperInterface_V2):
 
 if __name__=="__main__":
     controller = PiperController("test_piper")
-    controller.set_up("can_left")
+    controller.set_up("can0")
     print(controller.get_state())
+    print(controller.get_gripper())
 
-    controller.set_gripper(0.02)
+    controller.set_gripper(0.2)
 
     controller.set_joint(np.array([0.1,0.1,-0.2,0.3,-0.2,0.5]))
     time.sleep(1)
-    
+    print(controller.get_gripper())
     print(controller.get_state())
 
-    # controller.set_position(np.array([0.057, 0.0, 0.260, 0.0, 0.085, 0.0]))
-    # time.sleep(1)
-    # print(controller.get_state())
-    
-    controller.set_joint(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
-    controller.set_gripper(0.07259)
+    controller.set_position(np.array([0.057, 0.0, 0.260, 0.0, 0.085, 0.0]))
     time.sleep(1)
+    print(controller.get_gripper())
     print(controller.get_state())
-    

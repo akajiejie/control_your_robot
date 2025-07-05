@@ -7,10 +7,11 @@ from controller.Piper_controller import PiperController
 from sensor.Realsense_sensor import RealsenseSensor
 from data.collect_any import CollectAny
 
-# 组装你的控制器
+# setting your realsense serial
 CAMERA_SERIALS = {
-    'head': '313522071698',  # Replace with actual serial number
-    'wrist': '948122073452',   # Replace with actual serial number
+    'head': '1111',  # Replace with actual serial number
+    'left_wrist': '1111',   # Replace with actual serial number
+    'right_wrist': '1111',   # Replace with actual serial number
 }
 
 # Define start position (in degrees)
@@ -34,36 +35,37 @@ START_POSITION_ANGLE_RIGHT_ARM = [
 ]
 
 condition = {
-    "robot":"piper_single",
-    "save_path": "./datasets/", # 保存路径
-    "task_name": "test", # 任务名称
-    "save_format": "hdf5", # 保存格式
-    "save_interval": 10, # 保存频率
+    "save_path": "./save/",
+    "task_name": "test",
+    "save_format": "hdf5",
+    "save_interval": 10, 
 }
 
-
-class PiperSingle:
+class PiperDual:
     def __init__(self, start_episode=0):
-        self.condition = condition
         self.arm_controllers = {
             "left_arm": PiperController("left_arm"),
+            "right_arm": PiperController("right_arm"),
         }
         self.image_sensors = {
             "cam_head": RealsenseSensor("cam_head"),
-            "cam_wrist": RealsenseSensor("cam_wrist"),
+            "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
+            "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
         }
-        self.collection = CollectAny(condition, start_episode=0)
+        self.condition = condition
+        self.collection = CollectAny(condition, start_episode=start_episode)
 
-    # ============== 初始化相关 ==============
     def reset(self):
+        return True
         self.arm_controllers["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
+        self.arm_controllers["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
 
     def set_up(self):
-        self.arm_controllers["left_arm"].set_up("can_left")
-
-        self.image_sensors["cam_head"].set_up(CAMERA_SERIALS["head"])
-        self.image_sensors["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])
-
+        self.arm_controllers["left_arm"].set_up("can0")
+        self.arm_controllers["right_arm"].set_up("can1")
+        self.image_sensors["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
+        self.image_sensors["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
+        self.image_sensors["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
         self.set_collect_type(["joint","qpos","gripper"],["color"])
         print("set up success!")
 
@@ -73,15 +75,13 @@ class PiperSingle:
         for sensor in self.image_sensors.values():
             sensor.set_collect_info(IMG_INFO_NAME)
 
-    # ============== 机械臂判定相关 ============== 
     def is_start(self):
         return True
-        if abs(self.arm_controllers["left_arm"].get_state()["joint"] - np.array(START_POSITION_ANGLE_LEFT_ARM)) > 0.01:
-            return True
-        else:
-            return False
-        
-    # ============== 数据操作相关 ==============
+        # if max(abs(self.arm_controllers["left_arm"].get_state()["joint"] - START_POSITION_ANGLE_LEFT_ARM), abs(self.arm_controllers["right_arm"].get_state()["joint"] - START_POSITION_ANGLE_RIGHT_ARM)) > 0.01:
+        #     return True
+        # else:
+        #     return False
+
     def get(self):
         controller_data = {}
         if self.arm_controllers is not None:    
@@ -99,18 +99,24 @@ class PiperSingle:
     def finish(self):
         self.collection.write()
     
-    # ============== 运动操作相关 ==============
     def set_action(self, action):
-        pass
+        self.arm_controllers["left_arm"].set_action(action)
+        self.arm_controllers["right_arm"].set_action(action)
     
-    def move(self, move_data):  
+    def move(self, move_data):
         self.arm_controllers["left_arm"].move(move_data["left_arm"],is_delta=False)
+        self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=False)
 
-if __name__=="__main__":
+def teleop():
+    pass
+
+if __name__ == "__main__":
     import time
-    robot = PiperSingle()
+    
+    robot = PiperDual()
     robot.set_up()
-    #采集测试
+
+    # collection test
     data_list = []
     for i in range(100):
         print(i)
@@ -119,17 +125,17 @@ if __name__=="__main__":
         time.sleep(0.1)
     robot.finish()
     
-    # 运动测试
+    # moving test
     move_data = {
         "left_arm":{
-        "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
+        "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0, 0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
         "gripper":0.2,
         },
     }
-    robot.move(move_data)
+    
     move_data = {
         "left_arm":{
-        "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
+        "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0, 0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
         "gripper":0.2,
         },
     }
