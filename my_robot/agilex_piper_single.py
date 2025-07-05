@@ -59,7 +59,7 @@ class PiperSingle:
         self.arm_controllers["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
 
     def set_up(self):
-        self.arm_controllers["left_arm"].set_up("can0")
+        self.arm_controllers["left_arm"].set_up("can_left")
 
         self.image_sensors["cam_head"].set_up(CAMERA_SERIALS["head"])
         self.image_sensors["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])
