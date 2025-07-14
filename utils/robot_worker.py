@@ -37,7 +37,7 @@ def RobotWorker(robot_class, start_episode,
             except Exception as e:
                 debug_print(process_name, f"Error: {e}", "ERROR")
 
-            debug_print(process_name, "Data processed. Waiting for next time slot.")
+            debug_print(process_name, "Data processed. Waiting for next time slot.", "DEBUG")
 
         debug_print(process_name, "Finish event triggered. Finalizing...","INFO")
         robot.finish()

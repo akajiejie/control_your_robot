@@ -11,11 +11,12 @@ from utils.data_handler import debug_print
 class DataBuffer:
     def __init__(self, manager):
         # 用 Manager dict 而不是普通 dict
+        self.manager = manager
         self.buffer = manager.dict()
 
     def collect(self, name, data):
         if name not in self.buffer:
-            self.buffer[name] = manager.list()
+            self.buffer[name] = self.manager.list()
         self.buffer[name].append(data)
 
     def get(self):
@@ -57,7 +58,7 @@ def ComponentWorker(component_class, component_name, component_setup_input,compo
             except Exception as e:
                 debug_print(process_name, f"Error: {e}", "ERROR")
 
-            debug_print(process_name, "Data processed. Waiting for next time slot.")
+            debug_print(process_name, "Data processed. Waiting for next time slot.", "DEBUG")
 
         debug_print(process_name, "Finish event triggered. Finalizing...","INFO")
         

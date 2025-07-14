@@ -10,10 +10,10 @@ __pycache__/
 
 # datasets
 datasets/
+save/
 
 # third_party
 third_party/3D-ViTac_Tactile_Hardware
-save/
 
 execution_logs/
 output/
