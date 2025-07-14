@@ -4,19 +4,22 @@ from controller import *
 import time
 from typing import *
 
-from multiprocessing import Event, Semaphore, Process, Value
+from multiprocessing import Event, Semaphore, Process, Value, Manager
 
 from utils.data_handler import debug_print
 
 class DataBuffer:
-    def __init__(self):
-        self.buffer = {}
+    def __init__(self, manager):
+        # 用 Manager dict 而不是普通 dict
+        self.buffer = manager.dict()
 
     def collect(self, name, data):
-        self.buffer.setdefault(name, []).append(data)
+        if name not in self.buffer:
+            self.buffer[name] = manager.list()
+        self.buffer[name].append(data)
 
     def get(self):
-        return self.buffer
+        return dict(self.buffer)  # 转回普通 dict 可选
     
 def ComponentWorker(component_class, component_name, component_setup_input,component_collect_info, data_buffer: DataBuffer,
                 time_lock: Semaphore, start_event: Event, finish_event: Event, process_name: str):
@@ -76,7 +79,8 @@ if __name__ == "__main__":
     processes = []
     start_event = Event()
     finish_event = Event()
-    data_buffer = DataBuffer()
+    manager = Manager()
+    data_buffer = DataBuffer(manager)
 
     time_lock_vision = Semaphore(0)
     time_lock_arm = Semaphore(0)
@@ -113,3 +117,5 @@ if __name__ == "__main__":
         if process.is_alive():
             process.join()
             process.close()
+    
+    print(data_buffer.get())
