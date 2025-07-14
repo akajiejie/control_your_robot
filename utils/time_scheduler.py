@@ -28,12 +28,21 @@ class TimeScheduler:
         self.process_name = "time_scheduler"
 
     def time_worker(self):
+        last_time = time.monotonic()
         while True:
-            for sem in self.time_semaphores:
-                # Issue "time slice token"
-                sem.release()  
-                debug_print(self.process_name, "released time slot to one worker", "DEBUG")
-            time.sleep(1 / self.time_interval)
+            now = time.monotonic()
+            if now - last_time >= 1 / self.time_interval:
+                if all(sem.get_value() == 0 for sem in self.time_semaphores):
+                    for sem in self.time_semaphores:
+                        sem.release()  
+                        debug_print(self.process_name, "released time slot to one worker", "DEBUG")
+                    debug_print(self.process_name, f"the actual time interval is {now - last_time}", "DEBUG")
+                    if now - last_time > 2 / self.time_interval:
+                         debug_print(self.process_name, "The current lock release time has exceeded twice the intended time interval. \
+                                    Please check whether the corresponding component's get() function is taking too long.", "WARNING")
+                         debug_print(self.process_name, f"the actual time interval is {now - last_time}", "WARNING")
+                    
+                    last_time = now
 
     def start(self):
         self.time_locker = Process(target=self.time_worker)
