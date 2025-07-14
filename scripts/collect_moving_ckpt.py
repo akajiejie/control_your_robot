@@ -131,7 +131,7 @@ if __name__ == "__main__":
     start_event = Event()
     finish_event = Event()
     robot_process = Process(target=RobotWorker, args=(PiperSingle, time_lock, start_event, finish_event, "robot_worker"))
-    time_scheduler = TimeScheduler([time_lock], time_interval=10) # set lock
+    time_scheduler = TimeScheduler([time_lock], time_freq=10) # set lock
 
     robot_process.start()
 

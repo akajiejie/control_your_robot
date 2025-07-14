@@ -41,7 +41,7 @@ START_POSITION_ANGLE_RIGHT_ARM = [
 condition = {
     "save_path": "./save/",
     "task_name": "test", 
-    "save_interval": 10,
+    "save_freq": 10,
 }
 
 class MyRobot:

@@ -19,7 +19,7 @@ condition = {
     "save_path": "./save/",
     "task_name": "test",
     "save_format": "hdf5",
-    "save_interval": 10, 
+    "save_freq": 10, 
 }
 
 
@@ -45,7 +45,8 @@ def dict2list(data: Dict[str, List]) -> List[Dict]:
 if __name__ == "__main__":
     import os
     os.environ["INFO_LEVEL"] = "DEBUG"
-    num_episode = 10
+    num_episode = 3
+    avg_collect_time = 0
 
     start_episode = 0
     collection = CollectAny(condition, start_episode=start_episode)
@@ -64,7 +65,7 @@ if __name__ == "__main__":
         time_lock_arm = Semaphore(0)
         vision_process = Process(target=ComponentWorker, args=(TestVisonSensor, "test_vision", None, ["color"], data_buffer, time_lock_vision, start_event, finish_event, "vision_worker"))
         arm_process = Process(target=ComponentWorker, args=(TestArmController, "test_arm", None, ["joint", "qpos", "gripper"], data_buffer, time_lock_arm, start_event, finish_event, "arm_worker"))
-        time_scheduler = TimeScheduler([time_lock_vision, time_lock_arm], time_interval=100) # 可以给多个进程同时上锁
+        time_scheduler = TimeScheduler([time_lock_vision, time_lock_arm], time_freq=100) # 可以给多个进程同时上锁
         
         processes.append(vision_process)
         processes.append(arm_process)
@@ -97,6 +98,12 @@ if __name__ == "__main__":
         data = data_buffer.get()
         data = dict2list(data)
         
+        avg_collect_time += time_scheduler.real_time_average_time_interval
         for i in range(len(data)):
             collection.collect(data[i], None)
         collection.write()
+    
+    avg_collect_time /= num_episode
+    extra_info = {}
+    extra_info["avg_time_interval"] = avg_collect_time
+    collection.add_extra_condition_info(extra_info)

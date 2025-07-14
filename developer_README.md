@@ -111,7 +111,7 @@ map = {
 #### 初始化参数
 ##### time_locks: List[multiprocessing.Lock]
 对应需要同步的进程的时间锁
-##### time_interval: int
+##### time_freq: int
 对应进程执行操作的频率
 
 ### def robot_worker

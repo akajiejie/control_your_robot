@@ -17,9 +17,13 @@ def RobotWorker(robot_class, start_episode,
     """
     robot = robot_class(start_episode=start_episode)
     robot.set_up()
+    
+    last_time = time.monotonic()
     while not start_event.is_set():
-        debug_print(process_name ,"Press Enter to start...","INFO")
-        time.sleep(1)
+        now = time.monotonic()
+        if now - last_time > 5:  
+            debug_print(process_name ,"Press Enter to start...","INFO")
+            last_time = now
     
     debug_print(process_name, "Get start Event, start collecting...","INFO")
     debug_print(process_name, "To finish this episode, please press Enter. ","INFO")

@@ -38,10 +38,13 @@ def ComponentWorker(component_class, component_name, component_setup_input,compo
     
     component.set_collect_info(component_collect_info)
     
+    last_time = time.monotonic()
     while not start_event.is_set():
-        debug_print(process_name ,"Press Enter to start...","INFO")
-        time.sleep(1)
-    
+        now = time.monotonic()
+        if now - last_time > 5:  
+            debug_print(process_name ,"Press Enter to start...","INFO")
+            last_time = now
+        
     debug_print(process_name, "Get start Event, start collecting...","INFO")
     debug_print(process_name, "To finish this episode, please press Enter. ","INFO")
     try:
@@ -87,7 +90,7 @@ if __name__ == "__main__":
     time_lock_arm = Semaphore(0)
     vision_process = Process(target=ComponentWorker, args=(TestVisonSensor, "test_vision", None, ["color"], data_buffer, time_lock_vision, start_event, finish_event, "vision_worker"))
     arm_process = Process(target=ComponentWorker, args=(TestArmController, "test_arm", None, ["joint", "qpos", "gripper"], data_buffer, time_lock_arm, start_event, finish_event, "arm_worker"))
-    time_scheduler = TimeScheduler([time_lock_vision, time_lock_arm], time_interval=100) # 可以给多个进程同时上锁
+    time_scheduler = TimeScheduler([time_lock_vision, time_lock_arm], time_freq=100) # 可以给多个进程同时上锁
     
     processes.append(vision_process)
     processes.append(arm_process)

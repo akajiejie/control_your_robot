@@ -1,6 +1,6 @@
 import time
 import multiprocessing as mp
-from multiprocessing import Array, Process, Semaphore, Lock
+from multiprocessing import Array, Process, Semaphore, Lock, Value
 from typing import List
 import numpy as np
 
@@ -22,26 +22,31 @@ def worker(process_id: int, process_name: str, time_semaphore: Semaphore, result
         time.sleep(0.01) 
 
 class TimeScheduler:
-    def __init__(self, time_semaphores: List[Semaphore], time_interval=10):
-        self.time_interval = time_interval
+    def __init__(self, time_semaphores: List[Semaphore], time_freq=10):
+        self.time_freq = time_freq
         self.time_semaphores = time_semaphores
         self.process_name = "time_scheduler"
+        self.real_time_accumulate_time_interval = Value('d', 0.0)
+        self.step = Value('i', 0)
 
     def time_worker(self):
         last_time = time.monotonic()
         while True:
             now = time.monotonic()
-            if now - last_time >= 1 / self.time_interval:
+            if now - last_time >= 1 / self.time_freq:
                 if all(sem.get_value() == 0 for sem in self.time_semaphores):
                     for sem in self.time_semaphores:
                         sem.release()  
                         debug_print(self.process_name, "released time slot to one worker", "DEBUG")
                     debug_print(self.process_name, f"the actual time interval is {now - last_time}", "DEBUG")
-                    if now - last_time > 2 / self.time_interval:
-                         debug_print(self.process_name, "The current lock release time has exceeded twice the intended time interval. \
-                                    Please check whether the corresponding component's get() function is taking too long.", "WARNING")
+                    with self.real_time_accumulate_time_interval.get_lock():
+                        self.real_time_accumulate_time_interval.value = self.real_time_accumulate_time_interval.value + (now - last_time)
+                    with self.step.get_lock():
+                        self.step.value += 1
+
+                    if now - last_time > 2 / self.time_freq:
+                         debug_print(self.process_name, "The current lock release time has exceeded twice the intended time interval.\n Please check whether the corresponding component's get() function is taking too long.", "WARNING")
                          debug_print(self.process_name, f"the actual time interval is {now - last_time}", "WARNING")
-                    
                     last_time = now
 
     def start(self):
@@ -55,6 +60,9 @@ class TimeScheduler:
         self.time_locker.join()
         self.time_locker.close()
         self.time_locker = None
+        with self.real_time_accumulate_time_interval.get_lock():
+            self.real_time_average_time_interval = self.real_time_accumulate_time_interval.value / self.step.value
+        debug_print(self.process_name, f"average real time collect interval is: {self.real_time_accumulate_time_interval.value / self.step.value}", "INFO")
 
 if __name__ == "__main__":
     processes = []
@@ -70,7 +78,7 @@ if __name__ == "__main__":
         processes.append(process)
 
     # start time scheduler
-    time_scheduler = TimeScheduler(time_semaphores, time_interval=10)
+    time_scheduler = TimeScheduler(time_semaphores, time_freq=10)
     time_scheduler.start()
 
     # (optional)
