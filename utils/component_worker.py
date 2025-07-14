@@ -19,8 +19,8 @@ class DataBuffer:
         self.buffer[name].append(data)
 
     def get(self):
-        return dict(self.buffer)  # 转回普通 dict 可选
-    
+        return dict(self.buffer)
+        
 def ComponentWorker(component_class, component_name, component_setup_input,component_collect_info, data_buffer: DataBuffer,
                 time_lock: Semaphore, start_event: Event, finish_event: Event, process_name: str):
     """
@@ -118,4 +118,3 @@ if __name__ == "__main__":
             process.join()
             process.close()
     
-    print(data_buffer.get())
