@@ -23,6 +23,8 @@ os.environ["INFO_LEVEL"] = "DEBUG" # DEBUG , INFO, ERROR
 ```bash
 # 多进程(通过时间同步器实现更严格的等时间距采集)
 python example/collect/collect_mp.py
+# 多进程(对每个元件单独进程采集数据)
+python -m utils.component_worker
 # 单线程(会存在一些由于函数执行导致的延迟堆积)
 python example/collect/collect.py
 ```
