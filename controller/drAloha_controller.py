@@ -68,6 +68,23 @@ class DrAlohaController(ArmController):
 
         draloha.torque_factors = [1, 0.2, 0.7, 0.5, 1, 0.5] # 于调节模型扭矩与电机扭矩的比例关系，当重力补偿或零力拖动效果不佳时可用该参数调节
         self.controller=draloha
+    def zero_gravity(self):
+        self.controller.set_torques(id_list=[1,2,3,4,5,6,7], torque_list=[0, 0, 0, 0, 0, 0, 0], param=0, mode=0) # 设置对应关节扭矩
+        angle_list = []
+        angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
+        if angle_speed_torque is None:
+            for i in range(4):
+                angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
+                print("angle_speed_torque retry:",i)
+                if angle_speed_torque is not None:
+                    break
+        if angle_speed_torque is None:
+            pass
+        else:
+            for i in range(6):
+                angle_list.append(angle_speed_torque[i][0])
+            print(angle_list)
+            self.controller.gravity_compensation(angle_list=angle_list)
     def reset(self, start_state):
         # 调用set_position或set_joint就行
         pass
@@ -89,7 +106,7 @@ class DrAlohaController(ArmController):
             }
         state["joint"]=np.array(joint)
         state["qpos"]=np.array(eef)
-        state["gripper"]=gripper*0.001*50
+        state["gripper"]=gripper*0.001*50/0.5
         return state
     
     # 单位为米
@@ -118,23 +135,7 @@ class DrAlohaController(ArmController):
         except:
             pass
         #Zero Gravity Model
-    def zero_gravity(self):
-        self.controller.set_torques(id_list=[1,2,3,4,5,6,7], torque_list=[0, 0, 0, 0, 0, 0, 0], param=0, mode=0) # 设置对应关节扭矩
-        angle_list = []
-        angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
-        if angle_speed_torque is None:
-            for i in range(4):
-                angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
-                print("angle_speed_torque retry:",i)
-                if angle_speed_torque is not None:
-                    break
-        if angle_speed_torque is None:
-            pass
-        else:
-            for i in range(6):
-                angle_list.append(angle_speed_torque[i][0])
-            print(angle_list)
-            self.controller.gravity_compensation(angle_list=angle_list)
+    
 if __name__=="__main__":
     fps=30
     controller=DrAlohaController("test Dr")
