@@ -1,6 +1,6 @@
 import time
 import multiprocessing as mp
-from multiprocessing import Array, Process, Semaphore, Lock
+from multiprocessing import Array, Process, Semaphore, Lock, Value
 from typing import List
 import numpy as np
 
@@ -10,6 +10,9 @@ Release = True
 from utils.data_handler import debug_print
 
 def worker(process_id: int, process_name: str, time_semaphore: Semaphore, result_array: Array, result_lock: Lock):
+    '''
+    测试使用的子类
+    '''
     while True:
         # Block until the scheduler issues an "execution token"
         time_semaphore.acquire()  
@@ -22,30 +25,58 @@ def worker(process_id: int, process_name: str, time_semaphore: Semaphore, result
         time.sleep(0.01) 
 
 class TimeScheduler:
-    def __init__(self, time_semaphores: List[Semaphore], time_interval=10):
-        self.time_interval = time_interval
+    '''
+    时间控制器, 用于同步不同进程之间的信号量
+    time_semaphores: 每个子进程的控制都需要有一个信号量控制循环操作, 这里就是将所有进程的信号量进行控制, List[Semaphore]
+    time_freq: 采集数据的频率, 实际频率可能会稍微低于该频率, 会保存最终采集平均时间间隔在数据采集的config里, int
+    '''
+    def __init__(self, time_semaphores: List[Semaphore], time_freq=10):
+        self.time_freq = time_freq
         self.time_semaphores = time_semaphores
         self.process_name = "time_scheduler"
+        self.real_time_accumulate_time_interval = Value('d', 0.0)
+        self.step = Value('i', 0)
 
     def time_worker(self):
+        last_time = time.monotonic()
         while True:
-            for sem in self.time_semaphores:
-                # Issue "time slice token"
-                sem.release()  
-                debug_print(self.process_name, "released time slot to one worker", "DEBUG")
-            time.sleep(1 / self.time_interval)
+            now = time.monotonic()
+            if now - last_time >= 1 / self.time_freq:
+                if all(sem.get_value() == 0 for sem in self.time_semaphores):
+                    for sem in self.time_semaphores:
+                        sem.release()  
+                        debug_print(self.process_name, "released time slot to one worker", "DEBUG")
+                    debug_print(self.process_name, f"the actual time interval is {now - last_time}", "DEBUG")
+                    with self.real_time_accumulate_time_interval.get_lock():
+                        self.real_time_accumulate_time_interval.value = self.real_time_accumulate_time_interval.value + (now - last_time)
+                    with self.step.get_lock():
+                        self.step.value += 1
+
+                    if now - last_time > 2 / self.time_freq:
+                         debug_print(self.process_name, "The current lock release time has exceeded twice the intended time interval.\n Please check whether the corresponding component's get() function is taking too long.", "WARNING")
+                         debug_print(self.process_name, f"the actual time interval is {now - last_time}", "WARNING")
+                    last_time = now
 
     def start(self):
+        '''
+        开启时间同步器进程
+        '''
         self.time_locker = Process(target=self.time_worker)
         self.time_locker.start()
 
     def stop(self):
+        '''
+        释放该时间同步器进程
+        '''
         for sem in self.time_semaphores:
                 sem.release()  # 防止卡在获取锁
         self.time_locker.terminate()
         self.time_locker.join()
         self.time_locker.close()
         self.time_locker = None
+        with self.real_time_accumulate_time_interval.get_lock():
+            self.real_time_average_time_interval = self.real_time_accumulate_time_interval.value / self.step.value
+        debug_print(self.process_name, f"average real time collect interval is: {self.real_time_accumulate_time_interval.value / self.step.value}", "INFO")
 
 if __name__ == "__main__":
     processes = []
@@ -61,7 +92,7 @@ if __name__ == "__main__":
         processes.append(process)
 
     # start time scheduler
-    time_scheduler = TimeScheduler(time_semaphores, time_interval=10)
+    time_scheduler = TimeScheduler(time_semaphores, time_freq=10)
     time_scheduler.start()
 
     # (optional)

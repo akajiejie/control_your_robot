@@ -22,7 +22,9 @@ os.environ["INFO_LEVEL"] = "DEBUG" # DEBUG , INFO, ERROR
 1. 数据采集测试
 ```bash
 # 多进程(通过时间同步器实现更严格的等时间距采集)
-python example/collect/collect_mp.py
+python example/collect/collect_mp_robot.py
+# 多进程(对每个元件单独进程采集数据)
+python example/collect/collect_mp_component.py
 # 单线程(会存在一些由于函数执行导致的延迟堆积)
 python example/collect/collect.py
 ```
@@ -59,6 +61,7 @@ python -m my_robot.test_robot
 ### 📅 更新记录
 | 日期       | 更新内容                          | 状态     |
 |------------|----------------------------------|----------|
+|2025.7.14   | 🦾添加了多进程的基础组件数据采集支持  | ✅ 已发布  | 
 |2025.6.15   | 🦾添加了完整的PIka遥操机械臂示例  | ✅ 已发布  | 
 | 2025.5.27  | 🧪 添加完善测试样例, 便于程序调试与参考 | ✅ 已发布 |
 | 2025.5.26  | 💻 客户端-服务器通讯实现，远程推理与本地控制 | ✅ 已发布 |

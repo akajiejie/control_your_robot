@@ -10,12 +10,10 @@ __pycache__/
 
 # datasets
 datasets/
+save/
 
 # third_party
 third_party/3D-ViTac_Tactile_Hardware
-save/test/0.hdf5
-save/test/config.json
-data/episode1
 
 execution_logs/
 output/

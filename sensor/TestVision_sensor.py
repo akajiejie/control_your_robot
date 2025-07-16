@@ -13,7 +13,7 @@ class TestVisonSensor(VisionSensor):
         self.name = name
         self.INFO = INFO
     
-    def set_up(self,is_depth = False):
+    def set_up(self, input=None, is_depth = False):
         debug_print(self.name, f"setup success, is_depth={is_depth}",self.INFO)
         self.is_depth = is_depth
 
@@ -31,7 +31,6 @@ class TestVisonSensor(VisionSensor):
                 raise ValueError
             image["depth"] = np.random.randint(0, 256, size=(height, width, 3), dtype=np.uint8)
         debug_print(self.name,f"get image success",self.INFO)
-
         return image
 
     def cleanup(self):

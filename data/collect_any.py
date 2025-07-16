@@ -36,6 +36,22 @@ class CollectAny:
             debug_print("collect_any", f"item {item} not in {controller_name}", "ERROR")
             return None
         
+    def add_extra_condition_info(self, extra_info):
+        save_path = os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/")
+        condition_path = os.path.join(save_path, "./config.json")
+        if os.path.exists(condition_path):
+            with open(condition_path, 'r', encoding='utf-8') as f:
+                self.condition = json.load(f)
+            for key in extra_info.keys():
+                self.condition[key] = extra_info[key]
+        else:
+            if len(self.episode) > 0:
+                for key in self.episode[0].keys():
+                    self.condition[key] = list(self.episode[0][key].keys())
+        with open(condition_path, 'w', encoding='utf-8') as f:
+            json.dump(self.condition, f, ensure_ascii=False, indent=4)
+        
+
     def write(self, only_end=False):
         save_path = os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/")
         if not os.path.exists(save_path):
@@ -43,8 +59,10 @@ class CollectAny:
 
         condition_path = os.path.join(save_path, "./config.json")
         if not os.path.exists(condition_path):
-             for key in self.episode[0].keys():
-                 self.condition[key] = list(self.episode[0][key].keys())
+             if len(self.episode) > 0:
+                for key in self.episode[0].keys():
+                    self.condition[key] = list(self.episode[0][key].keys())
+
              with open(condition_path, 'w', encoding='utf-8') as f:
                  json.dump(self.condition, f, ensure_ascii=False, indent=4)
 

@@ -17,7 +17,7 @@ class TestArmController(ArmController):
         self.INFO = INFO
         self.DoFs = DoFs
     
-    def set_up(self):
+    def set_up(self, input=None):
         debug_print(self.name, f"setup success",self.INFO)
 
     def reset(self, start_state):
