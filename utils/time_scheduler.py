@@ -10,6 +10,9 @@ Release = True
 from utils.data_handler import debug_print
 
 def worker(process_id: int, process_name: str, time_semaphore: Semaphore, result_array: Array, result_lock: Lock):
+    '''
+    测试使用的子类
+    '''
     while True:
         # Block until the scheduler issues an "execution token"
         time_semaphore.acquire()  
@@ -22,6 +25,11 @@ def worker(process_id: int, process_name: str, time_semaphore: Semaphore, result
         time.sleep(0.01) 
 
 class TimeScheduler:
+    '''
+    时间控制器, 用于同步不同进程之间的信号量
+    time_semaphores: 每个子进程的控制都需要有一个信号量控制循环操作, 这里就是将所有进程的信号量进行控制, List[Semaphore]
+    time_freq: 采集数据的频率, 实际频率可能会稍微低于该频率, 会保存最终采集平均时间间隔在数据采集的config里, int
+    '''
     def __init__(self, time_semaphores: List[Semaphore], time_freq=10):
         self.time_freq = time_freq
         self.time_semaphores = time_semaphores
@@ -50,10 +58,16 @@ class TimeScheduler:
                     last_time = now
 
     def start(self):
+        '''
+        开启时间同步器进程
+        '''
         self.time_locker = Process(target=self.time_worker)
         self.time_locker.start()
 
     def stop(self):
+        '''
+        释放该时间同步器进程
+        '''
         for sem in self.time_semaphores:
                 sem.release()  # 防止卡在获取锁
         self.time_locker.terminate()

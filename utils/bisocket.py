@@ -5,7 +5,16 @@ from threading import Thread, Event
 from utils.data_handler import debug_print
 
 class BiSocket:
+    '''
+    用于同步client-server信息的类
+    '''
     def __init__(self, conn: socket.socket, handler, send_back=False):
+        '''
+        输入:
+        conn: 用于通讯的套接字, 要先初始化套接字连接的(ip, port), socket::socket
+        handler: 会执行该函数函数, 函数输入为Dict[Any], function
+        sendback: 如果开启senback就会在执行完handler后将当前执行的信息发给信息发送方, bool
+        '''
         self.conn = conn
         self.handler = handler
         self.send_back = send_back
@@ -65,7 +74,12 @@ class BiSocket:
         finally:
             self.close()
 
+    
     def send(self, data):
+        '''
+        发送信息:
+        data: 发送的信息, Dict[Any]
+        '''
         try:
             serialized = pickle.dumps(data)
             self.conn.sendall(len(serialized).to_bytes(4, 'big') + serialized)
@@ -74,6 +88,9 @@ class BiSocket:
             self.close()
 
     def close(self):
+        '''
+        关闭连接
+        '''
         if self.running.is_set():
             self.running.clear()
             try:
