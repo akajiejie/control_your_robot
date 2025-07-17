@@ -4,7 +4,7 @@ sys.path.append("./")
 from controller.controller import Controller
 from typing import Dict, Any
 
-class HandController(Controller):
+class DexHandController(Controller):
     def __init__(self):
         super().__init__()
         self.controller_type = "robotic_hand"

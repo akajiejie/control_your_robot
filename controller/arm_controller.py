@@ -48,6 +48,8 @@ class ArmController(Controller):
         
         # For action and gripper, use absolute values instead of deltas
         for key, value in move_data.items():
+            if key == "teleop_qpos":
+                self.set_position_teleop(np.array(value))
             if key == "action":
                 self.set_action(np.array(value))
             if key == "gripper":
