@@ -18,12 +18,14 @@ https://github.com/agilexrobotics/pika_ros.git
 '''
 
 class PikaRosSensor(TeleoperationSensor):
+    '''
+    松灵Pika sensor遥操数采设备的ros版本
+    '''
     def __init__(self,name):
         super().__init__()
         self.name = name
     
     def set_up(self, pos_node_name, gripper_node_name, call: Optional[Callable] = None):
-
         self.pos_subscriber = ROSSubscriber(pos_node_name, PoseStamped, call)
 
         self.gripper_subscriber = ROSSubscriber(gripper_node_name, JointState)
@@ -56,18 +58,18 @@ class PikaRosSensor(TeleoperationSensor):
         else:
             qpos = compute_local_delta_pose(self.prev_qpos, qpos)
         
-        # gripper_msg = self.sensor["gripper_subscriber"].get_latest_data()
-        # if gripper_msg is None:
-        #     gripper = None
-        #     debug_print(f"{self.name}", f"getting message gripper from pika error!", "ERROR")
-        # else:
-        # # 归一化
-        #     gripper = (np.array([gripper_msg.position])[0] - 0.3) / 1.7
+        gripper_msg = self.sensor["gripper_subscriber"].get_latest_data()
+        if gripper_msg is None:
+            gripper = None
+            debug_print(f"{self.name}", f"getting message gripper from pika error!", "ERROR")
+        else:
+        # 归一化
+            gripper = (np.array([gripper_msg.position])[0] - 0.3) / 1.7
 
         qpos = compute_rotate_matrix(qpos)
         return {
             "end_pose":qpos,
-            # "gripper":gripper
+            "gripper":gripper
         }
 
     def reset(self):

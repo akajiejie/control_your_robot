@@ -78,7 +78,7 @@ class RealsenseSensor(VisionSensor):
                     raise RuntimeError("Failed to get depth frame.")
                 depth_image = np.asanyarray(depth_frame.get_data()).copy()
                 image["depth"] = depth_image
-
+        
         return image
 
     def cleanup(self):

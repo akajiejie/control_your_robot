@@ -90,8 +90,8 @@ class RealsenseSensor(VisionSensor):
                     raise RuntimeError("Failed to get depth frame.")
                 depth_image = np.asanyarray(depth_frame.get_data()).copy()
                 image["depth"] = depth_image
-
         return image
+
     def _update_frames(self):
         """独立线程持续获取帧数据"""
         try:
@@ -120,7 +120,7 @@ class RealsenseSensor(VisionSensor):
                 raise
         except Exception as e:
             print(f"{self.name} 捕获异常: {str(e)}")
-        #
+    
     def get_image_mp(self):
         """非阻塞获取最新帧"""
         return self.frame_buffer[-1] if self.frame_buffer else None
