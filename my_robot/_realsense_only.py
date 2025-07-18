@@ -3,8 +3,11 @@ sys.path.append("./")
 
 import numpy as np
 
+from my_robot.base_robot import Robot
+
 from controller.Piper_controller import PiperController
 from sensor.Realsense_sensor import RealsenseSensor
+
 from data.collect_any import CollectAny
 
 # 组装你的控制器
@@ -42,60 +45,30 @@ condition = {
 }
 
 
-class Camera:
+class Camera(Robot):
     def __init__(self, start_episode=0):
-        self.condition = condition
-        self.image_sensors = {
-            # "cam_head": RealsenseSensor("cam_head"),
-            "cam_wrist": RealsenseSensor("cam_wrist"),
-        }
-        self.collection = CollectAny(condition, start_episode=0)
+        super().__init__(start_episode)
 
+        self.condition = condition
+        self.sensors = {
+            "image":{
+                # "cam_head": RealsenseSensor("cam_head"),
+                "cam_wrist": RealsenseSensor("cam_wrist"),
+            }
+        }
     # ============== 初始化相关 ==============
 
     def reset(self):
         return
     
     def set_up(self):
-        # self.image_sensors["cam_head"].set_up(CAMERA_SERIALS["head"])
-        self.image_sensors["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])
+        # self.sensors["image"]["cam_head"].set_up(CAMERA_SERIALS["head"])
+        self.sensors["image"]["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])
 
-        self.set_collect_type(["color"])
+        self.set_collect_type({"image": ["color"]
+                               })
+
         print("set up success!")
-
-    def set_collect_type(self,IMG_INFO_NAME):
-        for sensor in self.image_sensors.values():
-            sensor.set_collect_info(IMG_INFO_NAME)
-
-    # ============== 机械臂判定相关 ============== 
-    def is_start(self):
-        return True
-        if abs(self.arm_controllers["left_arm"].get_state()["joint"] - np.array(START_POSITION_ANGLE_LEFT_ARM)) > 0.01:
-            return True
-        else:
-            return False
-        
-    # ============== 数据操作相关 ==============
-    def get(self):
-        controller_data = {}
-        sensor_data = {}
-        if self.image_sensors is not None:  
-            for sensor_name, sensor in self.image_sensors.items():
-                sensor_data[sensor_name] = sensor.get()
-        return [controller_data, sensor_data]
-    
-    def collect(self, data):
-        self.collection.collect(data[0], data[1])
-    
-    def finish(self):
-        self.collection.write()
-    
-    # ============== 运动操作相关 ==============
-    def set_action(self, action):
-        pass
-    
-    def move(self, move_data):  
-        self.arm_controllers["left_arm"].move(move_data["left_arm"],is_delta=False)
 
 if __name__=="__main__":
     import time

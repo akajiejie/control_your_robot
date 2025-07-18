@@ -51,7 +51,6 @@ class CollectAny:
         with open(condition_path, 'w', encoding='utf-8') as f:
             json.dump(self.condition, f, ensure_ascii=False, indent=4)
         
-
     def write(self, only_end=False):
         save_path = os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/")
         if not os.path.exists(save_path):

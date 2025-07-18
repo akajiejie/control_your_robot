@@ -6,7 +6,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 
-from utils.data_handler import *
+from utils.data_handler import hdf5_groups_to_dict
 
 import cv2
 
