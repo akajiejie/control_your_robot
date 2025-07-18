@@ -67,12 +67,16 @@ class Robot:
     def finish(self):
         self.collection.write()
     
-    def move(self, move_data):
+    def move(self, move_data, key_banned=None):
         if move_data is None:
             return
         for controller_type_name, controller_type in move_data.items():
             for controller_name, controller_action in controller_type.items():
-                self.controllers[controller_type_name][controller_name].move(controller_action,is_delta=False)
+                if key_banned is None:
+                    self.controllers[controller_type_name][controller_name].move(controller_action,is_delta=False)
+                else:
+                    controller_action = remove_duplicate_keys(controller_action, key_banned)
+                    self.controllers[controller_type_name][controller_name].move(controller_action,is_delta=False)
     
     def is_start(self):
         debug_print(self.name, "your are using default func: is_start(), this will return True only", "DEBUG")
@@ -96,14 +100,19 @@ class Robot:
         for ep in episode:
             while now_time - last_time < time_interval:
                 now_time = time.monotonic()
-            self.play_once(ep)
+            self.play_once(ep, key_banned)
             last_time = time.monotonic()
     
-    def play_once(self, episode: Dict[str, Any]):
-        for controller_group in self.controllers.values():
+    def play_once(self, episode: Dict[str, Any], key_banned=None):
+        for controller_type, controller_group in self.controllers.items():
             for controller_name, controller in controller_group.items():
                 if controller_name in episode:
-                    controller.move(episode[controller_name], is_delta=False)
+                    move_data = {
+                        controller_type: {
+                            controller_name: episode[controller_name],
+                        },
+                    }
+                    self.move(move_data, key_banned=key_banned)
 
 def get_array_length(data: Dict[str, Any]) -> int:
     """获取最外层np.array的长度"""
@@ -129,3 +138,6 @@ def split_nested_dict(data: Dict[str, Any], idx: int) -> Dict[str, Any]:
 def dict_to_list(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     length = get_array_length(data)
     return [split_nested_dict(data, i) for i in range(length)]
+
+def remove_duplicate_keys(source_dict: dict[str, any], keys_to_remove: list[str]) -> dict[str, any]:
+    return {k: v for k, v in source_dict.items() if k not in keys_to_remove}

@@ -72,7 +72,7 @@ if __name__ == "__main__":
     robot.finish()
 
     data_path = os.path.join(condition["save_path"], condition["task_name"], "0.hdf5")
-    # robot.replay(data_path)
+    robot.replay(data_path, key_banned=["qpos"])
 
     move_data = {
         "arm":{
