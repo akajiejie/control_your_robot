@@ -81,7 +81,8 @@ class MyRobot(Robot):
         self.sensors["teleop"]["pika_right"].set_up("/pika_pose_r","/gripper_r/joint_states")
 
         self.set_collect_type({"arm": ["joint","qpos","gripper"],
-                               "iamge": ["color"]
+                               "iamge": ["color"],
+                               "teleop": ["end_pose", "gripper"],
                                })
         
         debug_print("robot", "set up success!", "INFO")
@@ -145,9 +146,9 @@ if __name__ == "__main__":
             move_data = {
                 "arm":{
                     "left_arm": {
-                        "qpos":l_data},
+                        "teleop_qpos":l_data},
                     "right_arm": {
-                        "qpos":r_data},
+                        "teleop_qpos":r_data},
                 }
             }
             

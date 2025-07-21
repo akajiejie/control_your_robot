@@ -23,14 +23,16 @@ def input_transform(data):
 
 def output_transform(data):
     move_data = {
-        "left_arm":{
-            "joint":data[:6],
-            "gripper":data[6]
+        "arm":{
+            "left_arm":{
+                "joint":data[:6],
+                "gripper":data[6]
+            },
+            "right_arm":{
+                "joint":data[7:13],
+                "gripper":data[13]
+            }
         },
-        "right_arm":{
-            "joint":data[7:13],
-            "gripper":data[13]
-        }
     }
     return move_data
 
@@ -43,6 +45,7 @@ class Client:
         self.bisocket = bisocket
 
     def move(self, message):
+        print(message)
         action_chunk = message["action_chunk"]
         action_chunk = np.array(action_chunk)
 
