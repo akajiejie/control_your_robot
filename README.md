@@ -8,7 +8,7 @@
 ## 更新日志(只保留最新5条, 完整放在WIKI主页)
 ### 7.29
 1. 添加了ROS2支持, 为其添加案例controller/Bunker_controller 
-2. 为collect_any添加了关键词move_check, 用于自动筛除无运动部分数据,自动开启 |
+2. 为collect_any添加了关键词move_check, 用于自动筛除无运动部分数据,自动开启
 
 ### 7.18
 1. 为`my_robot`中添加了`base_robot`基类, 便于快速导入自己的机器人, 无需重复定义多余函数
