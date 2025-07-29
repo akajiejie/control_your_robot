@@ -38,7 +38,7 @@ def RobotWorker(robot_class, start_episode,
             if finish_event.is_set():
                 break  # Prevent exiting immediately after acquire before processing data
 
-            debug_print(process_name, "Time lock acquired. Processing data...")
+            debug_print(process_name, "Time lock acquired. Processing data...", "DEBUG")
 
             try:
                 data = robot.get()
