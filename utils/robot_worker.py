@@ -23,6 +23,8 @@ def RobotWorker(robot_class, start_episode,
     robot = robot_class(start_episode=start_episode)
     robot.set_up()
     
+    debug_print(process_name ,"Press Enter to start...","INFO")
+
     last_time = time.monotonic()
     while not start_event.is_set():
         now = time.monotonic()

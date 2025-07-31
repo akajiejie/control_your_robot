@@ -51,6 +51,7 @@ def ComponentWorker(component_class, component_name, component_setup_input,compo
     
     component.set_collect_info(component_collect_info)
     
+    debug_print(process_name ,"Press Enter to start...","INFO")
     last_time = time.monotonic()
     while not start_event.is_set():
         now = time.monotonic()
