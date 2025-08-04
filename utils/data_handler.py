@@ -205,10 +205,20 @@ def debug_print(name, info, level="INFO"):
 def is_enter_pressed():
     return select.select([sys.stdin], [], [], 0)[0] and sys.stdin.read(1) == '\n'    
 
-if __name__=="__main__":
-    s = np.array([0.1, 0.2, 0.3, 0., 0., 0.1])
-    print(compute_rotate_matrix(s))
+class DataBuffer:
+    '''
+    一个用于共享存储不同组件采集的数据的信息的类
+    输入:
+    manager: 创建的一个独立的控制器, multiprocessing::Manager
+    '''
+    def __init__(self, manager):
+        self.manager = manager
+        self.buffer = manager.dict()
 
-    base_pose = np.array([0, 0, 0, 0, 0, 1])
-    target_pose = np.array([1, 1, 1, 1, 0, 0])
-    print(compute_local_delta_pose(base_pose, target_pose))
+    def collect(self, name, data):
+        if name not in self.buffer:
+            self.buffer[name] = self.manager.list()
+        self.buffer[name].append(data)
+
+    def get(self):
+        return dict(self.buffer)

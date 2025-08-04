@@ -10,8 +10,8 @@ from sensor.TestVision_sensor import TestVisonSensor
 from controller.TestArm_controller import TestArmController
 
 from utils.time_scheduler import TimeScheduler
-from utils.component_worker import DataBuffer, ComponentWorker
-from utils.data_handler import is_enter_pressed
+from utils.component_worker import ComponentWorker
+from utils.data_handler import is_enter_pressed, DataBuffer
 
 from typing import Dict, List
 

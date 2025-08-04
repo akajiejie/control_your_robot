@@ -4,12 +4,13 @@ from controller import *
 import time
 from typing import *
 
-from multiprocessing import Event, Semaphore
+from multiprocessing import Event, Semaphore, Manager
 
-from utils.data_handler import debug_print
+from utils.data_handler import debug_print, DataBuffer
 
 def RobotWorker(robot_class, start_episode,
-                time_lock: Semaphore, start_event: Event, finish_event: Event, process_name: str):
+                time_lock: Semaphore, start_event: Event, finish_event: Event, process_name: str, 
+                data_buffer: DataBuffer = None, move_data: Manager = None):
     '''
     对于实现的机器人类进行多进程数据采集, 可以对多个机器人进行.
     输入:
@@ -45,6 +46,12 @@ def RobotWorker(robot_class, start_episode,
             try:
                 data = robot.get()
                 robot.collect(data)
+
+                if data_buffer is not None:
+                    data_buffer.collect(robot.name, {**data[0], **data[1]})
+
+                if move_data is not None:
+                    robot.move(move_data)
             except Exception as e:
                 debug_print(process_name, f"Error: {e}", "ERROR")
 
@@ -55,6 +62,6 @@ def RobotWorker(robot_class, start_episode,
         debug_print(process_name, "Writing success!","DEBUG")
         
     except KeyboardInterrupt:
-        debug_print(process_name, "Worker terminated by user.")
+        debug_print(process_name, "Worker terminated by user.", "WARNING")
     finally:
-        debug_print(process_name, "Worker exiting.")
+        debug_print(process_name, "Worker exiting.", "INFO")

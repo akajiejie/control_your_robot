@@ -6,26 +6,7 @@ from typing import *
 
 from multiprocessing import Event, Semaphore, Process, Value, Manager
 
-from utils.data_handler import debug_print
-
-class DataBuffer:
-    '''
-    一个用于共享存储不同组件采集的数据的信息的类
-    输入:
-    manager: 创建的一个独立的控制器, multiprocessing::Manager
-    '''
-    def __init__(self, manager):
-        self.manager = manager
-        self.buffer = manager.dict()
-
-    def collect(self, name, data):
-        if name not in self.buffer:
-            self.buffer[name] = self.manager.list()
-        self.buffer[name].append(data)
-
-    def get(self):
-        return dict(self.buffer)
-
+from utils.data_handler import debug_print, DataBuffer
 
 def ComponentWorker(component_class, component_name, component_setup_input,component_collect_info, data_buffer: DataBuffer,
                 time_lock: Semaphore, start_event: Event, finish_event: Event, process_name: str):
@@ -80,9 +61,9 @@ def ComponentWorker(component_class, component_name, component_setup_input,compo
         debug_print(process_name, "Finish event triggered. Finalizing...","INFO")
         
     except KeyboardInterrupt:
-        debug_print(process_name, "Worker terminated by user.")
+        debug_print(process_name, "Worker terminated by user.", "WARNING")
     finally:
-        debug_print(process_name, "Worker exiting.")
+        debug_print(process_name, "Worker exiting.", "INFO")
     
 if __name__ == "__main__":
     import os

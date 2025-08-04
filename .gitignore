@@ -12,6 +12,8 @@ __pycache__/
 datasets/
 save/
 
+example/teleop
+
 # third_party
 third_party/3D-ViTac_Tactile_Hardware
 
