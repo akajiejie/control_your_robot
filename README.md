@@ -10,7 +10,7 @@
 1. 新增了`Worker`类, 方便自定义多进程操作, 并提供了多进程同步的主从臂遥操示例`example/teleop/master_slave_arm_teleop.py`.  
     该组件提供了自定义接口:
     1. **handler():** 用于处理循环操作(如循环获取机械臂数据)
-    2. **finish():**用于处理进程结束时操作(如保存采集数据)
+    2. **finish():** 用于处理进程结束时操作(如保存采集数据)
     3. **component_init():** 用于初始化组件(如果初始化机械臂, 或者急切人)
     4. **next_to():** 用于声明链式操作的下一个操作, 如果是最后一个, 则只需要将其的`next_event`交给`time_scheduler`
 2. 修改了`time_scheduler`类, 将原本进程同步机制从Sem改成Event, 并添加了`end_event=`, 如果初始化了该参数, 则会使用链式操作
