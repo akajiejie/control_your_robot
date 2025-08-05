@@ -25,7 +25,7 @@ if __name__ == "__main__":
         is_start = False
         
         # 重置进程
-        time_lock = Semaphore(0)
+        time_lock = Event()
         start_event = Event()
         finish_event = Event()
         start_episode = i

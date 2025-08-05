@@ -8,8 +8,8 @@ from multiprocessing import Event, Semaphore, Process, Value, Manager
 
 from utils.data_handler import debug_print, DataBuffer
 
-def ComponentWorker(component_class, component_name, component_setup_input,component_collect_info, data_buffer: DataBuffer,
-                time_lock: Semaphore, start_event: Event, finish_event: Event, process_name: str):
+def ComponentWorker(component_class, component_name, component_setup_input, component_collect_info, data_buffer: DataBuffer,
+                time_lock: Event, start_event: Event, finish_event: Event, process_name: str):
     '''
     组件级别的多进程同步器, 用于多进程数据采集, 如果希望是多进程的同步控制也可以稍微改下代码添加一个共享的信号输入
     输入:
@@ -44,7 +44,7 @@ def ComponentWorker(component_class, component_name, component_setup_input,compo
     debug_print(process_name, "To finish this episode, please press Enter. ","INFO")
     try:
         while not finish_event.is_set():
-            time_lock.acquire()  
+            time_lock.wait()  
             if finish_event.is_set():
                 break  # Prevent exiting immediately after acquire before processing data
 
@@ -55,7 +55,8 @@ def ComponentWorker(component_class, component_name, component_setup_input,compo
                 data_buffer.collect(component.name, data)
             except Exception as e:
                 debug_print(process_name, f"Error: {e}", "ERROR")
-
+            
+            time_lock.clear()
             debug_print(process_name, "Data processed. Waiting for next time slot.", "DEBUG")
 
         debug_print(process_name, "Finish event triggered. Finalizing...","INFO")

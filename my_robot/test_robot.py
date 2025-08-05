@@ -40,8 +40,8 @@ class TestRobot(Robot):
         self.collection = CollectAny(condition, start_episode=start_episode)
     
     def reset(self):
-        self.controllers["left_arm"].reset(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
-        self.controllers["right_arm"].reset(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.controllers["arm"]["left_arm"].reset(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
+        self.controllers["arm"]["right_arm"].reset(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     
     def set_up(self):
         self.controllers["arm"]["left_arm"].set_up()
@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     robot.get()
 
-    for i in range(100):
+    for i in range(10):
         data = robot.get()
         robot.collect(data)
     robot.finish()
