@@ -64,8 +64,8 @@ class Robot:
     def collect(self, data):
         self.collection.collect(data[0], data[1])
     
-    def finish(self):
-        self.collection.write()
+    def finish(self, episode_id=None):
+        self.collection.write(episode_id)
     
     def move(self, move_data, key_banned=None):
         if move_data is None:
@@ -86,7 +86,7 @@ class Robot:
         debug_print(self.name, "your are using default func: reset(), this will return True only", "DEBUG")
         return True
 
-    def replay(self, data_path, key_banned=None):
+    def replay(self, data_path, key_banned=None, is_collect=False, episode_id=None):
         parent_dir = os.path.dirname(data_path)
         config_path = os.path.join(parent_dir, "config.json")
 
@@ -100,8 +100,13 @@ class Robot:
         for ep in episode:
             while now_time - last_time < time_interval:
                 now_time = time.monotonic()
+            if is_collect:
+                data = self.get()
+                self.collect(data)
             self.play_once(ep, key_banned)
             last_time = time.monotonic()
+        if is_collect:
+            self.finish(episode_id)
     
     def play_once(self, episode: Dict[str, Any], key_banned=None):
         for controller_type, controller_group in self.controllers.items():

@@ -63,7 +63,7 @@ class CollectAny:
         with open(condition_path, 'w', encoding='utf-8') as f:
             json.dump(self.condition, f, ensure_ascii=False, indent=4)
         
-    def write(self):
+    def write(self, episode_id=None):
         save_path = os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/")
         if not os.path.exists(save_path):
             os.makedirs(save_path)
@@ -76,8 +76,10 @@ class CollectAny:
 
              with open(condition_path, 'w', encoding='utf-8') as f:
                  json.dump(self.condition, f, ensure_ascii=False, indent=4)
-
-        hdf5_path = os.path.join(save_path, f"{self.episode_index}.hdf5")
+        if not episode_id is None:
+            hdf5_path = os.path.join(save_path, f"{episode_id}.hdf5")
+        else:
+            hdf5_path = os.path.join(save_path, f"{self.episode_index}.hdf5")
         with h5py.File(hdf5_path, "w") as f:
             obs = f
             for controller_name in self.episode[0].keys():

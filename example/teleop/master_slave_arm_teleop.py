@@ -66,7 +66,7 @@ if __name__ == "__main__":
         master = MasterWorker("master_arm", start_event, end_event)
         slave = SlaveWorker("slave_arm", start_event, end_event, master.data_buffer)
         
-        time_scheduler = TimeScheduler([master.forward_event], time_freq=10, end_Events=[slave.next_event])
+        time_scheduler = TimeScheduler([master.forward_event], time_freq=30, end_Events=[slave.next_event])
         
         master.next_to(slave)
 
