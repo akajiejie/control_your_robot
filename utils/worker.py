@@ -75,16 +75,17 @@ class Worker:
                     debug_print(self.process_name, "if this worker is not the end, you should use next_to() to build up a chain of process.", "ERROR")
                     break
                 else:
-                    self.next_event.set()
-                
+                    self.next_event.set()                
                 debug_print(self.process_name, "Data processed. Waiting for next time slot.", "DEBUG")
 
             debug_print(self.process_name, "Finish event triggered. Finalizing...","INFO")
-            
+            self.finish()
+
         except KeyboardInterrupt:
             debug_print(self.process_name, "Worker terminated by user.", "WARNING")
+        
         finally:
-            self.finish()
+            # self.finish()
             self.next_event.set()
             debug_print(self.process_name, "Worker exiting.", "INFO")
 
