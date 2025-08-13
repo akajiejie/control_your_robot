@@ -23,7 +23,7 @@ if __name__ == "__main__":
         robot.reset()
         debug_print("main", "Press Enter to start...", "INFO")
         while not robot.is_start() or not is_enter_pressed():
-            time.sleep(1/robot.condition["save_interval"])
+            time.sleep(1/robot.condition["save_freq"])
         
         debug_print("main", "Press Enter to finish...", "INFO")
 
@@ -35,4 +35,4 @@ if __name__ == "__main__":
                 robot.finish()
                 break
                 
-            time.sleep(1/robot.condition["save_interval"])
+            time.sleep(1/robot.condition["save_freq"])
