@@ -54,6 +54,8 @@ class Worker:
             if now - last_time > 5:  
                 debug_print(self.process_name ,"Press Enter to start...","INFO")
                 last_time = now
+            else:
+                time.sleep(0.001)
             
         debug_print(self.process_name, "Get start Event, start collecting...","INFO")
         debug_print(self.process_name, "To finish this episode, please press Enter. ","INFO")

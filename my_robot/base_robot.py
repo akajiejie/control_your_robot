@@ -115,6 +115,7 @@ class Robot:
         for ep in episode:
             while now_time - last_time < time_interval:
                 now_time = time.monotonic()
+                time.sleep(0.001)
             if is_collect:
                 data = self.get()
                 self.collect(data)
