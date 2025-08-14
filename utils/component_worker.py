@@ -15,7 +15,8 @@ def ComponentWorker(component_class_path,component_class_name , component_name, 
     '''
     组件级别的多进程同步器, 用于多进程数据采集, 如果希望是多进程的同步控制也可以稍微改下代码添加一个共享的信号输入
     输入:
-    component_class: 你的组件类名称, 可以自定义的是controller / sensor, str
+    component_class_path: 你的组件类的索引路径, from [1] import [2]中的[1], str
+    component_class_name:你的组件类的名称, from [1] import [2]中的[2], str 
     component_name: 你希望组件的名称, 用于对应组件info的输出, str
     component_setup_input: 组件初始化需要设置的信息, List[Any]
     component_collect_info: 组件采集的数据种类, List[str]
