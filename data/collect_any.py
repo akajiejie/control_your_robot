@@ -42,6 +42,8 @@ class CollectAny:
                 else:
                     debug_print("collect_any", f"robot is not moving, skip this frame!", "INFO")
                 self.last_controller_data = controllers_data
+        else:
+            self.episode.append(episode_data)
     
     def get_item(self, controller_name, item):
         if item in self.episode[0][controller_name]:
