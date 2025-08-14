@@ -7,7 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 
-
 import math
 
 def get_random_hdf5(path, n):
@@ -33,7 +32,7 @@ def read_hdf5(hdf5_path):
     episode = hdf5_groups_to_dict(hdf5_path)
     return episode
 
-def plot_6d_dual_episodes(episode_data_list, save_path, required_keys, suptitle=None):
+def plot_6d_dual_episodes(episode_data_list, save_path, required_keys, args, suptitle=None):
     """
     绘制多 episode 的双臂 6D 数据
     左臂虚线，右臂实线
@@ -72,18 +71,26 @@ def plot_6d_dual_episodes(episode_data_list, save_path, required_keys, suptitle=
     for i, key in enumerate(required_keys):
         ax = axes[i]
         for ep_idx, ep_data in enumerate(episode_data_list):
-            left, right = ep_data[key]
-            max_len = max(len(left), len(right))
+            if args.is_dual:
+                left, right = ep_data[key]
+            else:
+                left, right = ep_data[key], None
+            
+            max_len = max(len(left), len(right)) if right is not None else len(left)
             t = np.linspace(0, max_len-1, max_len)
             left_plot = np.interp(np.arange(max_len), np.arange(len(left)), left)
-            right_plot = np.interp(np.arange(max_len), np.arange(len(right)), right)
+            right_plot = np.interp(np.arange(max_len), np.arange(len(right)), right) if right is not None else None
             # 绘图
             l_line, = ax.plot(t, left_plot,  linestyle='--', color=colors[ep_idx])
-            r_line, = ax.plot(t, right_plot, linestyle='-',  color=colors[ep_idx])
+            if right is not None:
+                r_line, = ax.plot(t, right_plot, linestyle='-.',  color=colors[ep_idx])
+            else:
+                r_line = None
+            
             # 只在第一个子图收集 legend
             if i == 0:
                 legend_handles.append((l_line, f"Left arm ep{ep_idx+1}"))
-                legend_handles.append((r_line, f"Right arm ep{ep_idx+1}"))
+                legend_handles.append((r_line, f"Right arm ep{ep_idx+1}")) if right is not None else None
         ax.set_title(required_keys[i])
         ax.set_ylabel(required_keys[i])
         ax.grid(True, linestyle='--', alpha=0.3)
@@ -129,7 +136,7 @@ def parse_args():
         "--is_dual",
         type=bool,
         required=False,
-        default=True,
+        default=False,
         help="是否为双臂"
     )
 
@@ -198,7 +205,10 @@ if __name__ == "__main__":
                     else:
                         data[keys[i]] = (episode["left_arm"][opt][0].flatten(), episode["right_arm"][opt][0].flatten())
                 else:
-                    raise NotImplementedError("error")
+                    if len(key) > 1:
+                        data[keys[i]] = (episode["left_arm"][opt][:,i].flatten())
+                    else:
+                        data[keys[i]] = (episode["left_arm"][opt][0].flatten())
         
         data_list.append(data)
-    plot_6d_dual_episodes(data_list, "save/result_multi.jpg", required_keys, suptitle="Dual-arm 6-DOF Trajectory")
+    plot_6d_dual_episodes(data_list, "save/result_multi.jpg", required_keys, args, suptitle="Dual-arm 6-DOF Trajectory")
