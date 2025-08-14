@@ -13,6 +13,9 @@
 4. 添加数据快速完整性检验
 
 ## 更新日志(只保留最新5条, 完整放在WIKI主页)
+### 8.14
+1. 添加了`Cv_sensor`, `VisionROS_sensor`, 并在部分采集数据过程中的高频轮询中加入了time.sleep(0.001), 降低了对CPU的性能占用
+2. 修改了多进程的操作, 现在可以在多进程中加入ROS操作了
 
 ### 8.5
 1. 新增了`Worker`类, 方便自定义多进程操作, 并提供了多进程同步的主从臂遥操示例`example/teleop/master_slave_arm_teleop.py`.  
