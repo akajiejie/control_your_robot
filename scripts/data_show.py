@@ -201,4 +201,4 @@ if __name__ == "__main__":
                     raise NotImplementedError("error")
         
         data_list.append(data)
-    plot_6d_dual_episodes(data_list, "result_multi.jpg", required_keys, suptitle="Dual-arm 6-DOF Trajectory")
+    plot_6d_dual_episodes(data_list, "save/result_multi.jpg", required_keys, suptitle="Dual-arm 6-DOF Trajectory")
