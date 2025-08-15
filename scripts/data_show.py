@@ -200,12 +200,12 @@ if __name__ == "__main__":
             for i in range(len(keys)):
                 
                 if is_dual:
-                    if len(key) > 1:
+                    if len(keys) > 1:
                         data[keys[i]] = (episode["left_arm"][opt][:,i].flatten(), episode["right_arm"][opt][:,i].flatten())
                     else:
                         data[keys[i]] = (episode["left_arm"][opt][0].flatten(), episode["right_arm"][opt][0].flatten())
                 else:
-                    if len(key) > 1:
+                    if len(keys) > 1:
                         data[keys[i]] = (episode["left_arm"][opt][:,i].flatten())
                     else:
                         data[keys[i]] = (episode["left_arm"][opt][0].flatten())
