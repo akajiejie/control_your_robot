@@ -90,11 +90,6 @@ class Robot:
     def show_pic(self, data_path, pic_name):
         parent_dir = os.path.dirname(data_path)
         config_path = os.path.join(parent_dir, "config.json")
-        
-        with open(config_path, 'r', encoding='utf-8') as f:
-            condition = json.load(f)
-        
-        # time_interval = 1.0 / condition['save_freq']
 
         episode = dict_to_list(hdf5_groups_to_dict(data_path))
         for ep in episode:
@@ -119,6 +114,7 @@ class Robot:
             if is_collect:
                 data = self.get()
                 self.collect(data)
+            
             self.play_once(ep, key_banned)
             last_time = time.monotonic()
         if is_collect:
@@ -134,6 +130,19 @@ class Robot:
                         },
                     }
                     self.move(move_data, key_banned=key_banned)
+
+    # def eval(self, data_path, process):
+    #     l2_norm = []
+    #     episode = dict_to_list(hdf5_groups_to_dict(data_path))
+    #     for i in len(episode):
+    #         ep = episode[i]
+    #         target_action, ation = process(ep)
+
+    #         # 计算平均偏差
+    #         l2_norm.append(np.mean((np.linalg.norm(target_action - ation, ord=2))))
+
+    #     l2_norm = np.array(l2_norm)
+    #     return np.mean(l2_norm)
 
 def get_array_length(data: Dict[str, Any]) -> int:
     """获取最外层np.array的长度"""
