@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     robot = TestRobot()
     robot.set_up()
-    num_episode = 10
+    num_episode = 5
     robot.condition["task_name"] = "my_test"
 
     for _ in range(num_episode):
@@ -27,6 +27,8 @@ if __name__ == "__main__":
         
         debug_print("main", "Press Enter to finish...", "INFO")
 
+        avg_collect_time = 0.0
+        collect_num = 0
         while True:
             data = robot.get()
             robot.collect(data)
@@ -35,4 +37,16 @@ if __name__ == "__main__":
                 robot.finish()
                 break
                 
-            time.sleep(1/robot.condition["save_freq"])
+            last_time = time.monotonic()
+            collect_num += 1
+            while True:
+                now = time.monotonic()
+                if now -last_time > 1/robot.condition["save_freq"]:
+                    avg_collect_time += now -last_time
+                    break
+                else:
+                    time.sleep(0.001)
+        extra_info = {}
+        avg_collect_time = avg_collect_time / collect_num
+        extra_info["avg_time_interval"] = avg_collect_time
+        robot.collection.add_extra_condition_info(extra_info)
