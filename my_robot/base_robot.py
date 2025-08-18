@@ -131,19 +131,6 @@ class Robot:
                     }
                     self.move(move_data, key_banned=key_banned)
 
-    # def eval(self, data_path, process):
-    #     l2_norm = []
-    #     episode = dict_to_list(hdf5_groups_to_dict(data_path))
-    #     for i in len(episode):
-    #         ep = episode[i]
-    #         target_action, ation = process(ep)
-
-    #         # 计算平均偏差
-    #         l2_norm.append(np.mean((np.linalg.norm(target_action - ation, ord=2))))
-
-    #     l2_norm = np.array(l2_norm)
-    #     return np.mean(l2_norm)
-
 def get_array_length(data: Dict[str, Any]) -> int:
     """获取最外层np.array的长度"""
     for value in data.values():
