@@ -17,7 +17,6 @@ from data.filelock import FileLock
 from data.hdf5_vla_dataset import HDF5VLADataset
 from train.image_corrupt import image_corrupt
 
-
 def get_clean_item(chunk_dir):
     """
     Get indexes of clean items in a chunk.

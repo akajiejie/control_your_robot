@@ -65,7 +65,8 @@ class TimeScheduler:
                          debug_print(self.process_name, "The current lock release time has exceeded twice the intended time interval.\n Please check whether the corresponding component's get() function is taking too long.", "WARNING")
                          debug_print(self.process_name, f"the actual time interval is {now - last_time}", "WARNING")
                     last_time = now
-
+                else:
+                    time.sleep(0.001)
     def start(self):
         '''
         开启时间同步器进程

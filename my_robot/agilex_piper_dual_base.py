@@ -49,8 +49,10 @@ class PiperDual(Robot):
         super().__init__(start_episode)
 
         self.controllers = {
-            "left_arm": PiperController("left_arm"),
-            "right_arm": PiperController("right_arm"),
+            "arm":{
+                "left_arm": PiperController("left_arm"),
+                "right_arm": PiperController("right_arm"),
+            }
         }
         self.sensors = {
             "image": {

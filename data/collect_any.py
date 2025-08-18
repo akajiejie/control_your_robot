@@ -6,6 +6,8 @@ each controller/sensor corresponds to a separate group.
 import sys
 sys.path.append("./")
 
+import threading, os
+
 from utils.data_handler import debug_print
 
 import os
@@ -40,6 +42,8 @@ class CollectAny:
                 else:
                     debug_print("collect_any", f"robot is not moving, skip this frame!", "INFO")
                 self.last_controller_data = controllers_data
+        else:
+            self.episode.append(episode_data)
     
     def get_item(self, controller_name, item):
         if item in self.episode[0][controller_name]:
@@ -55,7 +59,15 @@ class CollectAny:
             with open(condition_path, 'r', encoding='utf-8') as f:
                 self.condition = json.load(f)
             for key in extra_info.keys():
-                self.condition[key] = extra_info[key]
+                if key in self.condition.keys():
+                    value = self.condition[key]
+                    if not isinstance(value, list):
+                        value = [value]
+                    value.append(extra_info[key])
+                    
+                    self.condition[key] = value
+                else:
+                    self.condition[key] = extra_info[key]
         else:
             if len(self.episode) > 0:
                 for key in self.episode[0].keys():
@@ -80,8 +92,12 @@ class CollectAny:
             hdf5_path = os.path.join(save_path, f"{episode_id}.hdf5")
         else:
             hdf5_path = os.path.join(save_path, f"{self.episode_index}.hdf5")
+        
+        # print(f"WRITE called in PID={os.getpid()} TID={threading.get_ident()}")
         with h5py.File(hdf5_path, "w") as f:
             obs = f
+            # print(self.episode[0])
+            print(self.episode[0].keys())
             for controller_name in self.episode[0].keys():
                 controller_group = obs.create_group(controller_name)
                 for item in self.episode[0][controller_name].keys():
