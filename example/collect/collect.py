@@ -30,6 +30,8 @@ if __name__ == "__main__":
         avg_collect_time = 0.0
         collect_num = 0
         while True:
+            last_time = time.monotonic()
+
             data = robot.get()
             robot.collect(data)
             
@@ -37,7 +39,6 @@ if __name__ == "__main__":
                 robot.finish()
                 break
                 
-            last_time = time.monotonic()
             collect_num += 1
             while True:
                 now = time.monotonic()
