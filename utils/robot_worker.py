@@ -4,12 +4,12 @@ from controller import *
 import time
 from typing import *
 
-from multiprocessing import Event, Manager
+from multiprocessing import Event, Manager, Barrier
 
 from utils.data_handler import debug_print, DataBuffer
 
 def RobotWorker(robot_class, start_episode,
-                time_lock: Event, start_event: Event, finish_event: Event, process_name: str, 
+                time_lock: Barrier, start_event: Event, finish_event: Event, process_name: str, 
                 data_buffer: DataBuffer = None, move_data: Manager = None):
     '''
     对于实现的机器人类进行多进程数据采集, 可以对多个机器人进行.
@@ -37,7 +37,10 @@ def RobotWorker(robot_class, start_episode,
     debug_print(process_name, "To finish this episode, please press Enter. ","INFO")
     try:
         while not finish_event.is_set():
-            time_lock.wait()  
+            try:
+                time_lock.wait()  
+            except Exception as e:
+                debug_print(process_name, f"This warining cause of Baririer.abort()", "WARNING")
             if finish_event.is_set():
                 break  # Prevent exiting immediately after acquire before processing data
 
@@ -55,7 +58,6 @@ def RobotWorker(robot_class, start_episode,
             except Exception as e:
                 debug_print(process_name, f"Error: {e}", "ERROR")
 
-            time_lock.clear()
             debug_print(process_name, "Data processed. Waiting for next time slot.", "DEBUG")
 
         debug_print(process_name, "Finish event triggered. Finalizing...","INFO")

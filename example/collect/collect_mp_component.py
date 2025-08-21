@@ -64,10 +64,12 @@ if __name__ == "__main__":
 
         time_lock_vision = Event()
         time_lock_arm = Event()
-        
-        vision_process = Process(target=ComponentWorker, args=("sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, time_lock_vision, start_event, finish_event, "vision_worker"))
-        arm_process = Process(target=ComponentWorker, args=("controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, time_lock_arm, start_event, finish_event, "arm_worker"))
-        time_scheduler = TimeScheduler([time_lock_vision, time_lock_arm], time_freq=30) # 可以给多个进程同时上锁
+        # 数量为组件进程数+时间控制器数(默认1个时间控制器)
+        worker_barrier = Barrier(2 + 1)
+
+        vision_process = Process(target=ComponentWorker, args=("sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, worker_barrier, start_event, finish_event, "vision_worker"))
+        arm_process = Process(target=ComponentWorker, args=("controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, worker_barrier, start_event, finish_event, "arm_worker"))
+        time_scheduler = TimeScheduler(worker_barrier, time_freq=30) # 可以给多个进程同时上锁
         
         processes.append(vision_process)
         processes.append(arm_process)

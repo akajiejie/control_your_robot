@@ -11,7 +11,7 @@ from utils.data_handler import debug_print, DataBuffer
 import importlib
 
 def ComponentWorker(component_class_path,component_class_name , component_name, component_setup_input, component_collect_info, data_buffer: Manager,
-                time_lock: Event, start_event: Event, finish_event: Event, process_name: str):
+                time_lock: Barrier, start_event: Event, finish_event: Event, process_name: str):
     '''
     组件级别的多进程同步器, 用于多进程数据采集, 如果希望是多进程的同步控制也可以稍微改下代码添加一个共享的信号输入
     输入:
@@ -50,7 +50,11 @@ def ComponentWorker(component_class_path,component_class_name , component_name, 
     debug_print(process_name, "To finish this episode, please press Enter. ","INFO")
     try:
         while not finish_event.is_set():
-            time_lock.wait()  
+            try:
+                time_lock.wait()  
+            except Exception as e:
+                debug_print(process_name, f"This warining cause of Baririer.abort()", "WARNING")
+              
             if finish_event.is_set():
                 break  # Prevent exiting immediately after acquire before processing data
 
@@ -68,7 +72,6 @@ def ComponentWorker(component_class_path,component_class_name , component_name, 
             except Exception as e:
                 debug_print(process_name, f"Error: {e}", "ERROR")
             
-            time_lock.clear()
             debug_print(process_name, "Data processed. Waiting for next time slot.", "DEBUG")
 
         debug_print(process_name, "Finish event triggered. Finalizing...","INFO")
