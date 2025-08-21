@@ -25,13 +25,17 @@ condition = {
 }
 
 class Robot:
-    def __init__(self, start_episode=0) -> None:
+    def __init__(self, 
+                condition=condition,
+                move_check=True, 
+                start_episode=0) -> None:
+        
         self.name = "base_robot"
         self.controllers = {}
         self.sensors = {}
 
         self.condition = condition
-        self.collection = CollectAny(condition, start_episode=start_episode)
+        self.collection = CollectAny(condition, move_check=move_check, start_episode=start_episode)
 
     def set_up(self):
         debug_print(self.name, "set_up() should be realized by your robot class", "ERROR")
