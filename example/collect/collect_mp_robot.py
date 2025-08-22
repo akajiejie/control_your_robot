@@ -30,7 +30,7 @@ if __name__ == "__main__":
         finish_event = Event()
         start_episode = i
         robot_process = Process(target=RobotWorker, args=(TestRobot, start_episode, time_lock, start_event, finish_event, "robot_worker"))
-        time_scheduler = TimeScheduler([time_lock], time_freq=10) # 可以给多个进程同时上锁
+        time_scheduler = TimeScheduler(work_events=[time_lock], time_freq=10) # 可以给多个进程同时上锁
         
         robot_process.start()
         while not is_start:
