@@ -6,11 +6,8 @@ from multiprocessing import Process, Manager, Event, Semaphore
 
 from data.collect_any import CollectAny
 
-from sensor.TestVision_sensor import TestVisonSensor
-from controller.TestArm_controller import TestArmController
-
 from utils.time_scheduler import TimeScheduler
-from utils.component_worker import DataBuffer, ComponentWorker
+from utils.component_worker import ComponentWorker
 from utils.data_handler import is_enter_pressed
 
 from typing import Dict, List
@@ -43,6 +40,9 @@ def dict2list(data: Dict[str, List]) -> List[Dict]:
     return result
 
 if __name__ == "__main__":
+    import multiprocessing as mp
+    mp.set_start_method("spawn")
+
     import os
     os.environ["INFO_LEVEL"] = "DEBUG"
     num_episode = 3
@@ -51,6 +51,9 @@ if __name__ == "__main__":
     start_episode = 0
     collection = CollectAny(condition, start_episode=start_episode)
 
+    manager = Manager()
+    shared_data_buffer = manager.dict()
+    
     for i in range(num_episode):
         is_start = False
 
@@ -58,17 +61,22 @@ if __name__ == "__main__":
         processes = []
         start_event = Event()
         finish_event = Event()
-        manager = Manager()
-        data_buffer = DataBuffer(manager)
 
-        time_lock_vision = Semaphore(0)
-        time_lock_arm = Semaphore(0)
-        vision_process = Process(target=ComponentWorker, args=(TestVisonSensor, "test_vision", None, ["color"], data_buffer, time_lock_vision, start_event, finish_event, "vision_worker"))
-        arm_process = Process(target=ComponentWorker, args=(TestArmController, "test_arm", None, ["joint", "qpos", "gripper"], data_buffer, time_lock_arm, start_event, finish_event, "arm_worker"))
-        time_scheduler = TimeScheduler([time_lock_vision, time_lock_arm], time_freq=100) # 可以给多个进程同时上锁
+        time_lock_vision = Event()
+        time_lock_arm = Event()
+        # 数量为组件进程数+时间控制器数(默认1个时间控制器)
+        worker_barrier = Barrier(2 + 1)
+
+        vision_process = Process(target=ComponentWorker, args=("sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, worker_barrier, start_event, finish_event, "vision_worker"))
+        arm_process = Process(target=ComponentWorker, args=("controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, worker_barrier, start_event, finish_event, "arm_worker"))
+        time_scheduler = TimeScheduler(work_barrier=worker_barrier, time_freq=30) # 可以给多个进程同时上锁
         
         processes.append(vision_process)
         processes.append(arm_process)
+
+        # 由于是Dict[list]形式, 需要提前在主进程申请空间
+        shared_data_buffer["test_vision"] = manager.list()
+        shared_data_buffer["test_arm"] = manager.list()
 
         for process in processes:
             process.start()
@@ -95,9 +103,12 @@ if __name__ == "__main__":
                 process.join()
                 process.close()
         
-        data = data_buffer.get()
-        data = dict2list(data)
-        
+        print(shared_data_buffer)
+        data = shared_data_buffer.copy()
+        data = dict2list(dict(data))
+
+        shared_data_buffer = manager.dict()
+
         avg_collect_time += time_scheduler.real_time_average_time_interval
         for i in range(len(data)):
             collection.collect(data[i], None)

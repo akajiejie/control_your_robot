@@ -6,6 +6,7 @@ import time
 import numpy as np
 from controller.arm_controller import ArmController
 
+from utils.data_handler import debug_print
 '''
 RealMan base code from:
 https://develop.realman-robotics.com/robot/apipython/getStarted/
@@ -18,7 +19,7 @@ class RealmanController(ArmController):
         self.controller_type = "user_controller"
         self.controller = None
 
-    def set_up(self,rm_ip, thread_mode=None,connection_level=3):
+    def set_up(self,rm_ip, thread_mode=None,connection_level=3, teleop_setup=None,dT=0.01):
         try:
             result = initialize_robot(rm_ip, thread_mode,connection_level)
             if result is None:
@@ -28,6 +29,14 @@ class RealmanController(ArmController):
             raise ConnectionError(f"Failed to initialize robot arm: {str(e)}")
         self.prev_tech_state = None
         self.gripper_close = False
+
+        try:
+            from third_party.Realman_IK.rm_ik import RM_IK
+            self.robot_IK = RM_IK("RM65B", dT)
+            if teleop_setup:
+                self.robot.set_up(**teleop_setup)
+        except:
+            debug_print(self.name, "Could not find Realman_IK in third_party, key[teleop_qpos] will not take effect.", "WARNING")
 
     def reset(self, start_angles):
         """Move robot to the specified start position"""
@@ -119,15 +128,30 @@ class RealmanController(ArmController):
     def set_position(self, position):
         try:
             # Validate state length
-            if len(position) != 6:  # 6 joints
+            if len(position) != 6:  # xyz+rpy
                 raise ValueError(f"Invalid state length: {len(position)}")
             # delta postion, abs angle
-            success = self.controller.rm_movej_p_canfd(position, False, 0, 0, 0)
+            success = self.controller.rm_movej_canfd(position, False, 0, 0, 0)
             if success != 0:
                 raise RuntimeError("Failed to set joint angles")           
         except Exception as e:
             raise RuntimeError(f"Error moving robot: {str(e)}")
-     
+    
+    def set_position_teleop(self, position):
+        try:
+            # Validate state length
+            if len(position) != 6:  # xyz+rpy
+                raise ValueError(f"Invalid state length: {len(position)}")
+            # delta postion, abs angle
+            joint = self.get_state()["joint"]
+            
+            joint_solve = self.robot_IK.solve(joint, position)
+            success = self.controller.Movej_CANFD(joint_solve,1)
+            if success != 0:
+                raise RuntimeError("Failed to set joint angles")           
+        except Exception as e:
+            raise RuntimeError(f"Error moving robot: {str(e)}")
+
     def set_gripper(self, gripper):
         try:
             if gripper < 0.10 and not self.gripper_close:

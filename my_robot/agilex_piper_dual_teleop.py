@@ -3,10 +3,14 @@ sys.path.append("./")
 
 import numpy as np
 
+from my_robot.base_robot import Robot
+
 from controller.Piper_controller import PiperController
 from sensor.Realsense_sensor import RealsenseSensor
 from control_your_robot.sensor.PikaRos_sensor import PikaRosSensor
+
 from data.collect_any import CollectAny
+
 from utils.data_handler import debug_print, matrix_to_xyz_rpy, apply_local_delta_pose 
 
 
@@ -43,85 +47,48 @@ condition = {
     "save_freq": 10,
 }
 
-class PikaPiper:
+class PikaPiper(Robot):
     def __init__(self, start_episode=0):
-        self.arm_controllers = {
-            "left_arm": PiperController("left_arm"),
-            "right_arm": PiperController("right_arm"),
-        }
-        self.image_sensors = {
-            "cam_head": RealsenseSensor("cam_head"),
-            "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
-            "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
-        }
-        self.pika_sensors = {
-            "pika_left": PikaRosSensor("left_pika"),
-            "pika_right": PikaRosSensor("right_pika"),
-        }
+        super().__init__(start_episode)
 
-        self.condition = condition
-        self.collection = CollectAny(condition, start_episode=start_episode)
+        self.controllers = {
+            "arm": {
+                "left_arm": PiperController("left_arm"),
+                "right_arm": PiperController("right_arm"),
+            },
+        }
+        self.sensors = {
+            "image":{
+                "cam_head": RealsenseSensor("cam_head"),
+                "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
+                "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
+            },
+            "teleop": {
+                "pika_left": PikaRosSensor("left_pika"),
+                "pika_right": PikaRosSensor("right_pika"),
+            },
+        }
 
     def reset(self):
-        return True
-        self.arm_controllers["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
-        self.arm_controllers["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
+        self.controllers["arm"]["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
+        self.controllers["arm"]["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
 
     def set_up(self):
-        self.arm_controllers["left_arm"].set_up("can0")
-        self.arm_controllers["right_arm"].set_up("can1")
+        self.controllers["arm"]["left_arm"].set_up("can0")
+        self.controllers["arm"]["right_arm"].set_up("can1")
 
-        self.image_sensors["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
-        self.image_sensors["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
-        self.image_sensors["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
+        self.sensors["iamge"]["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
+        self.sensors["iamge"]["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
+        self.sensors["iamge"]["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
 
-        self.pika_sensors["pika_left"].set_up("/pika_pose_l","/gripper_l/joint_states")
-        self.pika_sensors["pika_right"].set_up("/pika_pose_r","/gripper_r/joint_states")
+        self.sensors["teleop"]["pika_left"].set_up("/pika_pose_l","/gripper_l/joint_states")
+        self.sensors["teleop"]["pika_right"].set_up("/pika_pose_r","/gripper_r/joint_states")
 
-        self.set_collect_type(["joint","qpos"],["color"], ["end_pose"])
+        self.set_collect_type({"arm":["joint","qpos"],
+                              "image":["color"], 
+                              "teleop":["end_pose"],
+                              })
         debug_print("robot", "set up success!", "INFO")
-
-    def set_collect_type(self,ARM_INFO_NAME,IMG_INFO_NAME, PIKA_INFO_NAME):
-        for controller in self.arm_controllers.values():
-            controller.set_collect_info(ARM_INFO_NAME)
-        
-        for sensor in self.image_sensors.values():
-            sensor.set_collect_info(IMG_INFO_NAME)
-
-        for sensor in self.pika_sensors.values():
-            sensor.set_collect_info(PIKA_INFO_NAME)
-
-    def is_start(self):
-        return True
-    
-    def get(self):
-        controller_data = {}
-        sensor_data = {}
-
-        if self.arm_controllers is not None:    
-            for controller_name, controller in self.arm_controllers.items():
-                controller_data[controller_name] = controller.get()
-        
-        if self.image_sensors is not None:  
-            for sensor_name, sensor in self.image_sensors.items():
-                sensor_data[sensor_name] = sensor.get()
-
-        return [controller_data, sensor_data]
-    
-    def collect(self, data):
-        self.collection.collect(data[0], data[1])
-    
-    def finish(self):
-        self.collection.write()
-    
-    def set_action(self, action):
-        self.arm_controllers["left_arm"].set_action(action)
-        self.arm_controllers["right_arm"].set_action(action)
-    
-    def move(self, move_data):
-        self.arm_controllers["left_arm"].move(move_data["left_arm"],is_delta=True)
-        self.arm_controllers["right_arm"].move(move_data["right_arm"],is_delta=True)
-
 
 if __name__ == "__main__":
     import time
@@ -170,10 +137,12 @@ if __name__ == "__main__":
             print("right:", r_data.tolist())
 
             move_data = {
-                "left_arm": {
-                    "qpos":l_data},
-                "right_arm": {
-                    "qpos":r_data},
+                "arm":{
+                    "left_arm": {
+                        "qpos":l_data},
+                    "right_arm": {
+                        "qpos":r_data},
+                }
             }
 
             robot.move(move_data)

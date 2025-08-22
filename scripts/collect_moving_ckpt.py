@@ -79,7 +79,7 @@ class PathCollector:
             
             debug_print("path_controller", f"move {i}: {episode}", "INFO")
             i += 1
-            robot.move(episode)
+            robot.play_once(episode)
             
             if not is_block:
                 time.sleep(2)
@@ -97,7 +97,8 @@ if __name__ == "__main__":
     # setting collect info
     ARM_INFO_NAME = ["qpos", "gripper"]
 
-    robot.set_collect_type(ARM_INFO_NAME, None) 
+    robot.set_collect_type({"arm":ARM_INFO_NAME, 
+                           "image": None}) 
     collector = PathCollector(robot, condition, episode_index=0)
     '''
     按Enter键进行采集
@@ -118,19 +119,19 @@ if __name__ == "__main__":
             print("invalid input!")
 
     # testing, run the first tarjectory
-    collector.play(robot, 0, is_block=False)
-
-    '''
+    # collector.play(robot, 0, is_block=False)
+    
     # If your robotic arm can only establish communication within a single script, 
     # you can add a set of data collectors in this script and comment out the collector.play() above.
-    
+    from multiprocessing import Semaphore, Event, Process
+
     is_start = False
-        
+    
     # reset process
     time_lock = Semaphore(0)
     start_event = Event()
     finish_event = Event()
-    robot_process = Process(target=RobotWorker, args=(PiperSingle, time_lock, start_event, finish_event, "robot_worker"))
+    robot_process = Process(target=RobotWorker, args=(TestRobot, 0, time_lock, start_event, finish_event, "robot_worker"))
     time_scheduler = TimeScheduler([time_lock], time_freq=10) # set lock
 
     robot_process.start()
@@ -142,19 +143,15 @@ if __name__ == "__main__":
             start_event.set()
         else:
             time.sleep(1)
-    
-    collector.play(robot, 0, is_block=False)
 
     time_scheduler.start()
-    while is_start:
-        time.sleep(0.01)
-        if is_enter_pressed():
-            finish_event.set()  
-            time_scheduler.stop()  
-            is_start = False
-    
+    collector.play(robot, 0, is_block=False)
+
+    finish_event.set()  
+    time_scheduler.stop() 
+
     # destory
     if robot_process.is_alive():
         robot_process.join()
         robot_process.close()
-    '''
+    

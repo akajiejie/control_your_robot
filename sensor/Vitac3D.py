@@ -22,7 +22,9 @@ def temporal_filter(new_frame, prev_frame, alpha=0.2):
     """
     return alpha * new_frame + (1 - alpha) * prev_frame
 
-class Mutilthread3DVitac(TouchSensor):
+class Vitac3D(TouchSensor):
+    #[paper](https://arxiv.org/pdf/2410.24091)
+    #[hardware code](https://github.com/binghao-huang/3D-ViTac_Tactile_Hardware.git)
     def __init__(self,name):
         super().__init__()
         self.name = name
@@ -185,7 +187,7 @@ class Mutilthread3DVitac(TouchSensor):
     def __del__(self):
         self.close()
 if __name__ == "__main__":
-    tac=Mutilthread3DVitac("leftarm_left_tac")
+    tac=Vitac3D("leftarm_left_tac")
     tac.set_up("/dev/ttyUSB0",is_show=True)
 
     tac.set_collect_info("force")

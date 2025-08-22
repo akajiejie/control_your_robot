@@ -29,7 +29,7 @@ class TestModel:
     
     # set language randomly
     def random_set_language(self):
-        json_Path =f"task_instuctions/{self.task_name}.json"
+        json_Path =f"task_instructions/{self.task_name}.json"
         with open(json_Path, 'r') as f_instr:
             instruction_dict = json.load(f_instr)
         instructions = instruction_dict['instructions']

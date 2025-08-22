@@ -1,8 +1,43 @@
 [![中文](https://img.shields.io/badge/中文-简体-blue)](./README.md)  
 [![English](https://img.shields.io/badge/English-English-green)](./README_EN.md)
 
+[中文WIKI(还在完善)](https://tian-nian.github.io/control_your_robot-doc/)
+
 # 控制你的机器人!
 该项目旨在与帮助各位进入具身智能领域后能快速上手一整套从控制机械臂开始, 到数据采集, 到最终VLA模型的训练与部署的流程.
+
+## 近期预计改善
+1. 添加数据可视化采集, 帮助快速检查是否存在数据跳变
+2. 添加数据快速完整性检验
+
+## 更新日志(只保留最新5条, 完整放在WIKI主页)
+### 8.14
+1. 添加了`Cv_sensor`, `VisionROS_sensor`, 并在部分采集数据过程中的高频轮询中加入了time.sleep(0.001), 降低了对CPU的性能占用
+2. 修改了多进程的操作, 现在可以在多进程中加入ROS操作了
+
+### 8.5
+1. 新增了`Worker`类, 方便自定义多进程操作, 并提供了多进程同步的主从臂遥操示例`example/teleop/master_slave_arm_teleop.py`.  
+    该组件提供了自定义接口:
+    1. **handler():** 用于处理循环操作(如循环获取机械臂数据)
+    2. **finish():** 用于处理进程结束时操作(如保存采集数据)
+    3. **component_init():** 用于初始化组件(如果初始化机械臂, 或者急切人)
+    4. **next_to():** 用于声明链式操作的下一个操作, 如果是最后一个, 则只需要将其的`next_event`交给`time_scheduler`
+2. 修改了`time_scheduler`类, 将原本进程同步机制从Sem改成Event, 并添加了`end_event=`, 如果初始化了该参数, 则会使用链式操作
+
+### 7.29
+1. 添加了ROS2支持, 为其添加案例`controller/Bunker_controller` 
+2. 为`collect_any`添加了关键词`move_check`, 用于自动筛除无运动部分数据,自动开启
+
+### 7.18
+1. 为`my_robot`中添加了`base_robot`基类, 便于快速导入自己的机器人, 无需重复定义多余函数
+2. 添加了睿尔曼提供的自定义IK支持, 并于`arm_controller.move_controller()`添加新关键词`teleop_qpos`用于专门调用遥操接口(Canfd之类)
+
+### 7.14
+1. 添加了组件型的并行化单元`component_worker`用于多进程数据采集
+2. 修改了`time_scheduler`的时间控制逻辑, 提升了时间的同步性, 并额外保存了实际采样时间间隔于config.json中
+
+### 6.28
+1. 合并了来自于`akajiejie`的关于`Reaksense_MultiThread_sensor`的分支, 里面根据部署运行更新了部分示例的代码
 
 ## 快速上手!
 由于本项目实现了部分测试样例, 如机械臂测试样例, 视觉模拟样例, 完整机器人模拟样例, 因此可以在没有任何实体的情况下快速了解本项目的整体框架.
@@ -61,6 +96,7 @@ python -m my_robot.test_robot
 ### 📅 更新记录
 | 日期       | 更新内容                          | 状态     |
 |------------|----------------------------------|----------|
+| 2025.7.29   | 🤖 添加了ROS2接口封装    | ✅ 已发布 |
 |2025.7.14   | 🦾添加了多进程的基础组件数据采集支持  | ✅ 已发布  | 
 |2025.6.15   | 🦾添加了完整的PIka遥操机械臂示例  | ✅ 已发布  | 
 | 2025.5.27  | 🧪 添加完善测试样例, 便于程序调试与参考 | ✅ 已发布 |
