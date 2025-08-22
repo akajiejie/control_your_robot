@@ -20,6 +20,7 @@ condition = {
     "collect_type": "teleop",
 }
 
+
 class MasterWorker(Worker):
     def __init__(self, process_name: str, start_event, end_event):
         super().__init__(process_name, start_event, end_event)
@@ -96,7 +97,7 @@ if __name__ == "__main__":
         is_start = False
 
         start_event, end_event = Event(), Event()
-        
+
         master = MasterWorker("master_arm", start_event, end_event)
         slave = SlaveWorker("slave_arm", start_event, end_event, master.data_buffer)
         data = DataWorker("collect_data", start_event, end_event, slave.data_buffer, episode_id=i)
