@@ -17,12 +17,12 @@ CAMERA_SERIALS = {
 
 # Define start position (in degrees)
 START_POSITION_ANGLE_LEFT_ARM = [
-    0,   # Joint 1
-    0,    # Joint 2
-    0,  # Joint 3
-    0,   # Joint 4
-    0,  # Joint 5
-    0,    # Joint 6
+    0.0,   # Joint 1
+    0.85220935,    # Joint 2
+    -0.68542569,  # Joint 3
+    0.,   # Joint 4
+    0.78588684,  # Joint 5
+    -0.05256932,    # Joint 6
 ]
 
 # Define start position (in degrees)
@@ -64,25 +64,25 @@ class PiperSingle(Robot):
 
     # ============== init ==============
     def reset(self):
-        self.arm_controllers["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
+        self.controllers["arm"]["left_arm"].reset(np.array(START_POSITION_ANGLE_LEFT_ARM))
 
     def set_up(self):
-        self.arm_controllers["left_arm"].set_up("can0")
-
-        self.image_sensors["cam_head"].set_up(CAMERA_SERIALS["head"])
-        self.image_sensors["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])
+        self.controllers["arm"]["left_arm"].set_up("can0")
+        self.sensors["image"]["cam_head"].set_up(CAMERA_SERIALS["head"])
+        self.sensors["image"]["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])
 
         self.set_collect_type({"arm": ["joint","qpos","gripper"],
-                               "iamge": ["color"]
+                               "image": ["color"]
                                })
         
         print("set up success!")
-        
+    
 if __name__=="__main__":
     import time
     robot = PiperSingle()
     robot.set_up()
     # collection test
+    robot.reset()
     data_list = []
     for i in range(100):
         print(i)
@@ -100,12 +100,14 @@ if __name__=="__main__":
             },
         },
     }
-    
+    robot.move(move_data)
+    time.sleep(1)
     move_data = {
         "arm":{
             "left_arm":{
-            "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
+            "joint":[0.00, 0.0, 0.0, 0.0, 0.0, 0.0],
             "gripper":0.2,
             },
         },
     }
+    robot.move(move_data)

@@ -57,7 +57,8 @@ class PiperController(ArmController):
     def set_joint(self, joint):
         j1, j2, j3 ,j4, j5, j6 = joint * 57295.7795 #1000*180/3.1415926
         j1, j2, j3 ,j4, j5, j6 = int(j1), int(j2), int(j3), int(j4), int(j5), int(j6)
-        self.controller.MotionCtrl_2(0x01, 0x01, 100, 0xAD)
+        
+        self.controller.MotionCtrl_2(0x01, 0x01, 100, 0x00)
         self.controller.JointCtrl(j1, j2, j3, j4, j5, j6)
 
     # The input gripper value is in the range [0, 1], representing the degree of opening.
@@ -107,10 +108,8 @@ if __name__=="__main__":
     controller = PiperController("test_piper")
     controller.set_up("can0")
     print(controller.get_state())
-    print(controller.get_gripper())
-
+    
     controller.set_gripper(0.2)
-
     controller.set_joint(np.array([0.1,0.1,-0.2,0.3,-0.2,0.5]))
     time.sleep(1)
     print(controller.get_gripper())
