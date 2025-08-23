@@ -23,7 +23,6 @@ output/
 data/check_data.json
 policy/weights
 realsense_captures/
-piper_scripts/can_config.sh
-piper_scripts/can_config.sh
+piper_scripts/
 third_party/dr/
 
