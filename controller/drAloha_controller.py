@@ -90,13 +90,13 @@ class DrAlohaController(ArmController):
         time.sleep(0.001)
         
         if angle_speed_torque is None:
-            print(f"[{arm_side}] 首次读取失败，开始重试")
-            for i in range(2):
-                print(f"[{arm_side}] 第{i+1}次重试")
+            # print(f"[{arm_side}] 首次读取失败，开始重试")
+            for i in range(3):
+                # print(f"[{arm_side}] 第{i+1}次重试")
                 angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
                 time.sleep(0.001)
                 if angle_speed_torque is not None:
-                    print(f"[{arm_side}] 第{i+1}次重试成功")
+                    # print(f"[{arm_side}] 第{i+1}次重试成功")
                     break
                 else:
                     print(f"[{arm_side}] 第{i+1}次重试失败")
@@ -112,22 +112,6 @@ class DrAlohaController(ArmController):
             return True
     def zero_gravity(self):
         self.controller.set_torques(id_list=[1,2,3,4,5,6,7], torque_list=[0, 0, 0, 0, 0, 0, 0], param=0, mode=0) # 设置对应关节扭矩
-        angle_list = []
-        angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
-        if angle_speed_torque is None:
-            for i in range(4):
-                angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
-                print("angle_speed_torque retry:",i)
-                if angle_speed_torque is not None:
-                    break
-        if angle_speed_torque is None:
-            pass
-        else:
-            for i in range(6):
-                angle_list.append(angle_speed_torque[i][0])
-            print(angle_list)
-            self.controller.gravity_compensation(angle_list=angle_list)
-        
     def reset(self, start_state):
         # 调用set_position或set_joint就行
         pass

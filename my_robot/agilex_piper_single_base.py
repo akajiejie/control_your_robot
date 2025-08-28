@@ -40,7 +40,7 @@ condition = {
     "save_path": "./datasets/", 
     "task_name": "test", 
     "save_format": "hdf5", 
-    "save_freq": 10, 
+    "save_freq": 50, 
 }
 
 

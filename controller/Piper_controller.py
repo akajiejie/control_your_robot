@@ -63,7 +63,7 @@ class PiperController(ArmController):
 
     # The input gripper value is in the range [0, 1], representing the degree of opening.
     def set_gripper(self, gripper):
-        gripper = int(gripper * 70 * 1000)
+        gripper = int(gripper * 100 * 1000)
         self.controller.GripperCtrl(gripper, 1000, 0x01, 0)
 
     def __del__(self):

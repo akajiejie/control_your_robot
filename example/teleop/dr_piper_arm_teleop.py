@@ -1,24 +1,24 @@
-from re import S
+from re import S, T
 import sys
+
+from h5py._hl.dataset import sel
 sys.path.append("./")
 
 import time
 from multiprocessing import Manager, Event
 
-from utils.data_handler import is_enter_pressed,debug_print
+from utils.data_handler import is_enter_pressed
 from utils.time_scheduler import TimeScheduler
 from utils.worker import Worker
-from controller.TestArm_controller import TestArmController
 from data.collect_any import CollectAny
 from controller.drAloha_controller import DrAlohaController
 from my_robot.agilex_piper_single_base import PiperSingle
-from my_robot.test_robot import TestRobot
 import math
 from typing import Dict, Any
 
 condition = {
     "save_path": "./save/", 
-    "task_name": "test_3", 
+    "task_name": "feed_rice", 
     "save_format": "hdf5", 
     "save_freq": 30,
     "collect_type": "teleop",
@@ -44,7 +44,7 @@ class MasterWorker(Worker):
         data = self.component.get()
         data = self.action_transform(data)
 
-        if self.start_gravity:
+        if self.start_gravity :
             current_time = time.time()
             if current_time - self.last_gravity_update >= self.gravity_update_interval:
                 self.component.update_gravity()
@@ -144,13 +144,13 @@ class SlaveWorker(Worker):
 
 
 class DataWorker(Worker):
-    def __init__(self, process_name: str, start_event, end_event, collect_data_buffer: Manager, episode_id=0):
+    def __init__(self, process_name: str, start_event, end_event, collect_data_buffer: Manager, episode_id=0, resume=False):
         super().__init__(process_name, start_event, end_event)
         self.collect_data_buffer = collect_data_buffer
         self.episode_id = episode_id
-    
+        self.resume = resume
     def component_init(self):
-        self.collection = CollectAny(condition=condition, start_episode=self.episode_id, move_check=True)
+        self.collection = CollectAny(condition=condition, start_episode=self.episode_id, move_check=True, resume=self.resume)
     
     def handler(self):
         data = dict(self.collect_data_buffer)
@@ -162,7 +162,7 @@ class DataWorker(Worker):
 if __name__ == "__main__":
     import os
     os.environ["INFO_LEVEL"] = "INFO"
-    num_episode = 3
+    num_episode = 10
     avg_collect_time = 0
 
     for i in range(num_episode):
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         
         master = MasterWorker("master_arm", start_event, end_event)
         slave = SlaveWorker("slave_arm", start_event, end_event, master.data_buffer)
-        data = DataWorker("collect_data", start_event, end_event, slave.data_buffer, episode_id=i)
+        data = DataWorker("collect_data", start_event, end_event, slave.data_buffer, episode_id=i, resume=True)
 
         time_scheduler = TimeScheduler(work_events=[master.forward_event], time_freq=30, end_events=[data.next_event])
         
@@ -189,6 +189,7 @@ if __name__ == "__main__":
                 is_start = True
                 master.zero_gravity_flag.value = True
                 start_event.set()
+                
             else:
                 time.sleep(1)
 
