@@ -75,7 +75,7 @@ class CollectAny:
                 self.last_controller_data = controllers_data
                 self.episode.append(episode_data)
             else:
-                if self.move_check_success(controllers_data, tolerance=0.001):
+                if self.move_check_success(controllers_data, tolerance=0.0001):
                     self.episode.append(episode_data)
                 else:
                     debug_print("collect_any", f"robot is not moving, skip this frame!", "INFO")
