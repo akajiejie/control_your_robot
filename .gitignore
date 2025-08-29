@@ -25,3 +25,4 @@ policy/weights
 realsense_captures/
 piper_scripts/
 third_party/test.py
+policy/ACT/act_ckpt
