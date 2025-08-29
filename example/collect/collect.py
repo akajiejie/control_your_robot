@@ -17,7 +17,6 @@ if __name__ == "__main__":
     robot = TestRobot()
     robot.set_up()
     num_episode = 5
-    robot.condition["task_name"] = "my_test"
 
     for _ in range(num_episode):
         robot.reset()
