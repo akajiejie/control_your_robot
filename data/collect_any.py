@@ -14,15 +14,53 @@ import os
 import numpy as np
 import h5py
 import json
+import glob
+import re
 
 class CollectAny:
-    def __init__(self, condition=None, start_episode=0, move_check=True):
+    def __init__(self, condition=None, start_episode=0, move_check=True, resume=False):
         self.condition = condition
         self.episode = []
-        self.episode_index = start_episode
         self.move_check = move_check
         self.last_controller_data = None
+        self.resume = resume
+        
+        # Initialize episode_index based on resume parameter
+        if resume and condition is not None:
+            self.episode_index = self._get_next_episode_index()
+        else:
+            self.episode_index = start_episode
     
+    def _get_next_episode_index(self):
+        """
+        获取下一个可用的episode索引，通过扫描目标文件夹中的hdf5文件
+        """
+        save_path = os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/")
+        if not os.path.exists(save_path):
+            debug_print("collect_any", f"Save path {save_path} does not exist, starting from episode 0", "INFO")
+            return 0
+
+        hdf5_files = glob.glob(os.path.join(save_path, "*.hdf5"))
+        if not hdf5_files:
+            debug_print("collect_any", f"No existing hdf5 files found in {save_path}, starting from episode 0", "INFO")
+            return 0
+
+        # 收集已有的 episode 序号
+        existing_ids = set()
+        for file_path in hdf5_files:
+            file_name = os.path.basename(file_path)
+            match = re.match(r"(\d+)\.hdf5", file_name)
+            if match:
+                existing_ids.add(int(match.group(1)))
+
+        # 找到从 0 开始的最小缺失序号
+        next_episode = 0
+        while next_episode in existing_ids:
+            next_episode += 1
+
+        debug_print("collect_any", f"Found {len(hdf5_files)} existing episodes, next free episode id {next_episode}", "INFO")
+        return next_episode
+
     def collect(self, controllers_data, sensors_data):
         episode_data = {}
         if controllers_data is not None:    
@@ -37,7 +75,7 @@ class CollectAny:
                 self.last_controller_data = controllers_data
                 self.episode.append(episode_data)
             else:
-                if self.move_check_success(controllers_data, tolerance=0.01):
+                if self.move_check_success(controllers_data, tolerance=0.001):
                     self.episode.append(episode_data)
                 else:
                     debug_print("collect_any", f"robot is not moving, skip this frame!", "INFO")
