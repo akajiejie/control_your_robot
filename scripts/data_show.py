@@ -168,7 +168,7 @@ if __name__ == "__main__":
     gripper_dim = args.gripper_dim
 
     if os.path.isdir(path):
-        paths = get_random_hdf5(path, 3)
+        paths = get_random_hdf5(path, 1)
     
     options = {
                 "qpos": {

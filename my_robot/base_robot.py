@@ -110,6 +110,7 @@ class Robot:
         time_interval = 1.0 / condition['save_freq']
 
         episode = dict_to_list(hdf5_groups_to_dict(data_path))
+        print(episode)
         now_time = last_time = time.monotonic()
         for ep in episode:
             while now_time - last_time < time_interval:
