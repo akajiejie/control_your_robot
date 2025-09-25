@@ -12,14 +12,14 @@ from data.collect_any import CollectAny
 
 condition = {
     "save_path": "./save/", 
-    "task_name": "test_1", 
+    "task_name": "test_robot", 
     "save_format": "hdf5", 
     "save_freq": 10,
 }
 
 class TestRobot(Robot):
-    def __init__(self, DoFs=6,INFO="DEBUG",start_episode=0):
-        super().__init__()  
+    def __init__(self, condition=condition, move_check=True, start_episode=0, DoFs=6,INFO="DEBUG"):
+        super().__init__(condition=condition, move_check=move_check, start_episode=start_episode)  
         
         self.INFO = INFO
         self.DoFs = DoFs

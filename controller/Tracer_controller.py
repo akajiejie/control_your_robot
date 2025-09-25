@@ -51,8 +51,9 @@ class TracerController(MobileController):
         raise NotImplementedError ("set_move_to is not implemented")
 
     def get_subscriber(self):
-        data = self.controller["subscriber"].get_latest_data()
-        print(data)
+        data = {}
+        data["move_velocity"] = self.controller["subscriber"].get_latest_data()
+        return data
 
     def stop(self):
         self.controller["publisher"].stop()

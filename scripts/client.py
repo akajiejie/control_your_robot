@@ -45,7 +45,6 @@ class Client:
         self.bisocket = bisocket
 
     def move(self, message):
-        print(message)
         action_chunk = message["action_chunk"]
         action_chunk = np.array(action_chunk)
 

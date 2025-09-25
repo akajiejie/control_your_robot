@@ -134,8 +134,6 @@ class CollectAny:
         # print(f"WRITE called in PID={os.getpid()} TID={threading.get_ident()}")
         with h5py.File(hdf5_path, "w") as f:
             obs = f
-            # print(self.episode[0])
-            print(self.episode[0].keys())
             for controller_name in self.episode[0].keys():
                 controller_group = obs.create_group(controller_name)
                 for item in self.episode[0][controller_name].keys():

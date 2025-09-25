@@ -58,7 +58,6 @@ class TestArmController(ArmController):
             else:
                 debug_print(self.name, f"gripper better be 0~1, but get number {gripper}","WARNING")
         else:
-            print(gripper.ndim)
             debug_print(self.name, f"gripper should be a number 0~1, but get type {type(gripper)}","ERROR")
     
     def __del__(self):
@@ -71,7 +70,7 @@ class TestArmController(ArmController):
 
 if __name__=="__main__":
     import os
-    os.environ["INFO_LEVEL"] = "INFO"
+    os.environ["INFO_LEVEL"] = "DEBUG"
     
     controller = TestArmController("test_arm",DoFs=6,INFO="DEBUG")
 

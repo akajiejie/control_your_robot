@@ -24,13 +24,15 @@ def input_transform(data):
 
 def output_transform(data):
     move_data = {
-        "left_arm":{
-            "joint":data[:6],
-            "gripper":data[6]
-        },
-        "right_arm":{
-            "joint":data[7:13],
-            "gripper":data[13]
+        "arm":{
+            "left_arm":{
+                "joint":data[:6],
+                "gripper":data[6]
+            },
+            "right_arm":{
+                "joint":data[7:13],
+                "gripper":data[13]
+            }
         }
     }
     return move_data
@@ -78,7 +80,7 @@ if __name__ == "__main__":
                 move_data = output_transform(action)
                 robot.move(move_data)
                 step += 1
-                time.sleep(1/robot.condition["save_interval"])
+                time.sleep(1/robot.condition["save_freq"])
                 if step%50 ==0:
                     debug_print("main", f"now step: {step}/{max_step}", "INFO")
 

@@ -2,7 +2,7 @@ import sys
 sys.path.append("./")
 import time
 
-from multiprocessing import Process, Manager, Event, Semaphore
+from multiprocessing import Process, Manager, Event, Semaphore, Barrier
 
 from data.collect_any import CollectAny
 
