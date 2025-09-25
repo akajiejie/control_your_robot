@@ -37,17 +37,14 @@ def compare_transform(data_chunk):
     actions = []
 
     for data in data_chunk[0]:
-        # 检查是否只有左臂数据
+        # check if single or dual
         if "left_arm" in data and "right_arm" not in data:
-            # 获取左臂数据
             left_joint = np.array(data["left_arm"]["joint"]).reshape(-1)
             left_gripper = np.array(data["left_arm"]["gripper"]).reshape(-1)
             
-            # 复制左臂数据作为右臂数据，保持维度一致性
-            right_joint = np.zeros_like(left_joint)  # 用零填充右臂关节数据
-            right_gripper = np.zeros_like(left_gripper)  # 用零填充右臂夹爪数据
+            right_joint = np.zeros_like(left_joint)
+            right_gripper = np.zeros_like(left_gripper)
             
-            # 如果模型期望14维输出 (7维左臂 + 7维右臂)，则复制左臂数据
             action = np.concatenate([
                 left_joint,
                 left_gripper,
@@ -55,7 +52,6 @@ def compare_transform(data_chunk):
                 right_gripper
             ])
         else:
-            # 正常情况，包含左右臂数据
             action = np.concatenate([
                 np.array(data["left_arm"]["joint"]).reshape(-1),
                 np.array(data["left_arm"]["gripper"]).reshape(-1),
@@ -73,61 +69,55 @@ def compute_similarity(action_chunk_pred, action_chunk_real):
 
 def compute_statistics(all_pred_actions, all_real_actions, all_time_chunks):
     """
-    计算所有episode的统计信息：平均轨迹、平均差异、方差等
+    Compute statistics for all episodes: mean trajectories, mean differences, variance, etc.
     """
-    # 找到最长的时间步数，用于对齐所有轨迹
+    # Find the maximum number of time steps to align all trajectories
     max_steps = 0
     for pred_actions in all_pred_actions:
         total_steps = sum(chunk.shape[0] for chunk in pred_actions)
         max_steps = max(max_steps, total_steps)
     
-    # 获取动作维度
     action_dim = all_pred_actions[0][0].shape[1]
     
-    # 初始化存储数组
-    all_pred_aligned = []  # 存储对齐后的预测轨迹
-    all_real_aligned = []  # 存储对齐后的真实轨迹
+    all_pred_aligned = []
+    all_real_aligned = []
     
-    # 对每个episode的轨迹进行拼接和对齐
     for i, (pred_chunks, real_chunks) in enumerate(zip(all_pred_actions, all_real_actions)):
-        # 拼接当前episode的所有chunks
         pred_traj = np.concatenate(pred_chunks, axis=0)  # (total_steps, action_dim)
         real_traj = np.concatenate(real_chunks, axis=0)  # (total_steps, action_dim)
         
-        # 对齐到相同长度（截断或填充）
+        # Align trajectories to the same length (truncate or pad)
         current_steps = pred_traj.shape[0]
         if current_steps < max_steps:
-            # 用最后一个值填充
             pred_pad = np.tile(pred_traj[-1:], (max_steps - current_steps, 1))
             real_pad = np.tile(real_traj[-1:], (max_steps - current_steps, 1))
             pred_traj = np.concatenate([pred_traj, pred_pad], axis=0)
             real_traj = np.concatenate([real_traj, real_pad], axis=0)
+        
         elif current_steps > max_steps:
-            # 截断
             pred_traj = pred_traj[:max_steps]
             real_traj = real_traj[:max_steps]
         
         all_pred_aligned.append(pred_traj)
         all_real_aligned.append(real_traj)
     
-    # 转换为numpy数组 (num_episodes, max_steps, action_dim)
     all_pred_aligned = np.stack(all_pred_aligned)
     all_real_aligned = np.stack(all_real_aligned)
     
-    # 计算统计信息
-    # 平均轨迹 (max_steps, action_dim)
+    # Compute statistics
+    # Mean trajectory over all episodes (max_steps, action_dim)
     mean_pred_traj = np.mean(all_pred_aligned, axis=0)
     mean_real_traj = np.mean(all_real_aligned, axis=0)
     
-    # 计算差异 (num_episodes, max_steps, action_dim)
+    # Compute differences between predicted and real actions (num_episodes, max_steps, action_dim)
     differences = all_pred_aligned - all_real_aligned
     
-    # 每个step的平均差异和方差 (max_steps, action_dim)
+    # Mean and variance of differences per time step and per dimension (max_steps, action_dim)
     mean_diff = np.mean(differences, axis=0)
     var_diff = np.var(differences, axis=0)
     std_diff = np.std(differences, axis=0)
     
-    # 每个step每个维度的绝对差异平均值 (max_steps, action_dim)
+    # Mean absolute difference per time step and per dimension (max_steps, action_dim)
     mean_abs_diff = np.mean(np.abs(differences), axis=0)
     
     return {
@@ -140,6 +130,7 @@ def compute_statistics(all_pred_actions, all_real_actions, all_time_chunks):
         'max_steps': max_steps,
         'action_dim': action_dim
     }
+
 
 ### =========THE PLACE YOU COULD MODIFY=========
 
@@ -213,36 +204,36 @@ def eval_once(model, episode):
 
 def plot_trajectories_subplots(trajA, trajB, time_intervals, save_path="traj_subplots.png"):
     """
-    每个维度一个子图绘制轨迹A和B，多段轨迹，支持不同时间区间
-    trajA, trajB: list of np.ndarray, 每段轨迹形状 (seg_len, num_dims)，可为None
-    time_intervals: list of tuples (a, b)，对应每段轨迹的时间区间
+    Plot each dimension of trajectories A and B in subplots, supporting multiple segments
+    and different time intervals.
+    
+    Args:
+        trajA, trajB: list of np.ndarray, each segment shape (seg_len, num_dims), can be None
+        time_intervals: list of tuples (a, b) indicating the time range of each segment
+        save_path: path to save the final figure
     """
-    sns.set_style("whitegrid")  # 使用 seaborn 风格
+    sns.set_style("whitegrid")  # Use seaborn style
 
-    # 检查至少有一条轨迹存在
+    # Check that at least one trajectory exists
     if trajA is None and trajB is None:
         print("No trajectories to plot.")
         return
 
-    # 获取维度数量
+    # Determine number of dimensions
     sample_traj = trajA if trajA is not None else trajB
     num_dims = sample_traj[0].shape[1]
 
-    # 动态调整图像高度，确保有足够空间
-    height_per_dim = max(3, 4 - num_dims * 0.1)  # 维度多时稍微减小高度
+    # Dynamically adjust figure height based on number of dimensions
+    height_per_dim = max(3, 4 - num_dims * 0.1)
     fig, axes = plt.subplots(num_dims, 1, figsize=(16, height_per_dim*num_dims), sharex=True)
     if num_dims == 1:
         axes = [axes]
 
-    # 定义颜色方案，与frame_wise_difference_analysis一致
-    colors = {"A": "#1E90FF", "B": "#FFD700"}  # A为蓝色，B为黄色
-    labels_dict = {"A": "predict", "B": "replay"}
+    # Color scheme: A = blue, B = yellow
+    colors = {"A": "#1E90FF", "B": "#FFD700"}
 
     num_segments = len(time_intervals) if time_intervals is not None else len(sample_traj)
 
-    # 为每个维度创建标签追踪
-    legend_added = {"A": [False] * num_dims, "B": [False] * num_dims}
-    
     for seg_idx in range(num_segments):
         a, b = time_intervals[seg_idx] if time_intervals is not None else (0, sample_traj[seg_idx].shape[0]-1)
         t = np.linspace(a, b, sample_traj[seg_idx].shape[0])
@@ -250,37 +241,32 @@ def plot_trajectories_subplots(trajA, trajB, time_intervals, save_path="traj_sub
         if trajA is not None:
             segA = trajA[seg_idx]
             for dim in range(num_dims):
-                # 去掉标签
+                # Plot trajectory with bold line, no legend label
                 sns.lineplot(x=t, y=segA[:, dim], ax=axes[dim], 
-                            color=colors["A"], alpha=0.8, linewidth=10, 
-                            label='')  # 这里去掉了标签文字
-                
+                             color=colors["A"], alpha=0.8, linewidth=10, label='')
+
         if trajB is not None:
             segB = trajB[seg_idx]
             for dim in range(num_dims):
-                # 去掉标签
                 sns.lineplot(x=t, y=segB[:, dim], ax=axes[dim], 
-                            color=colors["B"], alpha=0.8, linewidth=10, 
-                            label='')  # 这里去掉了标签文字
+                             color=colors["B"], alpha=0.8, linewidth=10, label='')
 
-    # 去掉每个子图的标题和标签
+    # Format each subplot
     for dim in range(num_dims):
         axes[dim].grid(True, alpha=0.3)
-        # 移除顶部和右侧边框
         axes[dim].spines['top'].set_visible(False)
         axes[dim].spines['right'].set_visible(False)
-        # 设置刻度标签字体大小
         axes[dim].tick_params(axis='both', which='major', labelsize=14)
-    
-    # 设置x轴标签
+
+    # X-axis label
     axes[-1].set_xlabel("Time Step (Frame)", fontsize=16)
 
-    # 使用subplots_adjust代替tight_layout，避免警告
+    # Adjust layout and save figure
     plt.subplots_adjust(left=0.08, bottom=0.08, right=0.95, top=0.95, hspace=0.3)
     plt.savefig(save_path, dpi=300, bbox_inches='tight', facecolor='white', edgecolor='none')
     plt.close()
     print(f"Saved trajectory figure to {save_path}")
-    
+
 def init():
     parser = argparse.ArgumentParser()
     
