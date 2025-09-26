@@ -18,7 +18,7 @@ from typing import Dict, Any
 
 condition = {
     "save_path": "./save/", 
-    "task_name": "feed_rice", 
+    "task_name": "pick_place_cup", 
     "save_format": "hdf5", 
     "save_freq": 30,
     "collect_type": "teleop",
@@ -202,7 +202,7 @@ if __name__ == "__main__":
                 is_start = False
 
         # 给数据写入一定时间缓冲
-        time.sleep(1)
+        time.sleep(2)
 
         master.stop()
         slave.stop()

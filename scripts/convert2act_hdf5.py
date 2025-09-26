@@ -58,6 +58,7 @@ def convert(hdf5_paths, output_path, start_index=0):
         os.makedirs(output_path)
     
     index = start_index
+    max_episode_len = 0  # 跟踪最大步数
     for hdf5_path in hdf5_paths:
         # 读取数据（坏文件直接跳过）
         try:
@@ -74,8 +75,17 @@ def convert(hdf5_paths, output_path, start_index=0):
             input_data = {}
 
             # 读取相机数据（不降采样）
-            input_data["cam_high"] = get_item(data, map["cam_high"])
-            input_data["cam_wrist"] = get_item(data, map["cam_wrist"])
+            try:
+                input_data["cam_high"] = get_item(data, map["cam_high"])
+            except Exception as e:
+                print(f"Warning: Failed to get cam_high data: {e}")
+                input_data["cam_high"] = None
+            
+            try:
+                input_data["cam_wrist"] = get_item(data, map["cam_wrist"])
+            except Exception as e:
+                print(f"Warning: Failed to get cam_wrist data: {e}")
+                input_data["cam_wrist"] = None
 
             # 构造 14 维 qpos：左臂(6)+左爪(1)+右臂(6)+右爪(1)
             def try_get(name):
@@ -154,7 +164,6 @@ def convert(hdf5_paths, output_path, start_index=0):
             images = obs.create_group("images")
             
             # Retrieve data based on your camera/view names, then encode and compress it for storage.
-
             cam_high = input_data["cam_high"]
             cam_wrist = input_data["cam_wrist"]
             
@@ -172,7 +181,11 @@ def convert(hdf5_paths, output_path, start_index=0):
             images.create_dataset("cam_high", data=np.stack(cam_high), dtype=np.uint8)
             images.create_dataset("cam_wrist", data=np.stack(cam_wrist), dtype=np.uint8)
 
+        # 更新最大步数
+        max_episode_len = max(max_episode_len, T)
         print(f"convert {hdf5_path} to rdt data format at {hdf5_output_path}")
+    
+    return max_episode_len
 
 if __name__ == "__main__":
     import argparse
@@ -186,13 +199,40 @@ if __name__ == "__main__":
     # args = parser.parse_args()
     # data_path = args.data_path
     # output_path = args.outout_path
-    data_path = "save/pick_place_cup/"
-    output_path = "/home/usst/kwj/GitCode/RoboTwin2.0/policy/ACT/processed_data/sim-pick_place_cup/"
+    task_name = "pick_place_cup"
+    data_path = "save/pick_place_cup"
+    
 
     # if output_path is None:
-    #     data_config = json.load(os.path.join(data_path, "config.json"))
+    #     with open(os.path.join(data_path, "config.json"), 'r') as f:
+    #         data_config = json.load(f)
     #     output_path = f"./datasets/RDT/{data_config['task_name']}"
     
     hdf5_paths = get_files(data_path, "*.hdf5")
     print("hdf5 files:\n",hdf5_paths)
-    convert(hdf5_paths, output_path)
+    # 从data_path中提取task_name
+    task_name = os.path.basename(data_path.rstrip('/'))
+    
+    # 统计hdf5文件数量
+    expert_data_num = len(hdf5_paths)
+    output_path = f"/home/usst/kwj/GitCode/RoboTwin2.0/policy/ACT/processed_data/sim-{task_name}/{task_name}-{expert_data_num}/"
+    # 转换数据并获取最大步数
+    max_episode_len = convert(hdf5_paths, output_path)
+    # 在output_path下保存SIM_TASK_CONFIGS.json
+    SIM_TASK_CONFIGS_PATH = os.path.join(output_path, "SIM_TASK_CONFIGS.json")
+    
+    # 构建配置
+    SIM_TASK_CONFIGS = {
+        f"sim-{task_name}": {
+            "dataset_dir": output_path,
+            "num_episodes": expert_data_num,
+            "episode_len": max_episode_len,
+            "camera_names": ["cam_high", "cam_wrist"],
+        }
+    }
+
+    with open(SIM_TASK_CONFIGS_PATH, "w") as f:
+        json.dump(SIM_TASK_CONFIGS, f, indent=4)
+    
+    print(f"Saved SIM_TASK_CONFIGS.json to {SIM_TASK_CONFIGS_PATH}")
+    print(f"Task: {task_name}, Episodes: {expert_data_num}, Max Episode Length: {max_episode_len}")

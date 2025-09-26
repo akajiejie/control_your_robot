@@ -8,9 +8,16 @@ import math
 from my_robot.agilex_piper_single_base import PiperSingle
 from policy.ACT.inference_model import MYACT
 from utils.data_handler import is_enter_pressed
+from data.collect_any import CollectAny
 import time
 import pdb
-
+condition = {
+    "save_path": "./test/", 
+    "task_name": "pick_place_cup", 
+    "save_format": "hdf5", 
+    "save_freq": 50,
+    "collect_type": "teleop",
+}
 def input_transform(data):
     has_left_arm = "left_arm" in data[0]
     has_right_arm = "right_arm" in data[0]
@@ -76,6 +83,8 @@ def output_transform(data):
         clamp(data[0][i], joint_limits_rad[i][0], joint_limits_rad[i][1])
         for i in range(6)
     ]
+    if data[0][6] < 0.05:
+        data[0][6] = 0.0
     left_gripper = data[0][6]
     
     move_data = {
@@ -90,10 +99,11 @@ if __name__ == "__main__":
     os.environ["INFO_LEVEL"] = "INFO"
     robot = PiperSingle()
     robot.set_up()
+    collection=CollectAny(condition=condition,start_episode=0,move_check=True,resume=True)
     #load model
-    model = MYACT("/home/usst/kwj/GitCode/control_your_robot_jie/policy/ACT/act_ckpt/act-pick_place_cup/50","act-pick_place_cup")
-    max_step = 2000
-    num_episode = 10
+    model = MYACT("/home/usst/kwj/GitCode/control_your_robot_jie/policy/ACT/act_ckpt/act-pick_place_cup/100","act-pick_place_cup")
+    max_step = 1200
+    num_episode = 1
     for i in range(num_episode):
         step = 0
         # 重置所有信息
@@ -122,11 +132,14 @@ if __name__ == "__main__":
                             move_data
                         })
             step += 1
+            data = robot.get()
+            collection.collect(data[0],None)
             # pdb.set_trace()
             time.sleep(1/robot.condition["save_freq"])
             print(f"Episode {i}, Step {step}/{max_step} completed.")
 
         robot.reset()
+        collection.write()
         print("finish episode", i)
     robot.reset()
 

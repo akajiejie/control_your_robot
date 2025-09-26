@@ -7,6 +7,7 @@ from my_robot.base_robot import Robot
 
 from controller.Piper_controller import PiperController
 from sensor.Realsense_sensor import RealsenseSensor
+# from sensor.Realsense_MultiThread_sensor import RealsenseSensor
 
 from data.collect_any import CollectAny
 
@@ -22,7 +23,7 @@ START_POSITION_ANGLE_LEFT_ARM = [
     -0.68542569,  # Joint 3
     0.,   # Joint 4
     0.78588684,  # Joint 5
-    -0.05256932,    # Joint 6
+    0.0,    # Joint 6
 ]
 
 # Define start position (in degrees)
@@ -40,7 +41,7 @@ condition = {
     "save_path": "./datasets/", 
     "task_name": "test", 
     "save_format": "hdf5", 
-    "save_freq": 50, 
+    "save_freq": 60, 
 }
 
 

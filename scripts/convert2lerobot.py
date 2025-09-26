@@ -10,6 +10,8 @@ from utils.data_handler import *
 Single-arm lerobot, simulated in libero format. The default robot arm has 6 degrees of freedom plus 1 gripper degree of freedom. 
 If your robot arm has a different number of degrees of freedom, please modify accordingly.
 
+single-arm:
+
 features={
     "image": {
         "dtype": "image",
@@ -130,17 +132,18 @@ if __name__== '__main__':
                         help="raw data path")
     parser.add_argument('repo_id', type=str,
                         help='repo_id should be a string, lerobotdataset default be aved at ~/.huggingface/lerobot/')
-    parser.add_argument('multi', typr=bool,default=False,
+    parser.add_argument('--multi', action='store_true', default=False,
                         help="if you are converting a multi-task dataset, please set this to true and set data_path to the root directory of the multi-task dataset.")
     args = parser.parse_args()
     data_path = args.data_path
+    print(f"data_path: {data_path}")
     repo_id = args.repo_id
     multi = args.multi
     hdf5_paths = get_files(data_path, "*.hdf5")
     
     if not multi:
-        data_config = json.load(os.path.join(data_path, "config.json"))
-        inst_path = f"./task_instructions/{data_config["task_name"]}.json"
+        data_config = json.load(open(os.path.join(data_path, "config.json")))
+        inst_path = f"./task_instructions/{data_config['task_name']}.json"
     else:
         inst_path = None
     lerobot = MyLerobotDataset(repo_id, "piper", 10 ,features, feature_map, inst_path)
@@ -149,8 +152,8 @@ if __name__== '__main__':
         data = hdf5_groups_to_dict(hdf5_path)
         if multi:
             # for every episode, reset instruction
-            data_config = json.load(os.path.join(hdf5_path, "../config.json"))
-            inst_path = f"./task_instructions/{data_config["task_name"]}.json"
+            data_config = json.load(open(os.path.join(hdf5_path, "../config.json")))
+            inst_path = f"./task_instructions/{data_config['task_name']}.json"
             lerobot.write(data, inst_path)
         else:
             lerobot.write(data)

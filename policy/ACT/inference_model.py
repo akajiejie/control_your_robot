@@ -64,9 +64,14 @@ class MYACT:
             }
         
     def get_action(self):
-        action = self.model.get_action(self.observation_window)
+        actions = []
+        for _ in range(self.args["chunk_size"]):
+            action = self.model.get_action(self.observation_window)
+            actions.append(action)
+
         debug_print("model",f"infer action success", self.INFO)
-        return action
+        actions = np.stack(actions).squeeze(1)
+        return actions
 
     def reset_obsrvationwindows(self):
         self.instruction = None
@@ -159,14 +164,23 @@ def output_transform(data):
 if __name__ == "__main__":
     import os
     os.environ["INFO_LEVEL"] = "DEBUG"
-    robot = PiperSingle()
-    robot.set_up()
-    robot.reset()
-    data = robot.get()
-    img_arr, state = input_transform(data)
-    
+    #real robot test
+    # robot = PiperSingle()
+    # robot.set_up()
+    # robot.reset()
+    # data = robot.get()
+    # img_arr, state = input_transform(data)
+
+    #sim test
+    DoFs = 14
     model = MYACT("/home/usst/kwj/GitCode/control_your_robot_jie/policy/ACT/act_ckpt/act-pick_place_cup/50","act-pick_place_cup")
-    
+    height = 480
+    width = 640
+    img_arr = [np.random.randint(0, 256, size=(height, width, 3), \
+                                 dtype=np.uint8), np.random.randint(0, 256, size=(height, width, 3), \
+                                dtype=np.uint8), np.random.randint(0, 256, size=(height, width, 3), dtype=np.uint8)]
+    state = np.random.rand(DoFs) * 3.1515926
     model.update_observation_window(img_arr, state)
-    model.get_action()
+    action = model.get_action()
+    print(action)
     model.reset_obsrvationwindows()

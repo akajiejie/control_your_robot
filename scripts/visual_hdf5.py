@@ -306,6 +306,10 @@ def visualize_folder(folder_path, output_base_dir="output", verbose=False):
     # 创建输出目录
     os.makedirs(output_base_dir, exist_ok=True)
     
+    # 跟踪处理结果
+    successful_files = []
+    failed_files = []
+    
     # 处理每个HDF5文件（显示总体进度条）
     with tqdm(total=len(hdf5_files), desc="Processing HDF5 files", unit="file", disable=False) as pbar:
         for i, hdf5_file in enumerate(hdf5_files, 1):
@@ -327,19 +331,43 @@ def visualize_folder(folder_path, output_base_dir="output", verbose=False):
                 # 然后可视化数据
                 visualize_hdf5(hdf5_file, output_dir, verbose=verbose)
                 
+                # 记录成功处理的文件
+                successful_files.append(os.path.basename(hdf5_file))
+                
                 if verbose:
                     print(f"✓ 文件 {os.path.basename(hdf5_file)} 处理完成")
                 
             except Exception as e:
+                # 记录失败的文件
+                failed_files.append(os.path.basename(hdf5_file))
                 print(f"✗ 处理文件 {os.path.basename(hdf5_file)} 时出错: {str(e)}")
             finally:
                 pbar.update(1)
     
-    if verbose:
-        print(f"\n{'='*60}")
-        print(f"批量处理完成！共处理 {len(hdf5_files)} 个文件")
-        print(f"输出目录: {output_base_dir}")
-        print(f"{'='*60}")
+    # 输出处理统计结果
+    total_files = len(hdf5_files)
+    successful_count = len(successful_files)
+    failed_count = len(failed_files)
+    success_rate = (successful_count / total_files * 100) if total_files > 0 else 0
+    
+    print(f"\n{'='*60}")
+    print(f"批量处理完成！")
+    print(f"输出目录: {output_base_dir}")
+    print(f"{'='*60}")
+    print(f"\n📊 处理统计结果:")
+    print(f"总文件数: {total_files}")
+    print(f"成功处理: {successful_count} 个文件")
+    print(f"处理失败: {failed_count} 个文件")
+    print(f"成功率: {success_rate:.1f}%")
+    
+    if failed_files:
+        print(f"\n❌ 处理失败的文件:")
+        for i, failed_file in enumerate(failed_files, 1):
+            print(f"  {i}. {failed_file}")
+    else:
+        print(f"\n✅ 所有文件处理成功！")
+    
+    print(f"{'='*60}")
 
 def get_hdf5_files_info(folder_path):
     """
@@ -419,7 +447,7 @@ def print_files_summary(files_info, verbose=False):
 
 if __name__ == "__main__":
     # 文件夹路径
-    folder_path = "path/to/your/dataset/"
+    folder_path = "/home/usst/kwj/GitCode/control_your_robot_jie/test/pick_place_cup/"
     
     # 检查文件夹是否存在
     if not os.path.exists(folder_path):
@@ -433,7 +461,7 @@ if __name__ == "__main__":
     
     # 直接批量处理（启用详细输出以便调试）
     if files_info:
-        output_dir = "save/output"
+        output_dir = "save/output/test/pick_place_cup/"
         visualize_folder(folder_path, output_dir, verbose=True)
     else:
         print("没有找到HDF5文件，无法处理")

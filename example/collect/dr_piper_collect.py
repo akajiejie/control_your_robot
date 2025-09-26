@@ -13,9 +13,9 @@ from typing import Dict, Any
 
 condition = {
     "save_path": "./save/", 
-    "task_name": "pick_place_cup", 
+    "task_name": "test", 
     "save_format": "hdf5", 
-    "save_freq": 30,
+    "save_freq": 60,
     "collect_type": "teleop",
 }
 def action_transform(move_data:Dict[str, Any]):
@@ -55,14 +55,14 @@ def action_transform(move_data:Dict[str, Any]):
         return action
 if __name__ == "__main__":
     import os
-    os.environ["INFO_LEVEL"] = "DEBUG" # DEBUG , INFO, ERROR
+    os.environ["INFO_LEVEL"] = "INFO" # DEBUG , INFO, ERROR
     controller = DrAlohaController(name="controller")
     controller.set_collect_info(["joint","gripper"])
     gravity_update_interval = 0.1  # 10Hz 更新频率
     controller.set_up(com="/dev/ttyACM1")
     robot = PiperSingle()
     robot.set_up()
-    num_episode = 5
+    num_episode = 1
     robot.condition["task_name"] = "my_test"
 
     # 初始化上次重力补偿更新时间（使用单调时钟，避免系统时间变化影响）
@@ -113,4 +113,5 @@ if __name__ == "__main__":
         extra_info = {}
         avg_collect_time = avg_collect_time / collect_num
         extra_info["avg_time_interval"] = avg_collect_time
+        print("avg_collect_time",avg_collect_time)
         robot.collection.add_extra_condition_info(extra_info)
