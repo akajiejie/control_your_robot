@@ -18,7 +18,7 @@ from typing import Dict, Any
 
 condition = {
     "save_path": "./save/", 
-    "task_name": "pick_place_cup", 
+    "task_name": "test", 
     "save_format": "hdf5", 
     "save_freq": 30,
     "collect_type": "teleop",
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         
         master = MasterWorker("master_arm", start_event, end_event)
         slave = SlaveWorker("slave_arm", start_event, end_event, master.data_buffer)
-        data = DataWorker("collect_data", start_event, end_event, slave.data_buffer, episode_id=i, resume=True)
+        data = DataWorker("collect_data", start_event, end_event, slave.data_buffer, episode_id=i, resume=False)
 
         time_scheduler = TimeScheduler(work_events=[master.forward_event], time_freq=30, end_events=[data.next_event])
         

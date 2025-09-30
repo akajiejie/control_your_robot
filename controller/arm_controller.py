@@ -29,6 +29,8 @@ class ArmController(Controller):
             arm_info["velocity"] = state["velocity"]
         if "force" in self.collect_info:
             arm_info["force"] = state["force"]
+        if "eefort" in self.collect_info:
+            arm_info["eefort"] = state["eefort"]
         return arm_info
     
     def move_controller(self, move_data:Dict[str, Any], is_delta=False):

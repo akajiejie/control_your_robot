@@ -1,23 +1,27 @@
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import cv2
 import os
 import json
 from tqdm import tqdm
 import subprocess
 import sys
+import matplotlib
+matplotlib.use('Agg')  # Use non-GUI backend for video generation
 
 def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
     """
     Visualize HDF5 file content:
-    1. Plot robot arm joint and gripper data curves for both left and right arms
-    2. Save camera data as video files
-    3. Save tactile force data as video files
+    1. Create synchronized videos combining camera feeds with dynamic robot data plots
+    2. Save tactile force data as video files
+    3. Support for eefort data visualization
     
     Parameters:
         hdf5_path: Path to HDF5 file
         output_dir: Output directory
+        verbose: Enable verbose output
     """
     # Create output directories
     os.makedirs(output_dir, exist_ok=True)
@@ -65,6 +69,32 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                     right_arm_data['gripper'] = right_arm_group['gripper'][:]
                 break
         
+        # Read eefort data for both arms
+        eefort_data = {'left': [], 'right': []}
+        
+        # Check within arm groups for eefort data
+        for key in left_arm_keys:
+            if key in f:
+                arm_group = f[key]
+                if 'eefort' in arm_group:
+                    eefort_data['left'] = arm_group['eefort'][:]
+                    break
+        
+        for key in right_arm_keys:
+            if key in f:
+                arm_group = f[key]
+                if 'eefort' in arm_group:
+                    eefort_data['right'] = arm_group['eefort'][:]
+                    break
+        
+        # Also check for standalone eefort data
+        for key in f.keys():
+            if 'eefort' in key.lower() or 'effort' in key.lower() or 'force' in key.lower():
+                if 'left' in key.lower():
+                    eefort_data['left'] = f[key][:]
+                elif 'right' in key.lower():
+                    eefort_data['right'] = f[key][:]
+        
         # Read camera data - dynamically discover camera keys (support multiple naming conventions)
         camera_data = {}
         for key in f.keys():
@@ -84,82 +114,329 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                 if key in f:
                     tactile_data[key] = f[key][:]
         
-        # 1. Plot robot arm data curves with 4 subplots
-        has_arm_data = (len(left_arm_data['joints']) > 0 or len(left_arm_data['gripper']) > 0 or 
-                       len(right_arm_data['joints']) > 0 or len(right_arm_data['gripper']) > 0)
+        # Pre-calculate data statistics for consistent plot ranges
+        def calculate_data_ranges(left_arm_data, right_arm_data, eefort_data):
+            """Calculate min/max ranges for all data to ensure consistent plot scaling"""
+            ranges = {
+                'left_joints': {'min': 0, 'max': 1, 'has_data': False},
+                'right_joints': {'min': 0, 'max': 1, 'has_data': False},
+                'left_gripper': {'min': 0, 'max': 1, 'has_data': False},
+                'right_gripper': {'min': 0, 'max': 1, 'has_data': False},
+                'left_eefort': {'min': 0, 'max': 1, 'has_data': False},
+                'right_eefort': {'min': 0, 'max': 1, 'has_data': False},
+                'max_frames': 0
+            }
+            
+            # Calculate joint ranges
+            if len(left_arm_data['joints']) > 0:
+                ranges['left_joints']['min'] = float(np.min(left_arm_data['joints']))
+                ranges['left_joints']['max'] = float(np.max(left_arm_data['joints']))
+                ranges['left_joints']['has_data'] = True
+                ranges['max_frames'] = max(ranges['max_frames'], len(left_arm_data['joints']))
+            
+            if len(right_arm_data['joints']) > 0:
+                ranges['right_joints']['min'] = float(np.min(right_arm_data['joints']))
+                ranges['right_joints']['max'] = float(np.max(right_arm_data['joints']))
+                ranges['right_joints']['has_data'] = True
+                ranges['max_frames'] = max(ranges['max_frames'], len(right_arm_data['joints']))
+            
+            # Calculate gripper ranges
+            if len(left_arm_data['gripper']) > 0:
+                ranges['left_gripper']['min'] = float(np.min(left_arm_data['gripper']))
+                ranges['left_gripper']['max'] = float(np.max(left_arm_data['gripper']))
+                ranges['left_gripper']['has_data'] = True
+                ranges['max_frames'] = max(ranges['max_frames'], len(left_arm_data['gripper']))
+            
+            if len(right_arm_data['gripper']) > 0:
+                ranges['right_gripper']['min'] = float(np.min(right_arm_data['gripper']))
+                ranges['right_gripper']['max'] = float(np.max(right_arm_data['gripper']))
+                ranges['right_gripper']['has_data'] = True
+                ranges['max_frames'] = max(ranges['max_frames'], len(right_arm_data['gripper']))
+            
+            # Calculate eefort ranges
+            if len(eefort_data['left']) > 0:
+                ranges['left_eefort']['min'] = float(np.min(eefort_data['left']))
+                ranges['left_eefort']['max'] = float(np.max(eefort_data['left']))
+                ranges['left_eefort']['has_data'] = True
+                ranges['max_frames'] = max(ranges['max_frames'], len(eefort_data['left']))
+            
+            if len(eefort_data['right']) > 0:
+                ranges['right_eefort']['min'] = float(np.min(eefort_data['right']))
+                ranges['right_eefort']['max'] = float(np.max(eefort_data['right']))
+                ranges['right_eefort']['has_data'] = True
+                ranges['max_frames'] = max(ranges['max_frames'], len(eefort_data['right']))
+            
+            # Add some padding to ranges for better visualization
+            for key in ['left_joints', 'right_joints', 'left_eefort', 'right_eefort']:
+                if ranges[key]['has_data']:
+                    data_range = ranges[key]['max'] - ranges[key]['min']
+                    padding = data_range * 0.1 if data_range > 0 else 0.1
+                    ranges[key]['min'] -= padding
+                    ranges[key]['max'] += padding
+            
+            # Gripper range is typically 0-1, but add some padding
+            for key in ['left_gripper', 'right_gripper']:
+                if ranges[key]['has_data']:
+                    ranges[key]['min'] = max(0, ranges[key]['min'] - 0.05)
+                    ranges[key]['max'] = min(1, ranges[key]['max'] + 0.05)
+            
+            return ranges
+
+        # Create synchronized videos combining camera and robot data
+        def create_dynamic_plot_frame(frame_idx, data_ranges, left_arm_data, right_arm_data, eefort_data):
+            """Create a single frame of the dynamic plot showing robot data up to current frame"""
+            # Set seaborn style
+            sns.set_style("whitegrid")
+            plt.style.use('seaborn-v0_8')
+            
+            # Create figure with subplots
+            fig = plt.figure(figsize=(16, 12))
+            gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 1], hspace=0.3, wspace=0.3)
+            
+            # Current time range for plotting
+            max_frames = data_ranges['max_frames']
+            current_range = min(frame_idx + 1, max_frames)
+            time_steps = np.arange(current_range)
+            full_time_steps = np.arange(max_frames)  # For consistent x-axis
+            
+            # Plot 1: Left Arm Joint Angles
+            ax1 = fig.add_subplot(gs[0, 0])
+            if data_ranges['left_joints']['has_data'] and current_range > 0:
+                palette = sns.color_palette("husl", min(6, left_arm_data['joints'].shape[1]))
+                for i in range(min(6, left_arm_data['joints'].shape[1])):
+                    ax1.plot(time_steps, left_arm_data['joints'][:current_range, i], 
+                            label=f'Joint {i+1}', color=palette[i], linewidth=2)
+                    # Highlight current point
+                    if frame_idx < len(left_arm_data['joints']):
+                        ax1.scatter(frame_idx, left_arm_data['joints'][frame_idx, i], 
+                                  color=palette[i], s=50, zorder=5)
+                
+                # Set fixed axis ranges
+                ax1.set_xlim(0, max_frames - 1)
+                ax1.set_ylim(data_ranges['left_joints']['min'], data_ranges['left_joints']['max'])
+                ax1.set_title('Left Arm Joint Angles', fontsize=14, fontweight='bold')
+                ax1.set_ylabel('Angle (rad)')
+                ax1.legend(fontsize=10)
+                ax1.grid(True, alpha=0.3)
+            else:
+                ax1.text(0.5, 0.5, 'No Left Arm Joint Data', ha='center', va='center', 
+                        transform=ax1.transAxes, fontsize=12)
+                ax1.set_title('Left Arm Joint Angles', fontsize=14, fontweight='bold')
+                ax1.set_xlim(0, max_frames - 1 if max_frames > 0 else 1)
+                ax1.set_ylim(0, 1)
+            
+            # Plot 2: Right Arm Joint Angles
+            ax2 = fig.add_subplot(gs[0, 1])
+            if data_ranges['right_joints']['has_data'] and current_range > 0:
+                palette = sns.color_palette("husl", min(6, right_arm_data['joints'].shape[1]))
+                for i in range(min(6, right_arm_data['joints'].shape[1])):
+                    ax2.plot(time_steps, right_arm_data['joints'][:current_range, i], 
+                            label=f'Joint {i+1}', color=palette[i], linewidth=2)
+                    # Highlight current point
+                    if frame_idx < len(right_arm_data['joints']):
+                        ax2.scatter(frame_idx, right_arm_data['joints'][frame_idx, i], 
+                                  color=palette[i], s=50, zorder=5)
+                
+                # Set fixed axis ranges
+                ax2.set_xlim(0, max_frames - 1)
+                ax2.set_ylim(data_ranges['right_joints']['min'], data_ranges['right_joints']['max'])
+                ax2.set_title('Right Arm Joint Angles', fontsize=14, fontweight='bold')
+                ax2.set_ylabel('Angle (rad)')
+                ax2.legend(fontsize=10)
+                ax2.grid(True, alpha=0.3)
+            else:
+                ax2.text(0.5, 0.5, 'No Right Arm Joint Data', ha='center', va='center', 
+                        transform=ax2.transAxes, fontsize=12)
+                ax2.set_title('Right Arm Joint Angles', fontsize=14, fontweight='bold')
+                ax2.set_xlim(0, max_frames - 1 if max_frames > 0 else 1)
+                ax2.set_ylim(0, 1)
+            
+            # Plot 3: Gripper States
+            ax3 = fig.add_subplot(gs[1, :])
+            has_gripper_data = data_ranges['left_gripper']['has_data'] or data_ranges['right_gripper']['has_data']
+            
+            if has_gripper_data:
+                # Calculate combined gripper range
+                gripper_min = min(data_ranges['left_gripper']['min'] if data_ranges['left_gripper']['has_data'] else 1,
+                                data_ranges['right_gripper']['min'] if data_ranges['right_gripper']['has_data'] else 1)
+                gripper_max = max(data_ranges['left_gripper']['max'] if data_ranges['left_gripper']['has_data'] else 0,
+                                data_ranges['right_gripper']['max'] if data_ranges['right_gripper']['has_data'] else 0)
+                
+                if data_ranges['left_gripper']['has_data'] and current_range > 0:
+                    ax3.plot(time_steps, left_arm_data['gripper'][:current_range], 
+                            color='purple', label='Left Gripper', linewidth=3)
+                    if frame_idx < len(left_arm_data['gripper']):
+                        ax3.scatter(frame_idx, left_arm_data['gripper'][frame_idx], 
+                                  color='purple', s=60, zorder=5)
+                
+                if data_ranges['right_gripper']['has_data'] and current_range > 0:
+                    ax3.plot(time_steps, right_arm_data['gripper'][:current_range], 
+                            color='orange', label='Right Gripper', linewidth=3)
+                    if frame_idx < len(right_arm_data['gripper']):
+                        ax3.scatter(frame_idx, right_arm_data['gripper'][frame_idx], 
+                                  color='orange', s=60, zorder=5)
+                
+                # Set fixed axis ranges
+                ax3.set_xlim(0, max_frames - 1)
+                ax3.set_ylim(gripper_min, gripper_max)
+                ax3.set_title('Gripper States', fontsize=14, fontweight='bold')
+                ax3.set_ylabel('Opening Degree')
+                ax3.legend(fontsize=12)
+                ax3.grid(True, alpha=0.3)
+            else:
+                ax3.text(0.5, 0.5, 'No Gripper Data', ha='center', va='center', 
+                        transform=ax3.transAxes, fontsize=12)
+                ax3.set_title('Gripper States', fontsize=14, fontweight='bold')
+                ax3.set_xlim(0, max_frames - 1 if max_frames > 0 else 1)
+                ax3.set_ylim(0, 1)
+            
+            # Plot 4: Eefort Data
+            ax4 = fig.add_subplot(gs[2, :])
+            has_eefort_data = data_ranges['left_eefort']['has_data'] or data_ranges['right_eefort']['has_data']
+            
+            if has_eefort_data:
+                # Calculate combined eefort range
+                eefort_min = min(data_ranges['left_eefort']['min'] if data_ranges['left_eefort']['has_data'] else 0,
+                               data_ranges['right_eefort']['min'] if data_ranges['right_eefort']['has_data'] else 0)
+                eefort_max = max(data_ranges['left_eefort']['max'] if data_ranges['left_eefort']['has_data'] else 1,
+                               data_ranges['right_eefort']['max'] if data_ranges['right_eefort']['has_data'] else 1)
+                
+                if data_ranges['left_eefort']['has_data'] and current_range > 0:
+                    # If multi-dimensional, plot each component
+                    if len(eefort_data['left'].shape) > 1:
+                        palette = sns.color_palette("Reds_r", eefort_data['left'].shape[1])
+                        for i in range(min(6, eefort_data['left'].shape[1])):
+                            ax4.plot(time_steps, eefort_data['left'][:current_range, i], 
+                                    color=palette[i], label=f'Left F{i+1}', linewidth=2)
+                    else:
+                        ax4.plot(time_steps, eefort_data['left'][:current_range], 
+                                color='red', label='Left Force', linewidth=3)
+                
+                if data_ranges['right_eefort']['has_data'] and current_range > 0:
+                    # If multi-dimensional, plot each component
+                    if len(eefort_data['right'].shape) > 1:
+                        palette = sns.color_palette("Blues_r", eefort_data['right'].shape[1])
+                        for i in range(min(6, eefort_data['right'].shape[1])):
+                            ax4.plot(time_steps, eefort_data['right'][:current_range, i], 
+                                    color=palette[i], label=f'Right F{i+1}', linewidth=2)
+                    else:
+                        ax4.plot(time_steps, eefort_data['right'][:current_range], 
+                                color='blue', label='Right Force', linewidth=3)
+                
+                # Set fixed axis ranges
+                ax4.set_xlim(0, max_frames - 1)
+                ax4.set_ylim(eefort_min, eefort_max)
+                ax4.set_title('Joint-Effector Forces', fontsize=14, fontweight='bold')
+                ax4.set_ylabel('Force (N)')
+                ax4.set_xlabel('Time Step')
+                ax4.legend(fontsize=10, ncol=2)
+                ax4.grid(True, alpha=0.3)
+            else:
+                ax4.text(0.5, 0.5, 'No Force Data', ha='center', va='center', 
+                        transform=ax4.transAxes, fontsize=12)
+                ax4.set_title('Joint-Effector Forces', fontsize=14, fontweight='bold')
+                ax4.set_xlabel('Time Step')
+                ax4.set_xlim(0, max_frames - 1 if max_frames > 0 else 1)
+                ax4.set_ylim(0, 1)
+            
+            # Add frame information
+            fig.suptitle(f'Robot Data Visualization - Frame {frame_idx + 1}/{max_frames}', 
+                        fontsize=16, fontweight='bold')
+            
+            # Convert plot to image
+            fig.canvas.draw()
+            # Try newer method first, fall back to older method if needed
+            try:
+                buf = fig.canvas.buffer_rgba()
+                plot_img = np.asarray(buf)[:, :, :3]  # Remove alpha channel
+            except AttributeError:
+                try:
+                    buf = fig.canvas.tostring_rgb()
+                    plot_img = np.frombuffer(buf, dtype=np.uint8)
+                    plot_img = plot_img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+                except AttributeError:
+                    # For newer matplotlib versions
+                    buf = fig.canvas.renderer.buffer_rgba()
+                    plot_img = np.asarray(buf)[:, :, :3]  # Remove alpha channel
+            plt.close(fig)
+            
+            return plot_img
         
-        if has_arm_data:
-            fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
-            fig.suptitle('Dual-Arm Robot Data Visualization', fontsize=16)
+        def create_combined_video(camera_frames, camera_name, left_arm_data, right_arm_data, eefort_data, output_path, fps=30):
+            """Create synchronized video combining camera feed and dynamic plots"""
+            if len(camera_frames) == 0:
+                return
+                
+            # Calculate data ranges for consistent plotting
+            data_ranges = calculate_data_ranges(left_arm_data, right_arm_data, eefort_data)
             
-            # Determine time steps
-            max_frames = max(
-                len(left_arm_data['joints']), len(left_arm_data['gripper']),
-                len(right_arm_data['joints']), len(right_arm_data['gripper'])
-            )
-            if max_frames > 0:
-                time_steps = range(max_frames)
-                
-                # Plot 1: Left Arm Joint Angles
-                if len(left_arm_data['joints']) > 0:
-                    labels = [f'Joint {i+1}' for i in range(min(6, left_arm_data['joints'].shape[1]))]
-                    for i in range(min(6, left_arm_data['joints'].shape[1])):
-                        ax1.plot(time_steps, left_arm_data['joints'][:, i], label=labels[i])
-                    
-                    ax1.set_title('Left Arm Joint Angles (radians)')
-                    ax1.set_ylabel('Angle (rad)')
-                    ax1.grid(True, linestyle='--', alpha=0.7)
-                    ax1.legend()
-                else:
-                    ax1.set_title('Left Arm Joint Angles (No Data)')
-                    ax1.text(0.5, 0.5, 'No joint data available', ha='center', va='center', transform=ax1.transAxes)
-                
-                # Plot 2: Right Arm Joint Angles
-                if len(right_arm_data['joints']) > 0:
-                    labels = [f'Joint {i+1}' for i in range(min(6, right_arm_data['joints'].shape[1]))]
-                    for i in range(min(6, right_arm_data['joints'].shape[1])):
-                        ax2.plot(time_steps, right_arm_data['joints'][:, i], label=labels[i])
-                    
-                    ax2.set_title('Right Arm Joint Angles (radians)')
-                    ax2.set_ylabel('Angle (rad)')
-                    ax2.grid(True, linestyle='--', alpha=0.7)
-                    ax2.legend()
-                else:
-                    ax2.set_title('Right Arm Joint Angles (No Data)')
-                    ax2.text(0.5, 0.5, 'No joint data available', ha='center', va='center', transform=ax2.transAxes)
-                
-                # Plot 3: Left Arm Gripper
-                if len(left_arm_data['gripper']) > 0:
-                    ax3.plot(time_steps, left_arm_data['gripper'], color='purple', label='Left Gripper')
-                    ax3.set_title('Left Arm Gripper State')
-                    ax3.set_xlabel('Time Step')
-                    ax3.set_ylabel('Opening Degree')
-                    ax3.set_ylim(0, 1.1)
-                    ax3.grid(True, linestyle='--', alpha=0.7)
-                    ax3.legend()
-                else:
-                    ax3.set_title('Left Arm Gripper (No Data)')
-                    ax3.text(0.5, 0.5, 'No gripper data available', ha='center', va='center', transform=ax3.transAxes)
-                
-                # Plot 4: Right Arm Gripper
-                if len(right_arm_data['gripper']) > 0:
-                    ax4.plot(time_steps, right_arm_data['gripper'], color='orange', label='Right Gripper')
-                    ax4.set_title('Right Arm Gripper State')
-                    ax4.set_xlabel('Time Step')
-                    ax4.set_ylabel('Opening Degree')
-                    ax4.set_ylim(0, 1.1)
-                    ax4.grid(True, linestyle='--', alpha=0.7)
-                    ax4.legend()
-                else:
-                    ax4.set_title('Right Arm Gripper (No Data)')
-                    ax4.text(0.5, 0.5, 'No gripper data available', ha='center', va='center', transform=ax4.transAxes)
+            # Determine the number of frames
+            max_frames = len(camera_frames)
             
-            plt.tight_layout()
-            plt.subplots_adjust(top=0.92)
-            plt.savefig(os.path.join(output_dir, 'dual_arm_data_plot.png'), dpi=300, bbox_inches='tight')
-            plt.close()
-            if verbose:
-                print(f"Saved dual-arm data plot: {os.path.join(output_dir, 'dual_arm_data_plot.png')}")
+            # Create temporary directory for combined frames
+            temp_dir = os.path.join(output_path, f"temp_{camera_name}_combined")
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            try:
+                # Generate combined frames
+                for frame_idx in tqdm(range(max_frames), desc=f"Creating {camera_name} combined frames", disable=not verbose):
+                    # Get camera frame
+                    camera_frame = camera_frames[frame_idx]
+                    
+                    # Process camera frame
+                    if camera_frame.dtype != np.uint8:
+                        camera_frame = cv2.normalize(camera_frame, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+                    
+                    if len(camera_frame.shape) == 3 and camera_frame.shape[2] == 3:
+                        camera_frame = cv2.cvtColor(camera_frame, cv2.COLOR_RGB2BGR)
+                    
+                    # Resize camera frame to standard size
+                    camera_height, camera_width = 480, 640
+                    camera_frame_resized = cv2.resize(camera_frame, (camera_width, camera_height))
+                    
+                    # Generate plot frame
+                    plot_img = create_dynamic_plot_frame(frame_idx, data_ranges, left_arm_data, right_arm_data, eefort_data)
+                    plot_img_bgr = cv2.cvtColor(plot_img, cv2.COLOR_RGB2BGR)
+                    
+                    # Resize plot to match camera height
+                    plot_aspect_ratio = plot_img.shape[1] / plot_img.shape[0]
+                    plot_width = int(camera_height * plot_aspect_ratio)
+                    plot_img_resized = cv2.resize(plot_img_bgr, (plot_width, camera_height))
+                    
+                    # Combine camera and plot horizontally
+                    combined_frame = np.hstack([camera_frame_resized, plot_img_resized])
+                    
+                    # Add title overlay
+                    title_text = f"{camera_name} - Frame {frame_idx + 1}/{max_frames}"
+                    cv2.putText(combined_frame, title_text, (10, 30), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+                    
+                    # Save frame
+                    cv2.imwrite(os.path.join(temp_dir, f"frame_{frame_idx:06d}.png"), combined_frame)
+                
+                # Create video using FFmpeg
+                video_path = os.path.join(output_path, f"{camera_name}_with_plots.mp4")
+                cmd = [
+                    'ffmpeg', '-y', '-loglevel', 'error',
+                    '-framerate', str(fps),
+                    '-i', os.path.join(temp_dir, 'frame_%06d.png'),
+                    '-c:v', 'libx264', '-crf', '23', '-preset', 'medium',
+                    '-pix_fmt', 'yuv420p', video_path
+                ]
+                
+                subprocess.run(cmd, check=True)
+                if verbose:
+                    print(f"Saved combined video: {video_path}")
+                    
+            except Exception as e:
+                if verbose:
+                    print(f"Error creating combined video for {camera_name}: {e}")
+            finally:
+                # Clean up temporary files
+                if os.path.exists(temp_dir):
+                    for file in os.listdir(temp_dir):
+                        os.remove(os.path.join(temp_dir, file))
+                    os.rmdir(temp_dir)
         
         # 视频保存函数
         def save_with_ffmpeg(frames, filename, output_path, fps=30, is_tactile=False):
@@ -230,9 +507,22 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                     os.remove(os.path.join(temp_dir, file))
                 os.rmdir(temp_dir)
         
-        # Save camera videos
+        # Determine maximum frames for synchronization
+        max_frames = 0
+        if camera_data:
+            max_frames = max(len(frames) for frames in camera_data.values())
+        
+        # Save combined camera videos with dynamic plots
+        combined_dir = os.path.join(output_dir, "video/combined")
+        os.makedirs(combined_dir, exist_ok=True)
+        
         for camera_name, camera_frames in camera_data.items():
             if len(camera_frames) > 0:
+                # Create combined video with plots
+                create_combined_video(camera_frames, camera_name, left_arm_data, right_arm_data, 
+                                    eefort_data, combined_dir, fps=30)
+                
+                # Also save original camera video for reference
                 save_with_ffmpeg(camera_frames, f"{camera_name}_video", camera_dir)
         
         # Save tactile force videos
@@ -252,8 +542,16 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
             print(f"Left arm gripper: {len(left_arm_data['gripper'])} frames")
             print(f"Right arm joints: {len(right_arm_data['joints'])} frames")
             print(f"Right arm gripper: {len(right_arm_data['gripper'])} frames")
+            print(f"Left arm eefort: {len(eefort_data['left'])} frames")
+            print(f"Right arm eefort: {len(eefort_data['right'])} frames")
             print(f"Camera data: {len(camera_data)} cameras")
             print(f"Tactile data: {len(tactile_data)} sensors")
+            print(f"Generated combined videos: {len([name for name, frames in camera_data.items() if len(frames) > 0])}")
+            print(f"Output directories:")
+            print(f"  - Combined videos: {combined_dir}")
+            print(f"  - Original camera videos: {camera_dir}")
+            if tactile_data:
+                print(f"  - Tactile videos: {tactile_dir}")
 
 def explore_hdf5_structure(hdf5_path, verbose=False):
     """
@@ -447,7 +745,7 @@ def print_files_summary(files_info, verbose=False):
 
 if __name__ == "__main__":
     # 文件夹路径
-    folder_path = "/home/usst/kwj/GitCode/control_your_robot_jie/test/pick_place_cup/"
+    folder_path = "/home/usst/kwj/GitCode/control_your_robot_jie/save/test/"
     
     # 检查文件夹是否存在
     if not os.path.exists(folder_path):
@@ -461,7 +759,7 @@ if __name__ == "__main__":
     
     # 直接批量处理（启用详细输出以便调试）
     if files_info:
-        output_dir = "save/output/test/pick_place_cup/"
+        output_dir = "save/output/test/test_eefort/"
         visualize_folder(folder_path, output_dir, verbose=True)
     else:
         print("没有找到HDF5文件，无法处理")

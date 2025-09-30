@@ -38,12 +38,15 @@ class PiperController(ArmController):
         state = {}
         eef = self.controller.GetArmEndPoseMsgs()
         joint = self.controller.GetArmJointMsgs()
+        eefort= self.controller.GetArmHighSpdInfoMsgs()
         
         state["joint"] = np.array([joint.joint_state.joint_1, joint.joint_state.joint_2, joint.joint_state.joint_3,\
                                    joint.joint_state.joint_4, joint.joint_state.joint_5, joint.joint_state.joint_6]) * 0.001 / 180 * 3.1415926
         state["qpos"] = np.array([eef.end_pose.X_axis, eef.end_pose.Y_axis, eef.end_pose.Z_axis, \
                                   eef.end_pose.RX_axis, eef.end_pose.RY_axis, eef.end_pose.RZ_axis]) * 0.001 / 1000
         state["gripper"] = self.controller.GetArmGripperMsgs().gripper_state.grippers_angle * 0.001 / 70
+        state["eefort"]=np.array([eefort.motor_1.effort,eefort.motor_2.effort,eefort.motor_3.effort,eefort.motor_4.effort,\
+                                  eefort.motor_5.effort,eefort.motor_6.effort])
         return state
 
     # All returned values are expressed in meters,if the value represents an angle, it is returned in radians
@@ -112,10 +115,10 @@ if __name__=="__main__":
     controller.set_gripper(0.2)
     controller.set_joint(np.array([0.1,0.1,-0.2,0.3,-0.2,0.5]))
     time.sleep(1)
-    print(controller.get_gripper())
+    # print(controller.get_gripper())
     print(controller.get_state())
 
     controller.set_position(np.array([0.057, 0.0, 0.260, 0.0, 0.085, 0.0]))
     time.sleep(1)
-    print(controller.get_gripper())
+    # print(controller.get_gripper())
     print(controller.get_state())
