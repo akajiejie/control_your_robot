@@ -17,8 +17,8 @@ import math
 from typing import Dict, Any
 
 condition = {
-    "save_path": "./save/", 
-    "task_name": "test", 
+    "save_path": "./save/real_data/", 
+    "task_name": "feed_test", 
     "save_format": "hdf5", 
     "save_freq": 30,
     "collect_type": "teleop",
@@ -58,7 +58,7 @@ class MasterWorker(Worker):
 
     def component_init(self):
         self.component = DrAlohaController(name="arm")
-        self.component.set_up(com="/dev/ttyACM1")
+        self.component.set_up(com="/dev/ttyACM0")
         self.component.set_collect_info(["joint","gripper"])
 
         self.component.apply_calibration()
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         
         master = MasterWorker("master_arm", start_event, end_event)
         slave = SlaveWorker("slave_arm", start_event, end_event, master.data_buffer)
-        data = DataWorker("collect_data", start_event, end_event, slave.data_buffer, episode_id=i, resume=False)
+        data = DataWorker("collect_data", start_event, end_event, slave.data_buffer, episode_id=i, resume=True)
 
         time_scheduler = TimeScheduler(work_events=[master.forward_event], time_freq=30, end_events=[data.next_event])
         

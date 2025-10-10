@@ -10,8 +10,13 @@ import subprocess
 import sys
 import matplotlib
 matplotlib.use('Agg')  # Use non-GUI backend for video generation
+from multiprocessing import Pool, cpu_count
+from functools import partial
+import time
+import shutil
 
-def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
+
+def visualize_hdf5(hdf5_path, output_dir="output", verbose=False, force_regenerate=False):
     """
     Visualize HDF5 file content:
     1. Create synchronized videos combining camera feeds with dynamic robot data plots
@@ -22,12 +27,44 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
         hdf5_path: Path to HDF5 file
         output_dir: Output directory
         verbose: Enable verbose output
+        force_regenerate: Force regeneration even if output exists
     """
     # Create output directories
     os.makedirs(output_dir, exist_ok=True)
     camera_dir = os.path.join(output_dir, "video/camera")
     tactile_dir = os.path.join(output_dir, "video/tactile")
+    combined_dir = os.path.join(output_dir, "video/combined")
     os.makedirs(camera_dir, exist_ok=True)
+    
+    # Check if processing is needed (caching mechanism)
+    def should_process_file():
+        if force_regenerate:
+            return True
+            
+        # Check if HDF5 file is newer than existing output
+        if not os.path.exists(hdf5_path):
+            return False
+            
+        hdf5_mtime = os.path.getmtime(hdf5_path)
+        
+        # Check if any video files exist and are newer than HDF5
+        video_dirs = [camera_dir, combined_dir]
+        if os.path.exists(tactile_dir):
+            video_dirs.append(tactile_dir)
+            
+        for video_dir in video_dirs:
+            if os.path.exists(video_dir):
+                for file in os.listdir(video_dir):
+                    if file.endswith('.mp4'):
+                        video_path = os.path.join(video_dir, file)
+                        if os.path.getmtime(video_path) > hdf5_mtime:
+                            if verbose:
+                                print(f"Skipping {os.path.basename(hdf5_path)} - videos are up to date")
+                            return False
+        return True
+    
+    if not should_process_file():
+        return
     
     # Load config.json from the same directory as the HDF5 file
     hdf5_dir = os.path.dirname(hdf5_path)
@@ -183,15 +220,27 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
             return ranges
 
         # Create synchronized videos combining camera and robot data
-        def create_dynamic_plot_frame(frame_idx, data_ranges, left_arm_data, right_arm_data, eefort_data):
+        def create_dynamic_plot_frame(frame_idx, data_ranges, left_arm_data, right_arm_data, eefort_data, fig=None, axes=None):
             """Create a single frame of the dynamic plot showing robot data up to current frame"""
-            # Set seaborn style
-            sns.set_style("whitegrid")
-            plt.style.use('seaborn-v0_8')
-            
-            # Create figure with subplots
-            fig = plt.figure(figsize=(16, 12))
-            gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 1], hspace=0.3, wspace=0.3)
+            # Reuse figure and axes if provided (major performance improvement)
+            if fig is None or axes is None:
+                # Set seaborn style only once
+                sns.set_style("whitegrid")
+                plt.style.use('seaborn-v0_8')
+                
+                # Create figure with subplots
+                fig = plt.figure(figsize=(16, 12))
+                gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 1], hspace=0.3, wspace=0.3)
+                axes = {
+                    'ax1': fig.add_subplot(gs[0, 0]),
+                    'ax2': fig.add_subplot(gs[0, 1]),
+                    'ax3': fig.add_subplot(gs[1, :]),
+                    'ax4': fig.add_subplot(gs[2, :])
+                }
+            else:
+                # Clear existing plots
+                for ax in axes.values():
+                    ax.clear()
             
             # Current time range for plotting
             max_frames = data_ranges['max_frames']
@@ -200,7 +249,7 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
             full_time_steps = np.arange(max_frames)  # For consistent x-axis
             
             # Plot 1: Left Arm Joint Angles
-            ax1 = fig.add_subplot(gs[0, 0])
+            ax1 = axes['ax1']
             if data_ranges['left_joints']['has_data'] and current_range > 0:
                 palette = sns.color_palette("husl", min(6, left_arm_data['joints'].shape[1]))
                 for i in range(min(6, left_arm_data['joints'].shape[1])):
@@ -226,7 +275,7 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                 ax1.set_ylim(0, 1)
             
             # Plot 2: Right Arm Joint Angles
-            ax2 = fig.add_subplot(gs[0, 1])
+            ax2 = axes['ax2']
             if data_ranges['right_joints']['has_data'] and current_range > 0:
                 palette = sns.color_palette("husl", min(6, right_arm_data['joints'].shape[1]))
                 for i in range(min(6, right_arm_data['joints'].shape[1])):
@@ -252,7 +301,7 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                 ax2.set_ylim(0, 1)
             
             # Plot 3: Gripper States
-            ax3 = fig.add_subplot(gs[1, :])
+            ax3 = axes['ax3']
             has_gripper_data = data_ranges['left_gripper']['has_data'] or data_ranges['right_gripper']['has_data']
             
             if has_gripper_data:
@@ -291,7 +340,7 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                 ax3.set_ylim(0, 1)
             
             # Plot 4: Eefort Data
-            ax4 = fig.add_subplot(gs[2, :])
+            ax4 = axes['ax4']
             has_eefort_data = data_ranges['left_eefort']['has_data'] or data_ranges['right_eefort']['has_data']
             
             if has_eefort_data:
@@ -358,9 +407,11 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                     # For newer matplotlib versions
                     buf = fig.canvas.renderer.buffer_rgba()
                     plot_img = np.asarray(buf)[:, :, :3]  # Remove alpha channel
-            plt.close(fig)
+            # Don't close the figure if we're reusing it
+            if axes is None:
+                plt.close(fig)
             
-            return plot_img
+            return plot_img, fig, axes
         
         def create_combined_video(camera_frames, camera_name, left_arm_data, right_arm_data, eefort_data, output_path, fps=30):
             """Create synchronized video combining camera feed and dynamic plots"""
@@ -378,6 +429,9 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
             os.makedirs(temp_dir, exist_ok=True)
             
             try:
+                # Initialize reusable figure and axes for better performance
+                fig, axes = None, None
+                
                 # Generate combined frames
                 for frame_idx in tqdm(range(max_frames), desc=f"Creating {camera_name} combined frames", disable=not verbose):
                     # Get camera frame
@@ -394,8 +448,8 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                     camera_height, camera_width = 480, 640
                     camera_frame_resized = cv2.resize(camera_frame, (camera_width, camera_height))
                     
-                    # Generate plot frame
-                    plot_img = create_dynamic_plot_frame(frame_idx, data_ranges, left_arm_data, right_arm_data, eefort_data)
+                    # Generate plot frame (reuse figure and axes)
+                    plot_img, fig, axes = create_dynamic_plot_frame(frame_idx, data_ranges, left_arm_data, right_arm_data, eefort_data, fig, axes)
                     plot_img_bgr = cv2.cvtColor(plot_img, cv2.COLOR_RGB2BGR)
                     
                     # Resize plot to match camera height
@@ -432,80 +486,136 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                 if verbose:
                     print(f"Error creating combined video for {camera_name}: {e}")
             finally:
+                # Close the reused figure
+                if fig is not None:
+                    plt.close(fig)
+                
                 # Clean up temporary files
                 if os.path.exists(temp_dir):
                     for file in os.listdir(temp_dir):
                         os.remove(os.path.join(temp_dir, file))
                     os.rmdir(temp_dir)
         
-        # 视频保存函数
-        def save_with_ffmpeg(frames, filename, output_path, fps=30, is_tactile=False):
-            """使用FFmpeg保存视频（需要系统安装FFmpeg）"""
+        # 优化的视频保存函数
+        def save_with_ffmpeg_optimized(frames, filename, output_path, fps=30, is_tactile=False):
+            """使用FFmpeg保存视频（优化版本，减少磁盘I/O）"""
             if len(frames) == 0:
                 return
                 
-            # 创建临时目录存储帧图像
-            temp_dir = os.path.join(output_path, "temp_frames")
-            os.makedirs(temp_dir, exist_ok=True)
-            
-            # 保存所有帧为PNG图像
-            for i, frame in enumerate(tqdm(frames, desc=f"Saving {filename} frames", disable=not verbose)):
-                if is_tactile:
-                    # 处理触觉数据
-                    # 归一化到0-255范围
-                    normalized = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX)
-                    # 转换为uint8类型
-                    normalized = normalized.astype(np.uint8)
-                    # 应用颜色映射
-                    colormap = cv2.applyColorMap(normalized, cv2.COLORMAP_VIRIDIS)
-                    # 放大图像以便观看 (16x16 -> 256x256)
-                    resized = cv2.resize(colormap, (256, 256), interpolation=cv2.INTER_NEAREST)
-                    # 添加标题
-                    cv2.putText(resized, f"Tactile: {filename}", (10, 30), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
-                    cv2.imwrite(os.path.join(temp_dir, f"frame_{i:06d}.png"), resized)
-                else:
-                    # 处理相机数据
-                    if frame.dtype != np.uint8:
-                        # 如果数据不是uint8，进行归一化
-                        frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-                    
-                    # 检查是否需要颜色空间转换
-                    if len(frame.shape) == 3 and frame.shape[2] == 3:
-                        # 假设是RGB格式，转换为BGR
-                        frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                    else:
-                        frame_bgr = frame
-                    
-                    cv2.imwrite(os.path.join(temp_dir, f"frame_{i:06d}.png"), frame_bgr)
-            
-            # 使用FFmpeg创建视频
             video_path = os.path.join(output_path, f"{filename}.mp4")
+            
+            # 使用FFmpeg的stdin管道直接传输帧数据，避免临时文件
             cmd = [
-                    'ffmpeg',
-                    '-y',  # 覆盖现有文件
-                    '-loglevel', 'error',  # 只显示错误信息
-                    '-framerate', str(fps),
-                    '-i', os.path.join(temp_dir, 'frame_%06d.png'),
-                    '-c:v', 'libx264',
-                    '-crf', '23',
-                    '-preset', 'medium',
-                    '-pix_fmt', 'yuv420p',
-                    video_path
-                ]
+                'ffmpeg',
+                '-y',  # 覆盖现有文件
+                '-loglevel', 'error',  # 只显示错误信息
+                '-f', 'rawvideo',
+                '-vcodec', 'rawvideo',
+                '-s', '640x480' if not is_tactile else '256x256',  # 设置帧大小
+                '-pix_fmt', 'bgr24',
+                '-r', str(fps),
+                '-i', '-',  # 从stdin读取
+                '-c:v', 'libx264',
+                '-crf', '23',
+                '-preset', 'fast',  # 使用更快的预设
+                '-pix_fmt', 'yuv420p',
+                video_path
+            ]
+            
+            process = None
+            stdin_closed = False
             
             try:
-                subprocess.run(cmd, check=True)
+                # 启动FFmpeg进程
+                process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                # 直接向FFmpeg管道写入帧数据
+                for i, frame in enumerate(tqdm(frames, desc=f"Encoding {filename}", disable=not verbose)):
+                    # 检查进程是否还在运行
+                    if process.poll() is not None:
+                        if verbose:
+                            print(f"FFmpeg process terminated early for {filename}")
+                        break
+                    
+                    if is_tactile:
+                        # 处理触觉数据
+                        normalized = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+                        colormap = cv2.applyColorMap(normalized, cv2.COLORMAP_VIRIDIS)
+                        resized = cv2.resize(colormap, (256, 256), interpolation=cv2.INTER_NEAREST)
+                        cv2.putText(resized, f"Tactile: {filename}", (10, 30), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+                        processed_frame = resized
+                    else:
+                        # 处理相机数据
+                        if frame.dtype != np.uint8:
+                            frame = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+                        
+                        if len(frame.shape) == 3 and frame.shape[2] == 3:
+                            frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                        else:
+                            frame_bgr = frame
+                        
+                        # 确保帧大小一致
+                        processed_frame = cv2.resize(frame_bgr, (640, 480))
+                    
+                    # 写入帧数据到FFmpeg
+                    try:
+                        if process.stdin and not stdin_closed:
+                            process.stdin.write(processed_frame.tobytes())
+                            process.stdin.flush()  # 确保数据被写入
+                    except (BrokenPipeError, OSError) as e:
+                        if verbose:
+                            print(f"Pipe broken while writing frame {i} for {filename}: {e}")
+                        break
+                
+                # 安全关闭stdin
+                try:
+                    if process and process.stdin and not stdin_closed:
+                        process.stdin.close()
+                        stdin_closed = True
+                except (BrokenPipeError, OSError):
+                    # stdin已经被关闭，忽略错误
+                    stdin_closed = True
+                
+                # 等待FFmpeg完成
+                if process:
+                    try:
+                        stdout_output, stderr_output = process.communicate(timeout=30)
+                        
+                        if process.returncode == 0:
+                            if verbose:
+                                print(f"Saved video: {video_path}")
+                        else:
+                            if verbose:
+                                print(f"FFmpeg error for {filename}: {stderr_output.decode() if stderr_output else 'Unknown error'}")
+                    except subprocess.TimeoutExpired:
+                        if verbose:
+                            print(f"FFmpeg timeout for {filename}, terminating process")
+                        process.kill()
+                        process.communicate()
+                        
+            except Exception as e:
                 if verbose:
-                    print(f"Saved video: {video_path}")
-            except subprocess.CalledProcessError as e:
-                if verbose:
-                    print(f"FFmpeg error: {e}")
+                    print(f"Error creating video {filename}: {e}")
             finally:
-                # 清理临时文件
-                for file in os.listdir(temp_dir):
-                    os.remove(os.path.join(temp_dir, file))
-                os.rmdir(temp_dir)
+                # 确保进程被正确清理
+                if process:
+                    try:
+                        if not stdin_closed and process.stdin:
+                            process.stdin.close()
+                    except (BrokenPipeError, OSError):
+                        pass
+                    
+                    # 如果进程还在运行，终止它
+                    if process.poll() is None:
+                        try:
+                            process.terminate()
+                            process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            process.kill()
+                            process.wait()
+                        except:
+                            pass
         
         # Determine maximum frames for synchronization
         max_frames = 0
@@ -523,14 +633,14 @@ def visualize_hdf5(hdf5_path, output_dir="output", verbose=False):
                                     eefort_data, combined_dir, fps=30)
                 
                 # Also save original camera video for reference
-                save_with_ffmpeg(camera_frames, f"{camera_name}_video", camera_dir)
+                save_with_ffmpeg_optimized(camera_frames, f"{camera_name}_video", camera_dir)
         
         # Save tactile force videos
         for data_type, data in tactile_data.items():
             # 确保数据是16x16矩阵
             if len(data.shape) == 3 and data.shape[1] == 16 and data.shape[2] == 16:
                 os.makedirs(tactile_dir, exist_ok=True)
-                save_with_ffmpeg(data, f"tactile_{data_type}", tactile_dir, fps=30, is_tactile=True)
+                save_with_ffmpeg_optimized(data, f"tactile_{data_type}", tactile_dir, fps=30, is_tactile=True)
             else:
                 if verbose:
                     print(f"Warning: Unexpected tactile data shape {data.shape} for {data_type}")
@@ -571,13 +681,52 @@ def explore_hdf5_structure(hdf5_path, verbose=False):
                 print(f"  Group: {name}")
         f.visititems(print_structure)
 
-def visualize_folder(folder_path, output_base_dir="output", verbose=False):
+def process_single_hdf5(args):
     """
-    可视化文件夹下的所有HDF5文件
+    处理单个HDF5文件的函数，用于多进程处理
+    
+    Parameters:
+        args: (hdf5_file, output_base_dir, verbose, force_regenerate) 元组
+        
+    Returns:
+        tuple: (success, filename, error_message, skipped)
+    """
+    hdf5_file, output_base_dir, verbose, force_regenerate = args
+    file_name = os.path.splitext(os.path.basename(hdf5_file))[0]
+    output_dir = os.path.join(output_base_dir, file_name)
+    
+    try:
+        # 首先探索文件结构
+        explore_hdf5_structure(hdf5_file, verbose=verbose)
+        
+        # 直接可视化数据，简化逻辑
+        visualize_hdf5(hdf5_file, output_dir, verbose=verbose, force_regenerate=force_regenerate)
+        
+        return True, os.path.basename(hdf5_file), None, False
+        
+    except Exception as e:
+        import traceback
+        error_msg = f"{str(e)}\n{traceback.format_exc()}"
+        return False, os.path.basename(hdf5_file), error_msg, False
+
+def visualize_folder(folder_path, output_base_dir="output", verbose=False, max_workers=None, force_regenerate=False):
+    """
+    可视化文件夹下的所有HDF5文件（支持多进程加速和智能缓存）
     
     Parameters:
         folder_path: 包含HDF5文件的文件夹路径
         output_base_dir: 输出基础目录
+        verbose: 详细输出模式
+        max_workers: 最大工作进程数，None表示使用CPU核心数
+        force_regenerate: 强制重新生成所有视频
+    # 快速处理（推荐）
+    python visual_hdf5.py /path/to/hdf5/folder -v
+
+    # 最大性能（多核系统）
+    python visual_hdf5.py /path/to/hdf5/folder -j 8 -v
+
+    # 强制重新生成
+    python visual_hdf5.py /path/to/hdf5/folder -f -v
     """
     if not os.path.exists(folder_path):
         print(f"文件夹不存在: {folder_path}")
@@ -593,6 +742,15 @@ def visualize_folder(folder_path, output_base_dir="output", verbose=False):
         print(f"在文件夹 {folder_path} 中未找到HDF5文件")
         return
     
+    # 确定工作进程数
+    if max_workers is None or max_workers == 0:
+        max_workers = min(cpu_count(), len(hdf5_files))
+    else:
+        max_workers = min(max_workers, len(hdf5_files))
+    
+    # 确保至少有1个进程
+    max_workers = max(1, max_workers)
+    
     # Quiet mode: only print count; verbose: also list files
     if verbose:
         print(f"找到 {len(hdf5_files)} 个HDF5文件:")
@@ -601,69 +759,112 @@ def visualize_folder(folder_path, output_base_dir="output", verbose=False):
     else:
         print(f"找到 {len(hdf5_files)} 个HDF5文件")
     
+    print(f"使用 {max_workers} 个进程并行处理")
+    
     # 创建输出目录
     os.makedirs(output_base_dir, exist_ok=True)
     
     # 跟踪处理结果
     successful_files = []
     failed_files = []
+    skipped_files = []
     
-    # 处理每个HDF5文件（显示总体进度条）
-    with tqdm(total=len(hdf5_files), desc="Processing HDF5 files", unit="file", disable=False) as pbar:
-        for i, hdf5_file in enumerate(hdf5_files, 1):
-            if verbose:
-                print(f"\n{'='*60}")
-                print(f"处理文件 {i}/{len(hdf5_files)}: {os.path.basename(hdf5_file)}")
-                print(f"{'='*60}")
-            
-            # 为每个文件创建独立的输出目录
-            file_name = os.path.splitext(os.path.basename(hdf5_file))[0]
-            output_dir = os.path.join(output_base_dir, file_name)
-            
-            try:
-                # 首先探索文件结构
-                explore_hdf5_structure(hdf5_file, verbose=verbose)
-                if verbose:
-                    print("\n" + "-"*50 + "\n")
-                
-                # 然后可视化数据
-                visualize_hdf5(hdf5_file, output_dir, verbose=verbose)
-                
-                # 记录成功处理的文件
-                successful_files.append(os.path.basename(hdf5_file))
-                
-                if verbose:
-                    print(f"✓ 文件 {os.path.basename(hdf5_file)} 处理完成")
-                
-            except Exception as e:
-                # 记录失败的文件
-                failed_files.append(os.path.basename(hdf5_file))
-                print(f"✗ 处理文件 {os.path.basename(hdf5_file)} 时出错: {str(e)}")
-            finally:
+    # 记录开始时间
+    start_time = time.time()
+    
+    # 准备参数
+    args_list = [(hdf5_file, output_base_dir, verbose, force_regenerate) for hdf5_file in hdf5_files]
+    
+    # 使用多进程处理
+    if max_workers > 1:
+        try:
+            with Pool(processes=max_workers) as pool:
+                # 使用imap_unordered获得进度反馈
+                results = []
+                with tqdm(total=len(hdf5_files), desc="Processing HDF5 files", unit="file") as pbar:
+                    for result in pool.imap_unordered(process_single_hdf5, args_list):
+                        results.append(result)
+                        success, filename, error, skipped = result
+                        if success:
+                            if skipped:
+                                skipped_files.append(filename)
+                                if verbose:
+                                    print(f"⏭ 文件 {filename} 已跳过（缓存有效）")
+                            else:
+                                successful_files.append(filename)
+                                if verbose:
+                                    print(f"✓ 文件 {filename} 处理完成")
+                        else:
+                            failed_files.append(filename)
+                            print(f"✗ 处理文件 {filename} 时出错: {error}")
+                        pbar.update(1)
+        except Exception as e:
+            print(f"多进程处理出错，切换到单进程模式: {e}")
+            max_workers = 1
+    
+    if max_workers == 1:
+        # 单进程处理（用于调试或多进程失败时的回退）
+        print("使用单进程处理模式")
+        with tqdm(total=len(hdf5_files), desc="Processing HDF5 files", unit="file") as pbar:
+            for args in args_list:
+                success, filename, error, skipped = process_single_hdf5(args)
+                if success:
+                    if skipped:
+                        skipped_files.append(filename)
+                        if verbose:
+                            print(f"⏭ 文件 {filename} 已跳过（缓存有效）")
+                    else:
+                        successful_files.append(filename)
+                        if verbose:
+                            print(f"✓ 文件 {filename} 处理完成")
+                else:
+                    failed_files.append(filename)
+                    print(f"✗ 处理文件 {filename} 时出错: {error}")
                 pbar.update(1)
+    
+    # 计算处理时间
+    end_time = time.time()
+    processing_time = end_time - start_time
     
     # 输出处理统计结果
     total_files = len(hdf5_files)
     successful_count = len(successful_files)
     failed_count = len(failed_files)
+    skipped_count = len(skipped_files)
+    processed_count = successful_count + failed_count
     success_rate = (successful_count / total_files * 100) if total_files > 0 else 0
     
     print(f"\n{'='*60}")
     print(f"批量处理完成！")
     print(f"输出目录: {output_base_dir}")
+    print(f"处理时间: {processing_time:.2f} 秒")
+    if processed_count > 0:
+        print(f"平均每处理文件: {processing_time/processed_count:.2f} 秒")
     print(f"{'='*60}")
     print(f"\n📊 处理统计结果:")
     print(f"总文件数: {total_files}")
     print(f"成功处理: {successful_count} 个文件")
+    print(f"跳过文件: {skipped_count} 个文件（缓存有效）")
     print(f"处理失败: {failed_count} 个文件")
     print(f"成功率: {success_rate:.1f}%")
+    print(f"使用进程数: {max_workers}")
+    if skipped_count > 0:
+        print(f"缓存节省时间: 约 {skipped_count * (processing_time/max(processed_count, 1)):.1f} 秒")
     
     if failed_files:
         print(f"\n❌ 处理失败的文件:")
         for i, failed_file in enumerate(failed_files, 1):
             print(f"  {i}. {failed_file}")
-    else:
+    
+    if skipped_files and verbose:
+        print(f"\n⏭ 跳过的文件（缓存有效）:")
+        for i, skipped_file in enumerate(skipped_files, 1):
+            print(f"  {i}. {skipped_file}")
+    
+    if successful_count == total_files:
         print(f"\n✅ 所有文件处理成功！")
+    elif successful_count + skipped_count == total_files:
+        print(f"\n✅ 所有文件完成（包括缓存）！")
     
     print(f"{'='*60}")
 
@@ -744,22 +945,93 @@ def print_files_summary(files_info, verbose=False):
         print()
 
 if __name__ == "__main__":
-    # 文件夹路径
-    folder_path = "/home/usst/kwj/GitCode/control_your_robot_jie/save/test/"
+    # 多进程安全保护
+    import multiprocessing
+    multiprocessing.set_start_method('spawn', force=True)
     
-    # 检查文件夹是否存在
-    if not os.path.exists(folder_path):
-        print(f"文件夹不存在: {folder_path}")
+    import argparse
+    
+    # 创建命令行参数解析器
+    parser = argparse.ArgumentParser(description='高性能HDF5数据可视化工具')
+    parser.add_argument('input_path', help='输入HDF5文件或包含HDF5文件的文件夹路径')
+    parser.add_argument('-o', '--output', default='save/output/test/feed_test/', 
+                       help='输出目录 (默认: save/output/test/feed_test/)')
+    parser.add_argument('-v', '--verbose', action='store_true', 
+                       help='启用详细输出')
+    parser.add_argument('-j', '--jobs', type=int, default=8,
+                       help='并行处理的进程数 (默认: 1, 使用-j 0自动检测CPU核心数)')
+    parser.add_argument('-f', '--force', action='store_true',
+                       help='强制重新生成所有视频，忽略缓存')
+    parser.add_argument('--single-file', action='store_true',
+                       help='处理单个HDF5文件而不是文件夹')
+    
+    args = parser.parse_args()
+    
+    
+    # 处理进程数参数
+    if args.jobs == 0:
+        args.jobs = cpu_count()
+    elif args.jobs < 0:
+        args.jobs = 1
+    
+    # 检查输入路径是否存在
+    if not os.path.exists(args.input_path):
+        print(f"路径不存在: {args.input_path}")
         print("请检查路径是否正确")
         sys.exit(1)
     
-    # 获取文件信息并仅输出数量（安静模式）
-    files_info = get_hdf5_files_info(folder_path)
-    print(f"找到 {len(files_info)} 个HDF5文件")
+    # 处理单个文件
+    if args.single_file or args.input_path.endswith(('.hdf5', '.h5')):
+        if not args.input_path.endswith(('.hdf5', '.h5')):
+            print("错误: 指定了 --single-file 但输入不是HDF5文件")
+            sys.exit(1)
+        
+        print(f"处理单个HDF5文件: {args.input_path}")
+        
+        # 为单个文件创建输出目录
+        file_name = os.path.splitext(os.path.basename(args.input_path))[0]
+        output_dir = os.path.join(args.output, file_name)
+        
+        try:
+            start_time = time.time()
+            explore_hdf5_structure(args.input_path, verbose=args.verbose)
+            visualize_hdf5(args.input_path, output_dir, verbose=args.verbose, 
+                          force_regenerate=args.force)
+            end_time = time.time()
+            
+            print(f"\n✅ 文件处理完成！")
+            print(f"处理时间: {end_time - start_time:.2f} 秒")
+            print(f"输出目录: {output_dir}")
+            
+        except Exception as e:
+            print(f"✗ 处理文件时出错: {e}")
+            sys.exit(1)
     
-    # 直接批量处理（启用详细输出以便调试）
-    if files_info:
-        output_dir = "save/output/test/test_eefort/"
-        visualize_folder(folder_path, output_dir, verbose=True)
+    # 处理文件夹
     else:
-        print("没有找到HDF5文件，无法处理")
+        # 获取文件信息
+        files_info = get_hdf5_files_info(args.input_path)
+        
+        if not files_info:
+            print(f"在文件夹 {args.input_path} 中没有找到HDF5文件")
+            sys.exit(1)
+        
+        print(f"找到 {len(files_info)} 个HDF5文件")
+        
+        # 显示性能优化信息
+        if not args.force:
+            print("🚀 性能优化已启用:")
+            print("  - 智能缓存: 跳过已生成的视频")
+            print("  - 多进程处理: 并行处理多个文件")
+            print("  - 图形重用: 减少matplotlib开销")
+            print("  - 管道编码: 减少磁盘I/O")
+            if args.jobs:
+                print(f"  - 使用 {args.jobs} 个进程")
+            else:
+                print(f"  - 使用 {min(cpu_count(), len(files_info))} 个进程")
+        else:
+            print("⚠️  强制重新生成模式: 将忽略所有缓存")
+        
+        # 批量处理
+        visualize_folder(args.input_path, args.output, verbose=args.verbose, 
+                        max_workers=args.jobs, force_regenerate=args.force)

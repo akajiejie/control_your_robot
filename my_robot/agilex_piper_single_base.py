@@ -72,7 +72,7 @@ class PiperSingle(Robot):
         self.sensors["image"]["cam_head"].set_up(CAMERA_SERIALS["head"])
         self.sensors["image"]["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])
 
-        self.set_collect_type({"arm": ["joint","qpos","gripper","eefort"],
+        self.set_collect_type({"arm": ["joint","qpos","gripper"],
                                "image": ["color"]
                                })
         
