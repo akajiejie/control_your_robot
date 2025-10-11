@@ -45,13 +45,13 @@ class TestVisonSensor(VisionSensor):
 
 if __name__ == "__main__":
     import os
-    os.environ["INFO_LEVEL"] = "INFO"
+    os.environ["INFO_LEVEL"] = "DEBUG"
     
     cam = TestVisonSensor("test", INFO="DEBUG")
     cam.set_up()
     cam.set_collect_info(["color"])
     cam_list = []
-    for i in range(1000):
-        print(i)
+    for i in range(10):
+        debug_print("TestVison_sensor",f"step:{i}", "INFO")
         data = cam.get()
         time.sleep(0.1)

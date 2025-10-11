@@ -28,12 +28,12 @@ class TestArmController(ArmController):
 
     def get_state(self):
         state = {}
-        
+        time.sleep(0.00015)
         # randly return a vaild value  
         state["joint"] = np.random.rand(self.DoFs) * 3.1515926
         state["qpos"] = np.random.rand(6)
         state["gripper"] = np.random.rand(1)
-        # debug_print(self.name, f"get state to \n {state}", self.INFO)
+        debug_print(self.name, f"get state to \n {state}", self.INFO)
         return state
 
     def set_position(self, position):
@@ -58,7 +58,6 @@ class TestArmController(ArmController):
             else:
                 debug_print(self.name, f"gripper better be 0~1, but get number {gripper}","WARNING")
         else:
-            print(gripper.ndim)
             debug_print(self.name, f"gripper should be a number 0~1, but get type {type(gripper)}","ERROR")
     
     def __del__(self):
@@ -71,7 +70,7 @@ class TestArmController(ArmController):
 
 if __name__=="__main__":
     import os
-    os.environ["INFO_LEVEL"] = "INFO"
+    os.environ["INFO_LEVEL"] = "DEBUG"
     
     controller = TestArmController("test_arm",DoFs=6,INFO="DEBUG")
 

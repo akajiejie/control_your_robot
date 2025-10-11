@@ -44,12 +44,12 @@ if __name__ == "__main__":
     mp.set_start_method("spawn")
 
     import os
-    os.environ["INFO_LEVEL"] = "DEBUG"
+    os.environ["INFO_LEVEL"] = "INFO"
     num_episode = 3
     avg_collect_time = 0
 
     start_episode = 0
-    collection = CollectAny(condition, start_episode=start_episode)
+    collection = CollectAny(condition, start_episode=start_episode, move_check=False)
 
     manager = Manager()
     shared_data_buffer = manager.dict()
@@ -65,12 +65,14 @@ if __name__ == "__main__":
         time_lock_vision = Event()
         time_lock_arm = Event()
         # 数量为组件进程数+时间控制器数(默认1个时间控制器)
-        worker_barrier = Barrier(2 + 1)
+        worker_barrier_vision = Barrier(1 + 1)
+        worker_barrier_arm = Barrier(1 + 1)
 
-        vision_process = Process(target=ComponentWorker, args=("sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, worker_barrier, start_event, finish_event, "vision_worker"))
-        arm_process = Process(target=ComponentWorker, args=("controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, worker_barrier, start_event, finish_event, "arm_worker"))
+        vision_process = Process(target=ComponentWorker, args=("sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, worker_barrier_vision, start_event, finish_event, "vision_worker"))
+        arm_process = Process(target=ComponentWorker, args=("controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, worker_barrier_arm, start_event, finish_event, "arm_worker"))
         
-        time_scheduler = TimeScheduler(work_barrier=worker_barrier, time_freq=30) # 可以给多个进程同时上锁
+        time_scheduler_vision = TimeScheduler(work_barrier=worker_barrier_vision, time_freq=30) # 可以给多个进程同时上锁
+        time_scheduler_arm = TimeScheduler(work_barrier=worker_barrier_arm, time_freq=300) # 可以给多个进程同时上锁
         
         processes.append(vision_process)
         processes.append(arm_process)
@@ -90,12 +92,16 @@ if __name__ == "__main__":
             else:
                 time.sleep(1)
 
-        time_scheduler.start()
+        time_scheduler_vision.start()
+        time_scheduler_arm.start()
+
         while is_start:
             time.sleep(0.01)
             if is_enter_pressed():
                 finish_event.set()  
-                time_scheduler.stop()  
+                time_scheduler_vision.stop()  
+                time_scheduler_arm.stop()  
+
                 is_start = False
         
         # 销毁多进程
@@ -104,18 +110,15 @@ if __name__ == "__main__":
                 process.join()
                 process.close()
         
-        print(shared_data_buffer)
         data = shared_data_buffer.copy()
-        data = dict2list(dict(data))
 
         shared_data_buffer = manager.dict()
+        # import pdb;pdb.set_trace()
 
-        avg_collect_time += time_scheduler.real_time_average_time_interval
-        for i in range(len(data)):
-            collection.collect(data[i], None)
+        for arm_data in data["test_arm"]:
+            collection.collect({"test_arm": arm_data}, None)
+        
+        for vision_data in data["test_vision"]:
+            collection.collect(None, {"test_vision": vision_data})
+        
         collection.write()
-    
-    avg_collect_time /= num_episode
-    extra_info = {}
-    extra_info["avg_time_interval"] = avg_collect_time
-    collection.add_extra_condition_info(extra_info)

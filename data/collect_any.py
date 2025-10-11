@@ -16,14 +16,16 @@ import h5py
 import json
 import glob
 import re
+import time
 
 class CollectAny:
-    def __init__(self, condition=None, start_episode=0, move_check=True, resume=False):
+    def __init__(self, condition=None, start_episode=0, move_check=True, resume=False, time_stamp=True):
         self.condition = condition
         self.episode = []
         self.move_check = move_check
         self.last_controller_data = None
         self.resume = resume
+        self.time_stamp = time_stamp
         
         # Initialize episode_index based on resume parameter
         if resume and condition is not None:
@@ -62,13 +64,21 @@ class CollectAny:
         return next_episode
 
     def collect(self, controllers_data, sensors_data):
+        if self.time_stamp:
+            time_stamp = time.time_ns()
+
         episode_data = {}
         if controllers_data is not None:    
             for controller_name, controller_data in controllers_data.items():
                 episode_data[controller_name] = controller_data
+                if self.time_stamp:
+                    episode_data[controller_name]["timestamp"] = time_stamp
+        
         if sensors_data is not None:    
             for sensor_name, sensor_data in sensors_data.items():
                 episode_data[sensor_name] = sensor_data
+                if self.time_stamp:
+                    episode_data[sensor_name]["timestamp"] = time_stamp
         
         if self.move_check:
             if self.last_controller_data is None:
@@ -84,11 +94,24 @@ class CollectAny:
             self.episode.append(episode_data)
     
     def get_item(self, controller_name, item):
-        if item in self.episode[0][controller_name]:
-            return np.array([self.episode[i][controller_name][item] for i in range(len(self.episode))])
-        else:
+        data = None
+        for ep in self.episode:
+            if controller_name in ep.keys():
+                if data is None:
+                    data = [ep[controller_name][item]] 
+                else:
+                    data.append(ep[controller_name][item])
+        if data is None:
             debug_print("collect_any", f"item {item} not in {controller_name}", "ERROR")
             return None
+
+        data = np.array(data)
+        return data
+        # if item in self.episode[0][controller_name]:
+        #     return np.array([self.episode[i][controller_name][item] for i in range(len(self.episode))])
+        # else:
+        #     debug_print("collect_any", f"item {item} not in {controller_name}", "ERROR")
+        #     return None
         
     def add_extra_condition_info(self, extra_info):
         save_path = os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/")
@@ -134,8 +157,6 @@ class CollectAny:
         # print(f"WRITE called in PID={os.getpid()} TID={threading.get_ident()}")
         with h5py.File(hdf5_path, "w") as f:
             obs = f
-            # print(self.episode[0])
-            print(self.episode[0].keys())
             for controller_name in self.episode[0].keys():
                 controller_group = obs.create_group(controller_name)
                 for item in self.episode[0][controller_name].keys():

@@ -4,7 +4,7 @@ from controller import *
 import time
 from typing import *
 
-from multiprocessing import Event, Semaphore, Process, Value, Manager
+from multiprocessing import Event, Semaphore, Process, Value, Manager, Barrier
 
 from utils.data_handler import debug_print, DataBuffer
 
