@@ -51,15 +51,15 @@ class MYACT:
     def update_observation_window(self, img_arr, state):
         head_cam = img_arr[0]
         left_cam = img_arr[1]
-        # right_cam = img_arr[2]
+        right_cam = img_arr[2]
         head_cam = np.moveaxis(head_cam, -1, 0) / 255.0
         left_cam = np.moveaxis(left_cam, -1, 0) / 255.0
-        # right_cam = np.moveaxis(right_cam, -1, 0) / 255.0
+        right_cam = np.moveaxis(right_cam, -1, 0) / 255.0
         qpos = state
         self.observation_window = {
                 "cam_high": head_cam,
-                "cam_wrist": left_cam,
-                # "right_cam": right_cam,
+                "cam_right_wrist": left_cam,
+                "cam_left_wrist": right_cam,
                 "qpos": qpos,
             }
         
