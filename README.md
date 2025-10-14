@@ -30,6 +30,8 @@ os.environ["INFO_LEVEL"] = "DEBUG" # DEBUG , INFO, ERROR
 python example/collect/collect_mp_robot.py
 # Multi-process (separate process for each component)
 python example/collect/collect_mp_component.py
+# Multi-process (separate process for each component, and have diffrent save_freq for each, this will save timestamp)
+python example/collect/collect_mp_component_different_time_freq.py
 # Single-threaded (may have accumulated delays due to function execution)
 python example/collect/collect.py
 ```
@@ -82,6 +84,16 @@ python scripts/upload_zip.py path/to/floder --encode
 # decompress.
 python scripts/upload_zip.py path/to/floder
 ```
+
+8. telop by joint/eef
+```bash
+# We provide two general architectures for teleoperation-based data collection. The first one is relatively simple, where the teleoperation control frequency is aligned with the data collection frequency. The second one is slightly more complex, allowing the teleoperation frequency to far exceed the data recording frequency. Both architectures have been validated through real-world robot experiments.
+# same freq
+python example/teleop/master_slave_arm_teleop.py 
+# diff freq
+python example/teleop/master_slave_arm_teleop_fs.py
+```
+
 
 ### 🤖 Supported Devices
 
