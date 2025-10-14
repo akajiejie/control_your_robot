@@ -28,12 +28,11 @@ class TestArmController(ArmController):
 
     def get_state(self):
         state = {}
-        
         # randly return a vaild value  
         state["joint"] = np.random.rand(self.DoFs) * 3.1515926
         state["qpos"] = np.random.rand(6)
         state["gripper"] = np.random.rand(1)
-        # debug_print(self.name, f"get state to \n {state}", self.INFO)
+        debug_print(self.name, f"get state to \n {state}", self.INFO)
         return state
 
     def set_position(self, position):

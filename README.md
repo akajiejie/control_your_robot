@@ -73,6 +73,16 @@ python -m my_robot.test_robot
 python scripts/convert2rdt_hdf5.py save/test_robot/ save/rdt/
 ```
 
+7. upload data
+```bash
+# In the original dataset, image files occupy a large amount of storage space, which is unfavorable for data transmission. Therefore, a compression and decompression script is provided. It performs JPEG processing on the images to enable faster transfer. The script is configured by default for a dual-arm, three-view setup, but it can be adjusted according to specific needs.
+# compress. will make a new floder: path/to/floder/_zip/
+python scripts/upload_zip.py path/to/floder --encode
+
+# decompress.
+python scripts/upload_zip.py path/to/floder
+```
+
 ### 🤖 Supported Devices
 
 #### 🎛️ Controllers

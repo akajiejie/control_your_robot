@@ -9,6 +9,8 @@ Release = True
 
 from utils.data_handler import debug_print
 
+TIME_SLEEP = 0.00001
+
 def worker(process_id: int, process_name: str, time_event: Event, result_array: Array, result_lock: Lock):
     '''
     测试使用的子类
@@ -38,7 +40,8 @@ class TimeScheduler:
         work_barrier: Optional[Barrier] = None,
         time_freq: int = 10,
         end_events: Optional[List[Event]] = None,
-        end_barrier: Optional[Barrier] = None
+        end_barrier: Optional[Barrier] = None,
+        process_name: str = None
     ):
 
         self.time_freq = int(time_freq)
@@ -64,7 +67,7 @@ class TimeScheduler:
             raise ValueError("end_events and end_barrier cannot both be set; choose one.")
 
         # 统计信息
-        self.process_name = "time_scheduler"
+        self.process_name = process_name
         self.real_time_accumulate_time_interval = Value('d', 0.0)
         self.step = Value('i', 0)
 
@@ -91,7 +94,7 @@ class TimeScheduler:
                             if all(not event.is_set() for event in self.work_events):
                                 break
                             else:
-                                time.sleep(0.00001)
+                                time.sleep(TIME_SLEEP)
                 else:
                     # 链式结构触发
                     if self.end_barrier:
@@ -101,7 +104,7 @@ class TimeScheduler:
                             if all(event.is_set() for event in self.end_events):
                                 break
                             else:
-                                time.sleep(0.00001)
+                                time.sleep(TIME_SLEEP)
                     
                 debug_print(self.process_name, f"the actual time interval is {now - last_time}", "DEBUG")
                 with self.real_time_accumulate_time_interval.get_lock():
