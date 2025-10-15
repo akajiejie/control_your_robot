@@ -9,6 +9,10 @@ import time
 
 from utils.data_handler import debug_print, is_enter_pressed
 
+# START ================ you could modify to your format ================ 
+video_path="save/videos/"
+fps = 30
+
 def input_transform(data):
     state = np.concatenate([
         np.array(data[0]["left_arm"]["joint"]).reshape(-1),
@@ -34,6 +38,25 @@ def output_transform(data):
         }
     }
     return move_data
+
+# END ================ you could modify to your format ================ 
+
+def get_class(import_name, class_name):
+    try:
+        class_module = importlib.import_module(import_name)
+        debug_print("function", f"Module loaded: {class_module}", "DEBUG")
+    except ModuleNotFoundError as e:
+        raise SystemExit(f"ModuleNotFoundError: {e}")
+
+    try:
+        return_class = getattr(class_module, class_name)
+        debug_print("function", f"Class found: {return_class}", "DEBUG")
+
+    except AttributeError as e:
+        raise SystemExit(f"AttributeError: {e}")
+    except Exception as e:
+        raise SystemExit(f"Unexpected error instantiating model: {e}")
+    return return_class
 
 def get_class(import_name, class_name):
     try:
@@ -62,7 +85,8 @@ def init():
     parser.add_argument("--robot_name", type=str, required=True, help="robot name, read my_robot/{robot_name}.py")
     parser.add_argument("--robot_class", type=str, required=True, help="robot class, get class from my_robot/{robot_name}.py")
     parser.add_argument("--episode_num", type=int, required=False,default=10, help="how many episode you want to deploy")
-    parser.add_argument("--max_step", type=int, required=False,default=100, help="the maxinum step for each episode")
+    parser.add_argument("--max_step", type=int, required=False,default=1000000, help="the maxinum step for each episode")
+    parser.add_argument("--video", type=str, required=False, default=None, help="Recording the video if set, should set to cam_name like cam_head.")
     
     args = parser.parse_args()
     model_name = args.model_name
@@ -73,6 +97,7 @@ def init():
     robot_class = args.robot_class
     episode_num = args.episode_num
     max_step = args.max_step
+    is_video = args.video
 
 
     model_class = get_class(f"policy.{model_name}.inference_model", model_class)
@@ -81,12 +106,12 @@ def init():
     robot_class = get_class(f"my_robot.{robot_name}", robot_class)
     robot = robot_class()
 
-    return model, robot, episode_num, max_step
+    return model, robot, episode_num, max_step, is_video
 
 if __name__ == "__main__":
     os.environ["INFO_LEVEL"] = "INFO" # DEBUG , INFO, ERROR
     
-    model, robot, episode_num, max_step = init()
+    model, robot, episode_num, max_step, video_cam_name = init()
     robot.set_up()
 
     for i in range(episode_num):
@@ -95,6 +120,17 @@ if __name__ == "__main__":
         robot.reset()
         model.reset_obsrvationwindows()
         model.random_set_language()
+
+        writer = None
+        if video_cam_name is not None:
+            import cv2
+            first_frame = robot.get()[1][video_cam_name]["color"][:,:,::-1]
+            height, width, channels = first_frame.shape
+            fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # 或 'XVID'
+            video_dir = video_path + f"/{i}/"
+            os.makedirs(video_dir, exist_ok=True)
+            writer = cv2.VideoWriter(os.path.join(video_dir, f"{video_cam_name}.mp4"), fourcc, fps, (width, height))
+            print(f"Video saving enabled: {video_path}, fps={fps}, size=({width},{height})")
 
         # 等待允许执行推理指令, 按enter开始
         is_start = False
@@ -113,15 +149,22 @@ if __name__ == "__main__":
             model.update_observation_window(img_arr, state)
             action_chunk = model.get_action()
             for action in action_chunk:
+                if video_cam_name is not None:
+                    frame = robot.get()[1][video_cam_name]["color"][:,:,::-1]
+                    writer.write(frame)
+                
                 if step % 10 == 0:
                     debug_print("main", f"step: {step}/{max_step}", "INFO")
                 move_data = output_transform(action)
                 robot.move(move_data)
                 step += 1
-                time.sleep(1/robot.condition["save_freq"])
+                # time.sleep(1/robot.condition["save_freq"])
+                time.sleep(1 / 20)
                 if step >= max_step or is_enter_pressed():
                     debug_print("main", "enter pressed, the episode end", "INFO")
                     is_start = False
                     break
-        
+                    
+        if writer is not None:
+            writer.release()
         debug_print("main",f"finish episode {i}, running steps {step}","INFO")

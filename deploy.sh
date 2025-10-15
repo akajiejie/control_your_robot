@@ -5,3 +5,4 @@ python example/deploy/deploy.py \
     --task_name "test"\
     --robot_name "test_robot"\
     --robot_class "TestRobot"\
+    # --video "cam_head"\
