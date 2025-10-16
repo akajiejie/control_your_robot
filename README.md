@@ -3,6 +3,11 @@
 
 [Chinese WIKI](https://tian-nian.github.io/control_your_robot-doc/)
 
+# WECHAT
+<p align="center">
+  <img src="imgs/Wechat.jpg" alt="wechat" width="400">
+</p>
+
 # Control Your Robot!
 This project aims to provide a comprehensive and ready-to-use pipeline for embodied intelligence research, covering everything from robotic arm control, data collection, to Vision-Language-Action (VLA) model training and deployment.
 
