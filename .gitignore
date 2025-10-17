@@ -29,3 +29,5 @@ policy/ACT/act_ckpt/
 save/
 processed_data/
 test/
+test_script/
+task_instructions/

@@ -42,19 +42,19 @@ def load_source_hdf5(hdf5_path):
         return None
     
     # collect data from convert2act_hdf5.py
-    # source_map = {
-    #     "cam_high": "slave_cam_head.color",
-    #     "cam_wrist": "slave_cam_wrist.color",
-    #     "left_arm_joint": "slave_left_arm.joint",
-    #     "left_arm_gripper": "slave_left_arm.gripper", 
-    # }
-    #test data
     source_map = {
-        "cam_high": "cam_head.color",
-        "cam_wrist": "cam_wrist.color",
-        "left_arm_joint": "left_arm.joint",
-        "left_arm_gripper": "left_arm.gripper", 
+        "cam_high": "slave_cam_head.color",
+        "cam_wrist": "slave_cam_wrist.color",
+        "left_arm_joint": "slave_left_arm.joint",
+        "left_arm_gripper": "slave_left_arm.gripper", 
     }
+    #test data
+    # source_map = {
+    #     "cam_high": "cam_head.color",
+    #     "cam_wrist": "cam_wrist.color",
+    #     "left_arm_joint": "left_arm.joint",
+    #     "left_arm_gripper": "left_arm.gripper", 
+    # }
     result = {}
     
     # 读取图像数据

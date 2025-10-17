@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """
-逐帧差异分析工具 - 计算模型和源数据平均曲线的每帧平均差和方差
+逐帧差异分析工具 - 逐文件计算模型和源数据的动作差异，统计相同帧位置的平均差和方差
 专门用于分析两个模型与源数据之间的逐帧差异，生成详细的统计曲线图
 
 主要功能：
-1. 计算每帧模型输出与源数据的差异（绝对差值）
-2. 生成每帧平均差随时间变化的曲线图
-3. 生成每帧方差随时间变化的曲线图
-4. 保存CSV格式的曲线数据和维度汇总统计
-5. 支持多种HDF5文件格式的自动匹配
+1. 逐帧计算每个对应HDF5文件之间的动作差异（绝对差值）
+2. 统计所有相同帧位置的差异值，计算平均和方差
+3. 生成每帧平均差随时间变化的曲线图
+4. 生成每帧方差随时间变化的曲线图
+5. 保存CSV格式的曲线数据和维度汇总统计
+6. 支持多种HDF5文件格式的自动匹配
+
+计算方法：
+- 对于每个文件对(source_i, model_i)，计算逐帧绝对差值
+- 对于每个时间步t，收集所有文件在该时间步的差异值
+- 计算该时间步所有差异值的平均值和方差
 
 使用方法:
     conda activate telerobot
@@ -322,81 +328,134 @@ def calculate_average_actions(action_list, verbose=False, max_dims=None):
     return average_actions
 
 
-def calculate_frame_wise_differences(avg_source, avg_model1, avg_model2, verbose=False):
+def calculate_frame_wise_differences_pairwise(source_actions, model1_actions, model2_actions, verbose=False):
     """
-    计算每帧模型与源数据的差异
+    逐帧计算每个HDF5文件对之间的动作差异，然后统计相同帧位置的差异
     
     Parameters:
-        avg_source: 源数据的平均曲线
-        avg_model1: 模型1的平均曲线
-        avg_model2: 模型2的平均曲线
+        source_actions: 源数据action列表
+        model1_actions: 模型1 action列表  
+        model2_actions: 模型2 action列表
         verbose: 是否输出详细信息
         
     Returns:
         dict: 包含差异分析结果的字典
     """
-    if avg_source is None:
+    if not source_actions:
         if verbose:
-            print("源数据平均曲线为空，无法计算差异")
+            print("源数据为空，无法计算差异")
         return {}
     
-    # 确定共同的维度和时间步长
-    valid_curves = [curve for curve in [avg_source, avg_model1, avg_model2] if curve is not None]
-    if not valid_curves:
+    # 确定要比较的文件数量（取最小值）
+    n_files = len(source_actions)
+    if model1_actions:
+        n_files = min(n_files, len(model1_actions))
+    if model2_actions:
+        n_files = min(n_files, len(model2_actions))
+    
+    if n_files == 0:
         if verbose:
-            print("没有有效的平均曲线数据")
+            print("没有可比较的文件")
         return {}
     
-    # 找到共同的最小维度和时间步长
-    min_timesteps = min([curve.shape[0] for curve in valid_curves])
-    min_dims = min([curve.shape[1] for curve in valid_curves])
+    # 找到所有文件的共同维度和时间步长
+    all_actions = source_actions[:n_files]
+    if model1_actions:
+        all_actions.extend(model1_actions[:n_files])
+    if model2_actions:
+        all_actions.extend(model2_actions[:n_files])
+    
+    min_timesteps = min([data.shape[0] for data in all_actions])
+    min_dims = min([data.shape[1] for data in all_actions])
     
     if verbose:
+        print(f"将比较 {n_files} 个文件对")
         print(f"共同维度: {min_dims}, 共同时间步长: {min_timesteps}")
-    
-    # 截取到相同维度
-    source_aligned = avg_source[:min_timesteps, :min_dims]
     
     results = {
         'timesteps': min_timesteps,
         'dimensions': min_dims,
-        'source_curve': source_aligned,
+        'n_files': n_files,
         'differences': {},
         'statistics': {}
     }
     
-    # 计算模型1与源数据的差异
-    if avg_model1 is not None:
-        model1_aligned = avg_model1[:min_timesteps, :min_dims]
-        diff_model1 = np.abs(model1_aligned - source_aligned)  # 绝对差值
+    # 计算模型1与源数据的逐文件差异
+    if model1_actions and len(model1_actions) >= n_files:
+        if verbose:
+            print("计算模型1与源数据的逐文件差异...")
         
-        results['differences']['model1'] = diff_model1
+        # 存储每个文件对的差异 - shape: (n_files, timesteps, dims)
+        file_differences_model1 = []
+        
+        for i in range(n_files):
+            source_data = source_actions[i][:min_timesteps, :min_dims]
+            model1_data = model1_actions[i][:min_timesteps, :min_dims]
+            
+            # 计算绝对差值
+            diff = np.abs(model1_data - source_data)
+            file_differences_model1.append(diff)
+        
+        # 转换为numpy数组 - shape: (n_files, timesteps, dims)
+        file_differences_model1 = np.stack(file_differences_model1, axis=0)
+        
+        # 计算每帧的统计量（在所有文件上）
+        mean_diff_per_frame = np.mean(file_differences_model1, axis=(0, 2))  # 对文件和维度求平均
+        var_diff_per_frame = np.var(file_differences_model1, axis=(0, 2))    # 对文件和维度求方差
+        
+        # 计算每个维度的统计量（在所有文件和时间步上）
+        mean_diff_per_dim = np.mean(file_differences_model1, axis=(0, 1))    # 对文件和时间步求平均
+        var_diff_per_dim = np.var(file_differences_model1, axis=(0, 1))      # 对文件和时间步求方差
+        
+        results['differences']['model1'] = file_differences_model1
         results['statistics']['model1'] = {
-            'mean_diff_per_dim': np.mean(diff_model1, axis=0),  # 每个维度的平均差异
-            'var_diff_per_dim': np.var(diff_model1, axis=0),    # 每个维度的差异方差
-            'mean_diff_per_frame': np.mean(diff_model1, axis=1), # 每帧的平均差异
-            'var_diff_per_frame': np.var(diff_model1, axis=1),   # 每帧的差异方差
-            'overall_mean_diff': np.mean(diff_model1),           # 总体平均差异
-            'overall_var_diff': np.var(diff_model1)              # 总体差异方差
+            'mean_diff_per_dim': mean_diff_per_dim,
+            'var_diff_per_dim': var_diff_per_dim,
+            'mean_diff_per_frame': mean_diff_per_frame,
+            'var_diff_per_frame': var_diff_per_frame,
+            'overall_mean_diff': np.mean(file_differences_model1),
+            'overall_var_diff': np.var(file_differences_model1)
         }
     
-    # 计算模型2与源数据的差异
-    if avg_model2 is not None:
-        model2_aligned = avg_model2[:min_timesteps, :min_dims]
-        diff_model2 = np.abs(model2_aligned - source_aligned)  # 绝对差值
+    # 计算模型2与源数据的逐文件差异
+    if model2_actions and len(model2_actions) >= n_files:
+        if verbose:
+            print("计算模型2与源数据的逐文件差异...")
         
-        results['differences']['model2'] = diff_model2
+        # 存储每个文件对的差异 - shape: (n_files, timesteps, dims)
+        file_differences_model2 = []
+        
+        for i in range(n_files):
+            source_data = source_actions[i][:min_timesteps, :min_dims]
+            model2_data = model2_actions[i][:min_timesteps, :min_dims]
+            
+            # 计算绝对差值
+            diff = np.abs(model2_data - source_data)
+            file_differences_model2.append(diff)
+        
+        # 转换为numpy数组 - shape: (n_files, timesteps, dims)
+        file_differences_model2 = np.stack(file_differences_model2, axis=0)
+        
+        # 计算每帧的统计量（在所有文件上）
+        mean_diff_per_frame = np.mean(file_differences_model2, axis=(0, 2))  # 对文件和维度求平均
+        var_diff_per_frame = np.var(file_differences_model2, axis=(0, 2))    # 对文件和维度求方差
+        
+        # 计算每个维度的统计量（在所有文件和时间步上）
+        mean_diff_per_dim = np.mean(file_differences_model2, axis=(0, 1))    # 对文件和时间步求平均
+        var_diff_per_dim = np.var(file_differences_model2, axis=(0, 1))      # 对文件和时间步求方差
+        
+        results['differences']['model2'] = file_differences_model2
         results['statistics']['model2'] = {
-            'mean_diff_per_dim': np.mean(diff_model2, axis=0),  # 每个维度的平均差异
-            'var_diff_per_dim': np.var(diff_model2, axis=0),    # 每个维度的差异方差
-            'mean_diff_per_frame': np.mean(diff_model2, axis=1), # 每帧的平均差异
-            'var_diff_per_frame': np.var(diff_model2, axis=1),   # 每帧的差异方差
-            'overall_mean_diff': np.mean(diff_model2),           # 总体平均差异
-            'overall_var_diff': np.var(diff_model2)              # 总体差异方差
+            'mean_diff_per_dim': mean_diff_per_dim,
+            'var_diff_per_dim': var_diff_per_dim,
+            'mean_diff_per_frame': mean_diff_per_frame,
+            'var_diff_per_frame': var_diff_per_frame,
+            'overall_mean_diff': np.mean(file_differences_model2),
+            'overall_var_diff': np.var(file_differences_model2)
         }
     
     if verbose:
-        print("差异计算完成:")
+        print("逐文件差异计算完成:")
         for model_name, stats in results['statistics'].items():
             print(f"  {model_name.upper()}:")
             print(f"    总体平均差异: {stats['overall_mean_diff']:.6f}")
@@ -433,10 +492,10 @@ def create_difference_curves(diff_results, labels, output_dir, verbose=False):
     timesteps = diff_results['timesteps']
     time_axis = range(timesteps)
     
-    # 定义颜色方案
+    # 定义颜色方案 - 使用莫兰迪色系中对比明显的颜色
     colors = {
-        'model1': '#FFD700',    # 黄色 - 模型1
-        'model2': '#1E90FF'     # 蓝色 - 模型2
+        'model1': '#D4A574',    # 莫兰迪暖棕色 - 模型1
+        'model2': '#7B9AAF'     # 莫兰迪蓝灰色 - 模型2
     }
     
     # 1. 创建并保存每帧平均差曲线
@@ -456,7 +515,7 @@ def create_difference_curves(diff_results, labels, output_dir, verbose=False):
                         linewidth=3.5, color=colors[model_key])
     
     ax1.set_xlabel('Time Step (Frame)')
-    ax1.set_ylabel('')  # 移除左侧Y轴标题
+    ax1.set_ylabel('平均差（rad）')  # 设置Y轴标题为平均差（rad）
     ax1.set_title('')   # 移除上方标题
     ax1.legend(loc='upper right', frameon=True, framealpha=0.9, fontsize=14)
     ax1.grid(True, alpha=0.3)
@@ -489,7 +548,7 @@ def create_difference_curves(diff_results, labels, output_dir, verbose=False):
                         linewidth=3.5, color=colors[model_key])
     
     ax2.set_xlabel('Time Step (Frame)')
-    ax2.set_ylabel('')  # 移除左侧Y轴标题
+    ax2.set_ylabel('方差（rad）')  # 设置Y轴标题为方差（rad）
     ax2.set_title('')   # 移除上方标题
     ax2.legend(loc='upper right', frameon=True, framealpha=0.9, fontsize=14)
     ax2.grid(True, alpha=0.3)
@@ -608,7 +667,12 @@ def analyze_frame_wise_differences(source_folder, model1_folder, model2_folder,
                                  label_source="Source Data", label_model1="Model 1", label_model2="Model 2",
                                  output_dir="output", verbose=False):
     """
-    分析三个文件夹中模型与源数据的逐帧差异
+    分析三个文件夹中模型与源数据的逐文件逐帧差异
+    
+    新的计算方法：
+    1. 逐文件计算每个对应HDF5文件之间的动作差异
+    2. 对于每个时间步，统计所有文件在该时间步的差异值
+    3. 计算每个时间步差异值的平均和方差
     
     Parameters:
         source_folder: 源数据文件夹路径（使用slave_left_arm键名）
@@ -677,13 +741,13 @@ def analyze_frame_wise_differences(source_folder, model1_folder, model2_folder,
     if verbose:
         print(f"将分析共同的 {common_dims} 个维度")
     
-    # 计算平均曲线
-    avg_actions_source = calculate_average_actions(data_source.get('actions', []), verbose, max_dims=common_dims)
-    avg_actions_model1 = calculate_average_actions(data_model1.get('actions', []), verbose, max_dims=common_dims)
-    avg_actions_model2 = calculate_average_actions(data_model2.get('actions', []), verbose, max_dims=common_dims)
-    
-    # 计算逐帧差异
-    diff_results = calculate_frame_wise_differences(avg_actions_source, avg_actions_model1, avg_actions_model2, verbose)
+    # 使用新的逐文件差异计算方法
+    diff_results = calculate_frame_wise_differences_pairwise(
+        data_source.get('actions', []), 
+        data_model1.get('actions', []), 
+        data_model2.get('actions', []), 
+        verbose
+    )
     
     if not diff_results:
         print("无法计算差异分析")
@@ -704,11 +768,12 @@ def analyze_frame_wise_differences(source_folder, model1_folder, model2_folder,
     
     if verbose:
         print("\n" + "="*80)
-        print("逐帧差异分析完成！")
+        print("逐文件逐帧差异分析完成！")
         print(f"结果保存在: {output_dir}")
         print(f"源数据 ({label_source}): {len(data_source.get('actions', []))} 个文件")
         print(f"模型1 ({label_model1}): {len(data_model1.get('actions', []))} 个文件")
         print(f"模型2 ({label_model2}): {len(data_model2.get('actions', []))} 个文件")
+        print(f"分析了 {diff_results.get('n_files', 0)} 个文件对的逐帧差异")
         print(f"已分别保存平均差曲线和方差曲线为独立图表文件")
         print("="*80)
 
@@ -716,7 +781,7 @@ def analyze_frame_wise_differences(source_folder, model1_folder, model2_folder,
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(
-        description="逐帧差异分析工具 - 计算模型和源数据平均曲线的每帧平均差和方差",
+        description="逐帧差异分析工具 - 逐文件计算模型和源数据的动作差异，统计相同帧位置的平均差和方差",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用示例:
@@ -761,8 +826,9 @@ if __name__ == "__main__":
     bash test_script/run_frame_analysis.sh
     '''
     print("Frame-wise Difference Analysis Tool")
-    print("专门用于分析模型与源数据平均曲线的逐帧差异")
-    print("- 计算每帧模型输出与源数据的绝对差值")
+    print("专门用于分析模型与源数据的逐文件逐帧差异")
+    print("- 逐文件计算每个对应HDF5文件之间的动作差异")
+    print("- 统计所有相同帧位置的差异值，计算平均和方差")
     print("- 生成平均差和方差随时间变化的曲线图")
     print("- 支持CSV格式导出曲线数据和维度汇总统计")
     print()

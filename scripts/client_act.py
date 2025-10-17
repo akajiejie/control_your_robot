@@ -6,6 +6,7 @@ from my_robot.agilex_piper_single_base import PiperSingle
 from utils.bisocket import BiSocket
 from utils.data_handler import debug_print, is_enter_pressed, hdf5_groups_to_dict
 from my_robot.base_robot import dict_to_list
+from data.collect_any import CollectAny
 from policy.ACT.inference_model import MYACT
 import socket
 import time
@@ -15,121 +16,198 @@ import cv2
 import pdb
 import h5py
 import os
-class Replay:
-    def __init__(self, hdf5_path) -> None:
-        self.ptr = 0
-        self.episode = dict_to_list(hdf5_groups_to_dict(hdf5_path))
-    def get_data(self):
-        # print(self.episode[self.ptr].keys())
-        data = self.episode[self.ptr], self.episode[self.ptr]
-        self.ptr += 1 #for act step is 1
-        return data
 
-class ActionCollector:
-    """专门用于收集和保存模型输出action的类，参考collect_any实现"""
-    def __init__(self, save_path="save/model_actions", task_name="act_inference"):
-        self.episode = []
-        self.episode_index = 0
-        self.save_path = save_path
-        self.task_name = task_name
-        
-        # 确保保存目录存在
-        full_save_path = os.path.join(save_path, task_name)
-        if not os.path.exists(full_save_path):
-            os.makedirs(full_save_path)
+def decode_compressed_images(encoded_data):
+    """解码压缩的JPEG图像数据
     
-    def collect(self, action, state, step):
-        """收集一个时间步的数据（只保存动作和状态，不保存图像）"""
-        episode_data = {
-            "step": step,
-            "action": np.array(action) if not isinstance(action, np.ndarray) else action,
-            "state": np.array(state) if not isinstance(state, np.ndarray) else state,
-            "timestamp": time.time()
-        }
-        self.episode.append(episode_data)
-    
-    def save_episode(self, custom_episode_name=None):
-        """保存当前episode到hdf5文件
+    Args:
+        encoded_data: 压缩的JPEG字节数据数组
         
-        Args:
-            custom_episode_name: 可选的自定义episode名称，如果提供则使用该名称而不是episode_index
-        """
-        if len(self.episode) == 0:
-            print("No data to save!")
-            return
-            
-        full_save_path = os.path.join(self.save_path, self.task_name)
-        
-        # 如果提供了自定义名称，使用自定义名称；否则使用episode_index
-        if custom_episode_name is not None:
-            hdf5_path = os.path.join(full_save_path, f"{custom_episode_name}.hdf5")
+    Returns:
+        解码后的图像数组
+    """
+    imgs = []
+    for data in encoded_data:
+        # 移除填充的零字节
+        jpeg_bytes = data.tobytes().rstrip(b"\0")
+        # 将字节数据转换为numpy数组
+        nparr = np.frombuffer(jpeg_bytes, dtype=np.uint8)
+        # 解码JPEG图像
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img is not None:
+            imgs.append(img)
         else:
-            hdf5_path = os.path.join(full_save_path, f"episode_{self.episode_index}.hdf5")
+            print("警告：无法解码图像数据")
+    return np.array(imgs)
+condition = {
+    "save_path": "./test/reload_model_actions/", 
+    "task_name": "act_stack_bowls_two", 
+    "save_format": "hdf5", 
+    "save_freq": 50,
+    "collect_type": "teleop",
+}
+class Replay:
+    def __init__(self, hdf5_path, is_compressed=False) -> None:
+        self.ptr = 0
+        self.is_compressed = is_compressed
         
-        with h5py.File(hdf5_path, "w") as f:
-            # 创建action组
-            action_group = f.create_group("action")
-            actions = np.array([ep["action"] for ep in self.episode])
-            action_group.create_dataset("model_output", data=actions)
-            
-            # 创建observation组
-            obs_group = f.create_group("observations")
-            states = np.array([ep["state"] for ep in self.episode])
-            obs_group.create_dataset("qpos", data=states)
-            
-            # 保存元数据
-            metadata_group = f.create_group("metadata")
-            steps = np.array([ep["step"] for ep in self.episode])
-            timestamps = np.array([ep["timestamp"] for ep in self.episode])
-            metadata_group.create_dataset("steps", data=steps)
-            metadata_group.create_dataset("timestamps", data=timestamps)
-        
-        episode_name = custom_episode_name if custom_episode_name else f"episode_{self.episode_index}"
-        print(f"Episode {episode_name} saved to {hdf5_path}")
-        print(f"Total steps: {len(self.episode)}")
-        
-        # 重置episode并增加索引
-        self.episode = []
-        if custom_episode_name is None:  # 只有在使用默认命名时才增加索引
-            self.episode_index += 1
+        if is_compressed:
+            # 处理压缩格式的数据
+            self.episode_data = self._load_compressed_data(hdf5_path)
+        else:
+            # 原始格式
+            self.episode = dict_to_list(hdf5_groups_to_dict(hdf5_path))
     
-    def reset(self):
-        """重置收集器"""
-        self.episode = []
+    def _load_compressed_data(self, hdf5_path):
+        """加载压缩格式的HDF5数据"""
+        episode_data = []
+        
+        with h5py.File(hdf5_path, 'r') as f:
+            obs = f['observations']
+            
+            # 解码压缩的图像数据 - 支持三相机
+            cam_high_encoded = obs['cam_high'][:]
+            cam_high_images = decode_compressed_images(cam_high_encoded)
+            
+            # 检查是否有左右手腕相机
+            cam_left_wrist_images = None
+            cam_right_wrist_images = None
+            cam_wrist_images = None
+            
+            if 'cam_left_wrist' in obs and 'cam_right_wrist' in obs:
+                # 双臂配置：左右手腕相机
+                cam_left_wrist_encoded = obs['cam_left_wrist'][:]
+                cam_right_wrist_encoded = obs['cam_right_wrist'][:]
+                cam_left_wrist_images = decode_compressed_images(cam_left_wrist_encoded)
+                cam_right_wrist_images = decode_compressed_images(cam_right_wrist_encoded)
+            elif 'cam_wrist' in obs:
+                # 单臂配置：单个手腕相机
+                cam_wrist_encoded = obs['cam_wrist'][:]
+                cam_wrist_images = decode_compressed_images(cam_wrist_encoded)
+            
+            # 获取机械臂数据
+            left_arm_joint = obs['left_arm']['joint'][:]
+            left_arm_gripper = obs['left_arm']['gripper'][:]
+            
+            # 检查是否有右臂数据
+            right_arm_joint = None
+            right_arm_gripper = None
+            if 'right_arm' in obs and len(obs['right_arm'].keys()) > 0:
+                if 'joint' in obs['right_arm'] and 'gripper' in obs['right_arm']:
+                    right_arm_joint = obs['right_arm']['joint'][:]
+                    right_arm_gripper = obs['right_arm']['gripper'][:]
+            
+            # 构建episode数据
+            for i in range(len(left_arm_joint)):
+                step_data = {
+                    'left_arm': {
+                        'joint': left_arm_joint[i],
+                        'gripper': left_arm_gripper[i]
+                    },
+                    'cam_high': {
+                        'color': cam_high_images[i] if i < len(cam_high_images) else cam_high_images[-1]
+                    }
+                }
+                
+                # 添加右臂数据（如果存在）
+                if right_arm_joint is not None and right_arm_gripper is not None:
+                    step_data['right_arm'] = {
+                        'joint': right_arm_joint[i],
+                        'gripper': right_arm_gripper[i]
+                    }
+                
+                # 添加相机数据
+                if cam_left_wrist_images is not None and cam_right_wrist_images is not None:
+                    # 双臂配置
+                    step_data['cam_left_wrist'] = {
+                        'color': cam_left_wrist_images[i] if i < len(cam_left_wrist_images) else cam_left_wrist_images[-1]
+                    }
+                    step_data['cam_right_wrist'] = {
+                        'color': cam_right_wrist_images[i] if i < len(cam_right_wrist_images) else cam_right_wrist_images[-1]
+                    }
+                elif cam_wrist_images is not None:
+                    # 单臂配置
+                    step_data['cam_wrist'] = {
+                        'color': cam_wrist_images[i] if i < len(cam_wrist_images) else cam_wrist_images[-1]
+                    }
+                
+                episode_data.append(step_data)
+        
+        return episode_data
+    
+    def get_data(self):
+        if self.is_compressed:
+            # 压缩格式：返回当前步骤的数据
+            if self.ptr >= len(self.episode_data):
+                return None, None
+            
+            step_data = self.episode_data[self.ptr]
+            
+            # 构建机械臂数据
+            arm_data = {
+                'left_arm': step_data['left_arm']
+            }
+            
+            # 添加右臂数据（如果存在）
+            if 'right_arm' in step_data:
+                arm_data['right_arm'] = step_data['right_arm']
+            
+            # 构建图像数据
+            img_data = {
+                'cam_high': step_data['cam_high']
+            }
+            
+            # 添加相机数据（根据实际存在的相机）
+            if 'cam_left_wrist' in step_data and 'cam_right_wrist' in step_data:
+                # 双臂配置
+                img_data['cam_left_wrist'] = step_data['cam_left_wrist']
+                img_data['cam_right_wrist'] = step_data['cam_right_wrist']
+            elif 'cam_wrist' in step_data:
+                # 单臂配置
+                img_data['cam_wrist'] = step_data['cam_wrist']
+            
+            self.ptr += 10
+            return arm_data, img_data
+        else:
+            # 原始格式
+            data = self.episode[self.ptr], self.episode[self.ptr]
+            self.ptr += 10
+            return data
+
     
 def input_transform(data):
-    has_left_arm = "slave_left_arm" in data[0]
-    has_right_arm = "slave_right_arm" in data[0]
+    has_left_arm = "left_arm" in data[0]
+    has_right_arm = "right_arm" in data[0]
     
     if has_left_arm and not has_right_arm:
-        left_joint_dim = len(data[0]["slave_left_arm"]["joint"])
+        left_joint_dim = len(data[0]["left_arm"]["joint"])
         left_gripper_dim = 1
         
-        data[0]["slave_right_arm"] = {
+        data[0]["right_arm"] = {
             "joint": [0.0] * left_joint_dim,
-            "gripper": [0.0] * left_gripper_dim
+            "gripper": 0.0
         }
         has_right_arm = True
     
     elif has_right_arm and not has_left_arm:
-        right_joint_dim = len(data[0]["slave_right_arm"]["joint"])
+        right_joint_dim = len(data[0]["right_arm"]["joint"])
         right_gripper_dim = 1
         
         # fill left_arm data
-        data[0]["slave_left_arm"] = {
+        data[0]["left_arm"] = {
             "joint": [0.0] * right_joint_dim,
-            "gripper": [0.0] * right_gripper_dim
+            "gripper": 0.0
         }
         has_left_arm = True
     
     elif not has_left_arm and not has_right_arm:
         default_joint_dim = 6
         
-        data[0]["slave_left_arm"] = {
+        data[0]["left_arm"] = {
             "joint": [0.0] * default_joint_dim,
             "gripper": 0.0
         }
-        data[0]["slave_right_arm"] = {
+        data[0]["right_arm"] = {
             "joint": [0.0] * default_joint_dim,
             "gripper": 0.0
         }
@@ -137,13 +215,30 @@ def input_transform(data):
         has_right_arm = True
     
     state = np.concatenate([
-        np.array(data[0]["slave_left_arm"]["joint"]).reshape(-1),
-        np.array(data[0]["slave_left_arm"]["gripper"]).reshape(-1),
-        np.array(data[0]["slave_right_arm"]["joint"]).reshape(-1),
-        np.array(data[0]["slave_right_arm"]["gripper"]).reshape(-1)
+        np.array(data[0]["left_arm"]["joint"]).reshape(-1),
+        np.array(data[0]["left_arm"]["gripper"]).reshape(-1),
+        np.array(data[0]["right_arm"]["joint"]).reshape(-1),
+        np.array(data[0]["right_arm"]["gripper"]).reshape(-1)
     ])
-    # print(state)
-    img_arr = data[1]["slave_cam_head"]["color"], data[1]["slave_cam_wrist"]["color"]
+    
+    # 处理图像数据 - 支持不同的相机配置
+    if "cam_left_wrist" in data[1] and "cam_right_wrist" in data[1]:
+        # 双臂配置：三相机
+        img_arr = (
+            data[1]["cam_high"]["color"], 
+            data[1]["cam_left_wrist"]["color"],
+            data[1]["cam_right_wrist"]["color"]
+        )
+    elif "cam_wrist" in data[1]:
+        # 单臂配置：两相机
+        img_arr = (
+            data[1]["cam_high"]["color"], 
+            data[1]["cam_wrist"]["color"]
+        )
+    else:
+        # 只有头部相机
+        img_arr = (data[1]["cam_high"]["color"],)
+    
     return img_arr, state
 
 def output_transform(data):
@@ -162,76 +257,38 @@ def output_transform(data):
         clamp(data[0][i], joint_limits_rad[i][0], joint_limits_rad[i][1])
         for i in range(6)
     ]
+    right_joints = [
+        clamp(data[0][i+7], joint_limits_rad[i][0], joint_limits_rad[i][1])
+        for i in range(6)
+    ]
     if data[0][6] < 0.05:
         data[0][6] = 0.0
     left_gripper = data[0][6]
-    
+    if data[0][13] < 0.05:
+        data[0][13] = 0.0
+    right_gripper = data[0][13]
     move_data = {
         "left_arm":{
             "joint": left_joints,
             "gripper": left_gripper,
+        },
+        "right_arm":{
+            "joint": right_joints,
+            "gripper": right_gripper,
         }
+
     }
     return move_data
-
-class Client:
-    def __init__(self,robot,cntrol_freq=10):
-        self.robot = robot
-        self.cntrol_freq = cntrol_freq
-    
-    def set_up(self, bisocket:BiSocket):
-        self.bisocket = bisocket
-
-    def move(self, message):
-        # print(message)
-        action_chunk = message["action_chunk"]
-        action_chunk = np.array(action_chunk)
-
-        for action in action_chunk[:30]:
-            move_data = output_transform(action)
-            # if move_data["arm"]["left_arm"]["gripper"] < 0.2 :
-            #     move_data["arm"]["left_arm"]["gripper"] = 0.0
-            # if move_data["arm"]["right_arm"]["gripper"] < 0.2 :
-            #     move_data["arm"]["right_arm"]["gripper"] = 0.0
-            
-            self.robot.move(move_data)
-            time.sleep(0.1)
-
-    def play_once(self, R=None):
-        if R:
-            raw_data = R.get_data()
-        else:    
-            time.sleep(0.1)
-            raw_data = self.robot.get()
-        # print(raw_data)
-            
-        img_arr, state = input_transform(raw_data)
-        print(state)
-        data_send = {
-            "img_arr": img_arr,
-            "state": state
-        }
-
-        # send data
-        self.bisocket.send(data_send)
-
-        time.sleep(1 / self.cntrol_freq)
-
-    def close(self):
-        return
 
 if __name__ == "__main__":
     import os
     os.environ["INFO_LEVEL"] = "INFO"
-    robot = PiperSingle()
-    robot.set_up()
-    model = MYACT("/home/usst/kwj/GitCode/control_your_robot_jie/policy/ACT/act_ckpt/act-pick_place_cup/100","act-pick_place_cup")
-    robot.reset()
+    model = MYACT("/home/usst/kwj/GitCode/control_your_robot_jie/policy/ACT/act_ckpt/stack_bowls_two","act-stack_bowls_two")
+    collection=CollectAny(condition=condition,start_episode=0,move_check=True,resume=False)
     time.sleep(1)
 
-
-    # 源文件夹路径
-    source_folder = "save/pick_place_cup/"
+    # 源文件夹路径 - 修改为压缩数据路径
+    source_folder = "save/stack_bowls_two_zip/"
     
     # 获取文件夹下所有hdf5文件
     hdf5_files = []
@@ -239,26 +296,37 @@ if __name__ == "__main__":
         if filename.endswith('.hdf5'):
             hdf5_files.append(os.path.join(source_folder, filename))
     
-    # 按文件名排序，确保按顺序处理
-    hdf5_files.sort()
+    # 按文件名中的数字顺序排序
+    def extract_number(filename):
+        """从文件名中提取数字用于排序"""
+        import re
+        basename = os.path.basename(filename)
+        # 提取文件名中的数字部分
+        numbers = re.findall(r'\d+', basename)
+        if numbers:
+            return int(numbers[0])  # 使用第一个数字进行排序
+        return 0  # 如果没有数字，返回0
+    
+    hdf5_files.sort(key=extract_number)
     
     if not hdf5_files:
         print(f"在文件夹 {source_folder} 中没有找到hdf5文件")
         exit()
     
-    print(f"找到 {len(hdf5_files)} 个hdf5文件:")
-    for file in hdf5_files:
-        print(f"  - {file}")
-    
-    # 创建action收集器
-    action_collector = ActionCollector(save_path="test/pick_place_cup/model_actions/", task_name="act_pick_place_cup")
+    print(f"找到 {len(hdf5_files)} 个hdf5文件（按数字顺序排序）:")
+    for i, file in enumerate(hdf5_files):
+        basename = os.path.basename(file)
+        print(f"  {i+1}. {basename} (完整路径: {file})")
     
     # 遍历每个hdf5文件进行测试
     for file_idx, source_hdf5_path in enumerate(hdf5_files):
         print(f"\n开始处理第 {file_idx + 1}/{len(hdf5_files)} 个文件: {source_hdf5_path}")
         
-        re = Replay(source_hdf5_path)
-        max_step = len(re.episode)  # 使用hdf5文件的实际步数
+        re = Replay(source_hdf5_path, is_compressed=True)
+        if re.is_compressed:
+            max_step = len(re.episode_data)  # 压缩格式使用episode_data长度
+        else:
+            max_step = len(re.episode)  # 原始格式使用episode长度
         print(f"HDF5文件包含 {max_step} 步数据")
         
         # 从源文件路径中提取文件名（不含扩展名）
@@ -268,24 +336,23 @@ if __name__ == "__main__":
         # 处理当前文件
         step = 0
         # 重置所有信息
-        robot.reset()
         model.reset_obsrvationwindows()
         model.random_set_language()
-        action_collector.reset()  # 重置action收集器
+        # action_collector.reset()  # 重置action收集器
         
-        # 等待允许执行推理指令, 按enter开始
-        is_start = False
-        while not is_start:
-            if is_enter_pressed():
-                is_start = True
-                print("start to inference...")
-            else:
-                print("waiting for start command...")
-                time.sleep(1)
+        # # 等待允许执行推理指令, 按enter开始
+        # is_start = False
+        # while not is_start:
+        #     if is_enter_pressed():
+        #         is_start = True
+        #         print("start to inference...")
+        #     else:
+        #         print("waiting for start command...")
+                # time.sleep(1)
+        time.sleep(1)
 
         # 开始逐条推理运行
         while step < max_step:
-            # data = robot.get()
             # print(data[0])
             raw_data=re.get_data()
             # print(raw_data[0])
@@ -293,25 +360,28 @@ if __name__ == "__main__":
             img_arr, state = input_transform(raw_data)
             
             model.update_observation_window(img_arr, state)
-            action = model.get_action()
-            
-            # 收集模型输出的action数据（只保存动作和状态）
-            action_collector.collect(action, state, step)
-            
-            move_data = output_transform(action)
-            # robot.move({"arm": 
-            #                 move_data
-            #             })
-            step += 1
-            # data = robot.get()
-            # pdb.set_trace()
-            time.sleep(1/robot.condition["save_freq"])
-            print(f"File {file_idx + 1}/{len(hdf5_files)}, Step {step}/{max_step} completed. Action saved.")
-        
-        # Episode完成，保存收集的action数据，使用源文件名作为episode名称
-        action_collector.save_episode(custom_episode_name=f"episode_{source_filename}")
-        robot.reset()
+            action_chunk = model.get_action() 
+            action_chunk = action_chunk[:10]
+            for action in action_chunk:
+                # 将action数据转换为collect_any期望的格式
+                controllers_data = {
+                    "left_arm": {
+                        "joint": action[:6].tolist(),  # 前6个是左臂关节角度
+                        "gripper": action[6]  # 第7个是左臂夹爪状态
+                    },
+                    "right_arm": {
+                        "joint": action[7:13].tolist(),  # 第8-13个是右臂关节角度
+                        "gripper": action[13]  # 第14个是右臂夹爪状态
+                    }
+                }
+                collection.collect(controllers_data, None)
+                step += 1
+                # pdb.set_trace()
+                time.sleep(1/condition["save_freq"])
+                print(f"File {file_idx + 1}/{len(hdf5_files)}, Step {step}/{max_step} completed. Action saved.")
+
+        collection.write()
+        time.sleep(1)
         print(f"完成处理文件 {source_filename}")
     
     print(f"\n所有文件处理完成！总共处理了 {len(hdf5_files)} 个文件")
-    robot.reset()

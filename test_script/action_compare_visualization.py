@@ -25,27 +25,91 @@ def read_joint_data_from_hdf5(hdf5_path, verbose=False):
     
     try:
         with h5py.File(hdf5_path, 'r') as f:
-            # Read left arm data (support multiple naming conventions)
-            left_arm_keys = ['left_arm', 'slave_left_arm', 'master_left_arm']
-            for key in left_arm_keys:
-                if key in f:
-                    left_arm_group = f[key]
-                    if 'joint' in left_arm_group:
-                        joint_data['left_arm'] = left_arm_group['joint'][:]
-                        if verbose:
-                            print(f"Found left arm joints in '{key}': shape {joint_data['left_arm'].shape}")
-                    break
+            # Read left arm data (support multiple naming conventions and data structures)
+            left_arm_paths = [
+                # 直接路径格式
+                'left_arm/joint',
+                'slave_left_arm/joint', 
+                'master_left_arm/joint',
+                # observations路径格式
+                'observations/left_arm/joint',
+                'observations/slave_left_arm/joint',
+                'observations/master_left_arm/joint'
+            ]
             
-            # Read right arm data (support multiple naming conventions)
-            right_arm_keys = ['right_arm', 'slave_right_arm', 'master_right_arm']
-            for key in right_arm_keys:
-                if key in f:
-                    right_arm_group = f[key]
-                    if 'joint' in right_arm_group:
-                        joint_data['right_arm'] = right_arm_group['joint'][:]
+            for path in left_arm_paths:
+                try:
+                    if path in f:
+                        joint_data['left_arm'] = f[path][:]
                         if verbose:
-                            print(f"Found right arm joints in '{key}': shape {joint_data['right_arm'].shape}")
-                    break
+                            print(f"Found left arm joints at '{path}': shape {joint_data['left_arm'].shape}")
+                        break
+                except:
+                    continue
+            
+            # 如果上面的路径都没找到，尝试通过组结构查找
+            if len(joint_data['left_arm']) == 0:
+                left_arm_keys = ['left_arm', 'slave_left_arm', 'master_left_arm']
+                for key in left_arm_keys:
+                    if key in f:
+                        left_arm_group = f[key]
+                        if 'joint' in left_arm_group:
+                            joint_data['left_arm'] = left_arm_group['joint'][:]
+                            if verbose:
+                                print(f"Found left arm joints in group '{key}': shape {joint_data['left_arm'].shape}")
+                            break
+                    # 也检查observations下的组
+                    obs_key = f'observations/{key}'
+                    if 'observations' in f and key in f['observations']:
+                        obs_group = f['observations'][key]
+                        if 'joint' in obs_group:
+                            joint_data['left_arm'] = obs_group['joint'][:]
+                            if verbose:
+                                print(f"Found left arm joints in observations group '{key}': shape {joint_data['left_arm'].shape}")
+                            break
+            
+            # Read right arm data (support multiple naming conventions and data structures)
+            right_arm_paths = [
+                # 直接路径格式
+                'right_arm/joint',
+                'slave_right_arm/joint',
+                'master_right_arm/joint',
+                # observations路径格式
+                'observations/right_arm/joint',
+                'observations/slave_right_arm/joint', 
+                'observations/master_right_arm/joint'
+            ]
+            
+            for path in right_arm_paths:
+                try:
+                    if path in f:
+                        joint_data['right_arm'] = f[path][:]
+                        if verbose:
+                            print(f"Found right arm joints at '{path}': shape {joint_data['right_arm'].shape}")
+                        break
+                except:
+                    continue
+            
+            # 如果上面的路径都没找到，尝试通过组结构查找
+            if len(joint_data['right_arm']) == 0:
+                right_arm_keys = ['right_arm', 'slave_right_arm', 'master_right_arm']
+                for key in right_arm_keys:
+                    if key in f:
+                        right_arm_group = f[key]
+                        if 'joint' in right_arm_group:
+                            joint_data['right_arm'] = right_arm_group['joint'][:]
+                            if verbose:
+                                print(f"Found right arm joints in group '{key}': shape {joint_data['right_arm'].shape}")
+                            break
+                    # 也检查observations下的组
+                    obs_key = f'observations/{key}'
+                    if 'observations' in f and key in f['observations']:
+                        obs_group = f['observations'][key]
+                        if 'joint' in obs_group:
+                            joint_data['right_arm'] = obs_group['joint'][:]
+                            if verbose:
+                                print(f"Found right arm joints in observations group '{key}': shape {joint_data['right_arm'].shape}")
+                            break
                     
     except Exception as e:
         if verbose:
@@ -550,8 +614,8 @@ def calculate_average_curves(joint_data_list, verbose=False):
 
 if __name__ == "__main__":
     # 示例用法
-    folder1 = "/home/usst/kwj/GitCode/control_your_robot_jie/test/pick_place_cup/"
-    folder2 = "/home/usst/kwj/GitCode/control_your_robot_jie/save/pick_place_cup/"
+    folder1 = "/home/usst/kwj/GitCode/control_your_robot_jie/save/real_data/stack_bowls_two_zip/"
+    folder2 = "/home/usst/kwj/GitCode/control_your_robot_jie/test/reload_model_actions/stack_bowls_two/"
     
     # 检查文件夹是否存在
     if not os.path.exists(folder1):
