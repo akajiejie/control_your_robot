@@ -6,7 +6,21 @@
 可以使用提供的api进行数据采集, 使用CollectAny进行数据存储, 或者用自己的采集的数据.  
 
 2. 转化数据格式  
-对于使用CollectAny采集的数据, 提供了转化lerobot格式的脚本, 需要注意的是, 如果你使用的是单臂, 建议使用libero格式进行训练, 双臂则采用aloha格式  
+首先转化为通用hdf5格式, 方便转为lerobotdataset:
+``` bash
+python scripts/convert2hdf5.py input_path output_path
+# example: python scripts/convert2hdf5.py ../../save/task_1/ processed_data/task_1/
+```
+然后将对应任务的instructions.json移动到对应任务的文件夹中, json文件格式参考`task_instructions/*.json`.
+
+最后根据需求, 转化为lerobotdataset格式, 支持多个任务同时转化, 或者只转化指定任务:
+``` bash
+python scripts/convert2lerobot.py --raw_dir data_dir --repo_id your_repo_id # --is_multi
+# 如果你是单数据集转化
+python scripts/convert2lerobot.py --raw_dir processed_data/task_1/ --repo_id my_task_1
+# 如果你输多数据集转化 
+python scripts/convert2lerobot.py --raw_dir processed_data/ --repo_id union_task --is_multi
+```
 
 3. 选择你的config  
 在`src/openpi/training/config.py`中, 选择你要使用的训练形式:单臂/双臂, base/fast, full/lora  
@@ -30,4 +44,6 @@ bash finetune.sh your_train_config_name your_model_name gpu_id
 ```
 
 ## 如何使用openpi进行推理  
-在`inference_model.py`中给出了单臂和双臂的部署封装类, 请结合自己的机器人进行数据对齐  
+在`inference_model.py`中给出了单臂和双臂的部署封装类, 请结合自己的机器人进行数据对齐. 需要修改两个部分:
+1. `train_config_name`要设置为你训练时使用的`train_config`
+2. 要在`src/openpi/training/config.py`对应的`train_config`中将`repo_id`改为你模型训练时使用的数据集的`repo_id`
