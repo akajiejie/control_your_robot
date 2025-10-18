@@ -63,12 +63,12 @@ def get_class(import_name, class_name):
 def parse_args_and_config():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--model_name", type=str, required=True, help="Name of the task")
-    parser.add_argument("--model_class", type=str, required=True, help="Name of the model class")
-    parser.add_argument("--model_path", type=str, required=True, help="model path, e.g., policy/RDT/checkpoints/checkpoint-10000. If using RoboTwin pipeline, this should be set as checkpoint_id")
-    parser.add_argument("--task_name", type=str, required=True, help="task name, read intructions from task_instuctions/{task_name}.json")
-    parser.add_argument("--robot_name", type=str, required=True, help="robot name, read my_robot/{robot_name}.py")
-    parser.add_argument("--robot_class", type=str, required=True, help="robot class, get class from my_robot/{robot_name}.py")
+    parser.add_argument("--base_model_name", type=str, required=True, help="Name of the task")
+    parser.add_argument("--base_model_class", type=str, required=True, help="Name of the model class")
+    parser.add_argument("--base_model_path", type=str, required=True, help="model path, e.g., policy/RDT/checkpoints/checkpoint-10000. If using RoboTwin pipeline, this should be set as checkpoint_id")
+    parser.add_argument("--base_task_name", type=str, required=True, help="task name, read intructions from task_instuctions/{base_task_name}.json")
+    parser.add_argument("--base_robot_name", type=str, required=True, help="robot name, read my_robot/{base_robot_name}.py")
+    parser.add_argument("--base_robot_class", type=str, required=True, help="robot class, get class from my_robot/{base_robot_name}.py")
     parser.add_argument("--episode_num", type=int, default=10, help="how many episodes you want to deploy")
     parser.add_argument("--max_step", type=int, default=1000000, help="the maximum step for each episode")
     parser.add_argument("--robotwin", action="store_true", help="If using RoboTwin pipeline, you should set it.")
@@ -90,10 +90,10 @@ def parse_args_and_config():
 
     # 分别读取两个配置文件
     robotwin_path = "config/RoboTwin_setting.yml"
-    model_path = f"policy/{args.model_name}/deploy_policy.yml"
+    base_model_path = f"policy/{args.base_model_name}/deploy_policy.yml"
 
     robotwin_setting = load_yaml_safe(robotwin_path)
-    model_setting = load_yaml_safe(model_path)
+    model_setting = load_yaml_safe(base_model_path)
 
     # ---------- 合并配置 ----------
     # 优先级顺序：
@@ -125,11 +125,11 @@ def parse_args_and_config():
 
 # ROboTwin eval
 class TASK_ENV:
-    def __init__(self, task_name):
-        self.task_name = task_name
+    def __init__(self, base_task_name):
+        self.base_task_name = base_task_name
     
     def get_instruction(self):
-        json_Path = os.path.join( "task_instructions", f"{self.task_name}.json")
+        json_Path = os.path.join( "task_instructions", f"{self.base_task_name}.json")
         with open(json_Path, 'r') as f_instr:
             instruction_dict = json.load(f_instr)
         instructions = instruction_dict['instructions']
@@ -137,10 +137,10 @@ class TASK_ENV:
         return instruction
 
 class RoboTwinModel:
-    def __init__(self, model, encode_obs, task_name):
+    def __init__(self, model, encode_obs, base_task_name):
         self.model = model
         self.encode_obs = encode_obs
-        self.TASK_ENV = TASK_ENV(task_name)
+        self.TASK_ENV = TASK_ENV(base_task_name)
     
     def random_set_language(self):
         debug_print("RoboTwinModel", "Eval under RoboTwin pipeline, set instruction by policy/{model}/deploy_policy.py", "DEBUG")
@@ -178,16 +178,16 @@ def init():
     is_video = args["video"]
 
     if not is_robotwin:
-        model_class = get_class(f"policy.{args['model_name']}.inference_model", args["model_class"])
-        model = model_class(args["model_path"], args["task_name"])
+        base_model_class = get_class(f"policy.{args['base_model_name']}.inference_model", args["base_model_class"])
+        model = base_model_class(args["base_model_path"], args["base_task_name"])
     else:
-        get_model = get_class(f"policy.{args['model_name']}.deploy_policy", "get_model")
-        encode_obs = get_class(f"policy.{args['model_name']}.deploy_policy", "encode_obs")
+        get_model = get_class(f"policy.{args['base_model_name']}.deploy_policy", "get_model")
+        encode_obs = get_class(f"policy.{args['base_model_name']}.deploy_policy", "encode_obs")
         base_model = get_model(args)
-        model = RoboTwinModel(base_model, encode_obs, args["task_name"])
+        model = RoboTwinModel(base_model, encode_obs, args["base_task_name"])
         
-    robot_class = get_class(f"my_robot.{args['robot_name']}", args["robot_class"])
-    robot = robot_class()
+    base_robot_class = get_class(f"my_robot.{args['base_robot_name']}", args["base_robot_class"])
+    robot = base_robot_class()
 
     return model, robot, args["episode_num"], args["max_step"], is_video
 
