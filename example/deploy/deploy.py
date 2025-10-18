@@ -137,9 +137,9 @@ class TASK_ENV:
         return instruction
 
 class RoboTwinModel:
-    def __init__(self, model, infer, task_name):
+    def __init__(self, model, encode_obs, task_name):
         self.model = model
-        self.infer = infer
+        self.encode_obs = encode_obs
         self.TASK_ENV = TASK_ENV(task_name)
     
     def random_set_language(self):
@@ -157,7 +157,15 @@ class RoboTwinModel:
         self.observation_window["joint_action"] = {"vector": state}
     
     def get_action(self):
-        actions = self.infer(self.TASK_ENV, self.model, self.observation_window)
+        if self.model.observation_window is None:
+            instruction = self.TASK_ENV.get_instruction()
+            self.model.set_language(instruction)
+
+        input_rgb_arr, input_state = self.encode_obs(self.observation_window)
+        self.model.update_observation_window(input_rgb_arr, input_state)
+
+        # ======== Get Action ========
+        actions = self.model.get_action()[:]
         return actions
     
     def reset_obsrvationwindows(self):
@@ -174,9 +182,9 @@ def init():
         model = model_class(args["model_path"], args["task_name"])
     else:
         get_model = get_class(f"policy.{args['model_name']}.deploy_policy", "get_model")
-        infer = get_class(f"policy.{args['model_name']}.deploy_policy", "infer")
+        encode_obs = get_class(f"policy.{args['model_name']}.deploy_policy", "encode_obs")
         base_model = get_model(args)
-        model = RoboTwinModel(base_model, infer, args["task_name"])
+        model = RoboTwinModel(base_model, encode_obs, args["task_name"])
         
     robot_class = get_class(f"my_robot.{args['robot_name']}", args["robot_class"])
     robot = robot_class()
