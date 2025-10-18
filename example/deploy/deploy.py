@@ -7,6 +7,7 @@ import argparse
 import numpy as np
 import time
 import yaml
+import json
 
 from utils.data_handler import debug_print, is_enter_pressed
 
@@ -153,15 +154,18 @@ class RoboTwinModel:
         self.observation_window["observation"]["right_camera"] = {"rgb": img_arr[1]}
         self.observation_window["observation"]["left_camera"] = {"rgb": img_arr[2]}
         self.observation_window["agent_pos"] = state
+        self.observation_window["joint_action"] = {"vector": state}
     
     def get_action(self):
         actions = self.infer(self.TASK_ENV, self.model, self.observation_window)
         return actions
+    
+    def reset_obsrvationwindows(self):
+        self.model.reset_obsrvationwindows()
 
 def init():
     args = parse_args_and_config()
 
-    print(args["test"])
     is_robotwin = args["robotwin"]
     is_video = args["video"]
 
@@ -169,8 +173,8 @@ def init():
         model_class = get_class(f"policy.{args['model_name']}.inference_model", args["model_class"])
         model = model_class(args["model_path"], args["task_name"])
     else:
-        get_model = get_class(f"policy.{args['model_name']}.deploy_policy", get_model)
-        infer = get_class(f"policy.{args['model_name']}.deploy_policy", infer)
+        get_model = get_class(f"policy.{args['model_name']}.deploy_policy", "get_model")
+        infer = get_class(f"policy.{args['model_name']}.deploy_policy", "infer")
         base_model = get_model(args)
         model = RoboTwinModel(base_model, infer, args["task_name"])
         
