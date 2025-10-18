@@ -46,18 +46,6 @@ def get_model(usr_args):
     test_1, test_2 = (usr_args["test_info_1"], usr_args["test_info_2"])
     return TestModel(test_1, test_2)
 
-def infer(TASK_ENV, model, observation):
-    if model.observation_window is None:
-        instruction = TASK_ENV.get_instruction()
-        model.set_language(instruction)
-
-    input_rgb_arr, input_state = encode_obs(observation)
-    model.update_observation_window(input_rgb_arr, input_state)
-
-    # ======== Get Action ========
-    actions = model.get_action()[:]
-    return actions
-
 def eval(TASK_ENV, model, observation):
 
     if model.observation_window is None:
