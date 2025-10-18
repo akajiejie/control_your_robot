@@ -6,6 +6,7 @@ import importlib
 import argparse
 import numpy as np
 import time
+import yaml
 
 from utils.data_handler import debug_print, is_enter_pressed
 
@@ -74,6 +75,7 @@ def parse_args_and_config():
     parser.add_argument("--overrides", nargs=argparse.REMAINDER)
 
     args = parser.parse_args()
+
     args_dict = vars(args)
 
     # ---------- 读取 YAML 配置 ----------
@@ -159,22 +161,23 @@ class RoboTwinModel:
 def init():
     args = parse_args_and_config()
 
-    is_robotwin = args.robotwin
-    is_video = args.video
+    print(args["test"])
+    is_robotwin = args["robotwin"]
+    is_video = args["video"]
 
     if not is_robotwin:
-        model_class = get_class(f"policy.{args.model_name}.inference_model", args.model_class)
-        model = model_class(args.model_path, args.task_name)
+        model_class = get_class(f"policy.{args['model_name']}.inference_model", args["model_class"])
+        model = model_class(args["model_path"], args["task_name"])
     else:
-        get_model = get_class(f"policy.{args.model_name}.deploy_policy", get_model)
-        infer = get_class(f"policy.{args.model_name}.deploy_policy", infer)
+        get_model = get_class(f"policy.{args['model_name']}.deploy_policy", get_model)
+        infer = get_class(f"policy.{args['model_name']}.deploy_policy", infer)
         base_model = get_model(args)
-        model = RoboTwinModel(base_model, infer, args.task_name)
+        model = RoboTwinModel(base_model, infer, args["task_name"])
         
-    robot_class = get_class(f"my_robot.{args.robot_name}", args.robot_class)
+    robot_class = get_class(f"my_robot.{args['robot_name']}", args["robot_class"])
     robot = robot_class()
 
-    return model, robot, args.episode_num, args.max_step, is_video
+    return model, robot, args["episode_num"], args["max_step"], is_video
 
 if __name__ == "__main__":
     os.environ["INFO_LEVEL"] = "INFO" # DEBUG , INFO, ERROR

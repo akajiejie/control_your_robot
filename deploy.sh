@@ -5,4 +5,6 @@ python example/deploy/deploy.py \
     --task_name "test"\
     --robot_name "test_robot"\
     --robot_class "TestRobot"\
+    --overrides \
+    --test "test for robot"
     # --video "cam_head"\
