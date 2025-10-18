@@ -8,6 +8,50 @@
   <img src="imgs/Wechat.jpg" alt="wechat" width="400">
 </p>
 
+# RoboTwin depoly pipeline support!
+Now we already support RoboTwin pipeline! You can refer to under step for your Sim2Real experiment!
+1. link `RoboTwin` policy to `control_your_robot` policy
+```bash
+# example
+ln -s path/to/RoboTwin/polciy/pi0 path/to/control_your_robot/policy/
+```
+
+2. modify `deploy.sh`
+By using `RoboTwin` pipeline, you should set `--robotwin` first, then extra info should be set like:
+```bash
+# pi0 eval.sh
+python script/eval_policy.py --config policy/$policy_name/deploy_policy.yml \
+    --overrides \
+    --task_name ${task_name} \
+    --task_config ${task_config} \
+    --train_config_name ${train_config_name} \
+    --model_name ${model_name} \
+    --ckpt_setting ${model_name} \
+    --seed ${seed} \
+    --policy_name ${policy_name} 
+
+# your deploy.sh
+python example/deploy/deploy.py \
+    --base_model_name "openpi"\
+    --base_model_class "None"\
+    --base_model_path "None"\
+    --base_task_name "test"\
+    --base_robot_name "test_robot"\
+    --base_robot_class "TestRobot"\
+    --robotwin \
+    --overrides \
+    --task_name ${task_name} \
+    --task_config ${task_config} \
+    --train_config_name ${train_config_name} \
+    --model_name ${model_name} \
+    --ckpt_setting ${model_name} \
+    --seed ${seed} \
+    --policy_name ${policy_name} 
+```
+By `RoboTwin` pipeline, some of the `base_` index may not make effect, here use None instead. Also some of the RoboTwin setting not take effect, you could ignore it.
+
+Other deploy info you could refer to RoboTwin Document, like some of the model should modify `deploy_policy.yml`.
+
 # Control Your Robot!
 This project aims to provide a comprehensive and ready-to-use pipeline for embodied intelligence research, covering everything from robotic arm control, data collection, to Vision-Language-Action (VLA) model training and deployment.
 
