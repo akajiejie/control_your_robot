@@ -18,6 +18,8 @@ import glob
 import re
 import time
 
+KEY_BANED = ["timestamp"]
+
 class CollectAny:
     def __init__(self, condition=None, start_episode=0, move_check=True, resume=False):
         self.condition = condition
@@ -193,6 +195,9 @@ class CollectAny:
 
             if isinstance(current_subdata, dict):
                 for key, current_value in current_subdata.items():
+                    if key in KEY_BANED:
+                        continue
+                    
                     previous_value = previous_subdata.get(key)
                     if previous_value is None:
                         return True  # 缺失对应字段，视为变动
