@@ -3,23 +3,31 @@ sys.path.append("./")
 
 from typing import List
 import numpy as np
+import time
 
 from utils.data_handler import debug_print
 
 class Controller:
-    def __init__(self):
+    def __init__(self, timestamp=True):
         self.name = "controller"
         self.controller_type = "base_controller"
-        self.is_set_up = False
+        # self.is_set_up = False
+        self.timestamp = timestamp
     
     def set_collect_info(self, collect_info:List[str]):
         self.collect_info = collect_info
+        if self.timestamp:
+           self.collect_info.append("timestamp")
 
     # get controller infomation
     def get(self):
         if self.collect_info is None:
             raise ValueError(f"{self.name}: collect_info is not set")
         info = self.get_information()
+
+        if self.timestamp:
+            info["timestamp"] = time.time_ns()
+        
         for collect_info in self.collect_info:
             if info[collect_info] is None:
                 debug_print(f"{self.name}", f"{collect_info} information is None", "ERROR")
