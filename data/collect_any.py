@@ -19,13 +19,12 @@ import re
 import time
 
 class CollectAny:
-    def __init__(self, condition=None, start_episode=0, move_check=True, resume=False, time_stamp=True):
+    def __init__(self, condition=None, start_episode=0, move_check=True, resume=False):
         self.condition = condition
         self.episode = []
         self.move_check = move_check
         self.last_controller_data = None
         self.resume = resume
-        self.time_stamp = time_stamp
         
         # Initialize episode_index based on resume parameter
         if resume and condition is not None:
@@ -64,21 +63,21 @@ class CollectAny:
         return next_episode
 
     def collect(self, controllers_data, sensors_data):
-        if self.time_stamp:
-            time_stamp = time.time_ns()
+        # if self.time_stamp:
+        #     time_stamp = time.time_ns()
 
         episode_data = {}
         if controllers_data is not None:    
             for controller_name, controller_data in controllers_data.items():
                 episode_data[controller_name] = controller_data
-                if self.time_stamp:
-                    episode_data[controller_name]["timestamp"] = time_stamp
+                # if self.time_stamp:
+                #     episode_data[controller_name]["timestamp"] = time_stamp
         
         if sensors_data is not None:    
             for sensor_name, sensor_data in sensors_data.items():
                 episode_data[sensor_name] = sensor_data
-                if self.time_stamp:
-                    episode_data[sensor_name]["timestamp"] = time_stamp
+                # if self.time_stamp:
+                #     episode_data[sensor_name]["timestamp"] = time_stamp
         
         if self.move_check:
             if self.last_controller_data is None:
@@ -160,7 +159,7 @@ class CollectAny:
                         mapping[outer_key] = set(inner_dict.keys())
             
             for name, items in mapping.items():
-                print(name, ": ",items)
+                # print(name, ": ",items)
                 group = obs.create_group(name)
                 for item in items:
                     data = self.get_item(name, item)
