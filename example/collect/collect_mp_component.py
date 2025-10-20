@@ -103,7 +103,7 @@ if __name__ == "__main__":
                 process.join()
                 process.close()
         
-        print(shared_data_buffer)
+        # print(shared_data_buffer)
         data = shared_data_buffer.copy()
         data = dict2list(dict(data))
 

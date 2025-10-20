@@ -44,7 +44,7 @@ if __name__ == "__main__":
     mp.set_start_method("spawn")
 
     import os
-    os.environ["INFO_LEVEL"] = "INFO"
+    os.environ["INFO_LEVEL"] = "DEBUG"
     num_episode = 3
     avg_collect_time = 0
 
