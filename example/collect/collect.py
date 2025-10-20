@@ -16,9 +16,11 @@ if __name__ == "__main__":
 
     robot = TestRobot()
     robot.set_up()
+
+    start_episode = 0
     num_episode = 5
 
-    for _ in range(num_episode):
+    for episode_id in range(start_episode, start_episode + num_episode):
         robot.reset()
         debug_print("main", "Press Enter to start...", "INFO")
         while not robot.is_start() or not is_enter_pressed():
@@ -35,7 +37,7 @@ if __name__ == "__main__":
             robot.collect(data)
             
             if is_enter_pressed():
-                robot.finish()
+                robot.finish(episode_id)
                 break
                 
             collect_num += 1
