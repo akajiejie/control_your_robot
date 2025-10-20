@@ -131,7 +131,7 @@ class DataWorker(Worker):
 
 if __name__ == "__main__":
     import os
-    os.environ["INFO_LEVEL"] = "INFO"
+    os.environ["INFO_LEVEL"] = "DEBUG"
     num_episode = 3
     avg_collect_time = 0
 
@@ -171,7 +171,6 @@ if __name__ == "__main__":
                 time_scheduler_collect.stop()  
                 is_start = False
 
-        print()
         # 给数据写入一定时间缓冲
         time.sleep(1)
 

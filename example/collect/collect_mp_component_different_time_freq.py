@@ -62,8 +62,8 @@ if __name__ == "__main__":
         start_event = Event()
         finish_event = Event()
 
-        time_lock_vision = Event()
-        time_lock_arm = Event()
+        # time_lock_vision = Event()
+        # time_lock_arm = Event()
         # 数量为组件进程数+时间控制器数(默认1个时间控制器)
         worker_barrier_vision = Barrier(1 + 1)
         worker_barrier_arm = Barrier(1 + 1)
@@ -122,3 +122,10 @@ if __name__ == "__main__":
             collection.collect(None, {"test_vision": vision_data})
         
         collection.write()
+
+        # add extra info
+        extra_info = {
+            "avg_time_interval_vision": time_scheduler_vision.real_time_average_time_interval,
+            "avg_time_interval_arm": time_scheduler_arm.real_time_average_time_interval,
+        }
+        collection.add_extra_condition_info(extra_info=extra_info)

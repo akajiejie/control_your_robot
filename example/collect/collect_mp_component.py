@@ -62,8 +62,8 @@ if __name__ == "__main__":
         start_event = Event()
         finish_event = Event()
 
-        time_lock_vision = Event()
-        time_lock_arm = Event()
+        # time_lock_vision = Event()
+        # time_lock_arm = Event()
         # 数量为组件进程数+时间控制器数(默认1个时间控制器)
         worker_barrier = Barrier(2 + 1)
 
@@ -109,12 +109,11 @@ if __name__ == "__main__":
 
         shared_data_buffer = manager.dict()
 
-        avg_collect_time += time_scheduler.real_time_average_time_interval
         for i in range(len(data)):
             collection.collect(data[i], None)
         collection.write()
-    
-    avg_collect_time /= num_episode
-    extra_info = {}
-    extra_info["avg_time_interval"] = avg_collect_time
-    collection.add_extra_condition_info(extra_info)
+        
+        extra_info = {}
+        avg_collect_time = time_scheduler.real_time_average_time_interval
+        extra_info["avg_time_interval"] = avg_collect_time
+        collection.add_extra_condition_info(extra_info)
