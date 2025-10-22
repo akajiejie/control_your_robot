@@ -48,8 +48,8 @@ condition = {
 }
 
 class PikaPiper(Robot):
-    def __init__(self, start_episode=0):
-        super().__init__(start_episode)
+    def __init__(self, condition=condition, move_check=True, start_episode=0):
+        super().__init__(condition=condition, move_check=move_check, start_episode=start_episode)
 
         self.controllers = {
             "arm": {

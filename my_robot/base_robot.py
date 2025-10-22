@@ -17,6 +17,9 @@ from utils.data_handler import debug_print, hdf5_groups_to_dict
 
 import cv2
 
+# add your key here
+ALLOW_KEYS = ["arm", "image", "tactile"]
+
 condition = {
     "save_path": "./save/", 
     "task_name": "base", 
