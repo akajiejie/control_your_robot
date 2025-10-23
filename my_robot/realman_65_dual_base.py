@@ -65,6 +65,8 @@ class MyRobot:
         }
 
     def set_up(self):
+        super().set_up()
+
         self.controllers["arm"]["left_arm"].set_up("192.168.80.18", rm_thread_mode_e.RM_TRIPLE_MODE_E)
         self.controllers["arm"]["right_arm"].set_up("192.168.80.19", rm_thread_mode_e.RM_TRIPLE_MODE_E)
 

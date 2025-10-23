@@ -61,14 +61,13 @@ class PiperDual(Robot):
                 "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
             },
         }
-        self.condition = condition
-        self.collection = CollectAny(condition, start_episode=start_episode)
 
     def reset(self):
         self.controllers["arm"]["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
         self.controllers["arm"]["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
 
     def set_up(self):
+        super().set_up()
         self.controllers["arm"]["left_arm"].set_up("can0")
         self.controllers["arm"]["right_arm"].set_up("can1")
 

@@ -60,13 +60,14 @@ class PiperSingle(Robot):
                 "cam_wrist": RealsenseSensor("cam_wrist"),
             },
         }
-        self.collection = CollectAny(condition, start_episode=start_episode)
 
     # ============== init ==============
     def reset(self):
         self.controllers["arm"]["left_arm"].reset(np.array(START_POSITION_ANGLE_LEFT_ARM))
 
     def set_up(self):
+        super().set_up()
+
         self.controllers["arm"]["left_arm"].set_up("can0")
         self.sensors["image"]["cam_head"].set_up(CAMERA_SERIALS["head"])
         self.sensors["image"]["cam_wrist"].set_up(CAMERA_SERIALS["wrist"])

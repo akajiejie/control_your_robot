@@ -74,6 +74,7 @@ class PikaPiper(Robot):
         self.controllers["arm"]["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
 
     def set_up(self):
+        super().set_up()
         self.controllers["arm"]["left_arm"].set_up("can0")
         self.controllers["arm"]["right_arm"].set_up("can1")
 

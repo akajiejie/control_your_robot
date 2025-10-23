@@ -45,9 +45,7 @@ condition = {
 }
 
 class dr_Single(Robot):
-    def __init__(self, condition=condition, move_check=True, start_episode=0):
-        super().__init__(condition=condition, move_check=move_check, start_episode=start_episode)
-        
+    def __init__(self, condition=condition, move_check=True, start_episode=0):        
         self.controllers = {
             "arm": {
                 "right_arm": DrAlohaController("right_arm"),
@@ -60,12 +58,16 @@ class dr_Single(Robot):
                 "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
             },
         }
-        self.condition = condition
-        self.collection = CollectAny(condition, start_episode=0)
+        
+        super().__init__(condition=condition, move_check=move_check, start_episode=start_episode)
+
+        
     #============== 初始化相关 ==============
     def reset(self):
         self.controllers["arm"]["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
+
     def set_up(self,is_master=False):
+        super().set_up()
         self.controllers["arm"]["right_arm"].set_up("/dev/ttyACM1")
         if is_master :
             self.set_collect_type({"arm": ["joint","gripper"]})

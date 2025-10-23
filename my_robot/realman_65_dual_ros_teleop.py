@@ -70,6 +70,8 @@ class MyRobot(Robot):
         }
 
     def set_up(self):
+        super().set_up()
+
         self.arm_controllers["arm"]["left_arm"].set_up("rm_left")
         self.arm_controllers["arm"]["right_arm"].set_up("rm_right")
 

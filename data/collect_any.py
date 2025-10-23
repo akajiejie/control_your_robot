@@ -21,12 +21,18 @@ import time
 KEY_BANED = ["timestamp"]
 
 class CollectAny:
-    def __init__(self, condition=None, start_episode=0, move_check=True, resume=False):
+    def __init__(self, condition=None, 
+                 start_episode=0, 
+                 move_check=True, 
+                 resume=False,
+                 ):
+        
         self.condition = condition
         self.episode = []
         self.move_check = move_check
         self.last_controller_data = None
         self.resume = resume
+        self.handler = None
         
         # Initialize episode_index based on resume parameter
         if resume and condition is not None:
@@ -34,6 +40,9 @@ class CollectAny:
         else:
             self.episode_index = start_episode
     
+    def _add_data_transform_pipeline(self, handler):
+        self.handler = handler
+
     def _get_next_episode_index(self):
         """
         获取下一个可用的episode索引，通过扫描目标文件夹中的hdf5文件
@@ -65,21 +74,14 @@ class CollectAny:
         return next_episode
 
     def collect(self, controllers_data, sensors_data):
-        # if self.time_stamp:
-        #     time_stamp = time.time_ns()
-
         episode_data = {}
         if controllers_data is not None:    
             for controller_name, controller_data in controllers_data.items():
                 episode_data[controller_name] = controller_data
-                # if self.time_stamp:
-                #     episode_data[controller_name]["timestamp"] = time_stamp
-        
+
         if sensors_data is not None:    
             for sensor_name, sensor_data in sensors_data.items():
                 episode_data[sensor_name] = sensor_data
-                # if self.time_stamp:
-                #     episode_data[sensor_name]["timestamp"] = time_stamp
         
         if self.move_check:
             if self.last_controller_data is None:
@@ -111,6 +113,9 @@ class CollectAny:
         
     def add_extra_condition_info(self, extra_info):
         save_path = os.path.join(self.condition["save_path"], f"{self.condition['task_name']}/")
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        
         condition_path = os.path.join(save_path, "./config.json")
         if os.path.exists(condition_path):
             with open(condition_path, 'r', encoding='utf-8') as f:
@@ -150,29 +155,29 @@ class CollectAny:
         else:
             hdf5_path = os.path.join(save_path, f"{self.episode_index}.hdf5")
         
-        # print(f"WRITE called in PID={os.getpid()} TID={threading.get_ident()}")
-        with h5py.File(hdf5_path, "w") as f:
-            obs = f
-            mapping = {}
-
-            for ep in self.episode:
-                for outer_key, inner_dict in ep.items():
-                    if isinstance(inner_dict, dict):
-                        mapping[outer_key] = set(inner_dict.keys())
-            
-            for name, items in mapping.items():
-                # print(name, ": ",items)
-                group = obs.create_group(name)
-                for item in items:
-                    data = self.get_item(name, item)
-                    group.create_dataset(item, data=data)
+        id_input = self.episode_index if episode_id is None else episode_id
+       
+        mapping = {}
+        for ep in self.episode:
+            for outer_key, inner_dict in ep.items():
+                if isinstance(inner_dict, dict):
+                    mapping[outer_key] = set(inner_dict.keys())
+        
+        if self.handler:
+            self.handler(self, save_path, id_input, mapping)
+        else:
+            # print(f"WRITE called in PID={os.getpid()} TID={threading.get_ident()}")
+            with h5py.File(hdf5_path, "w") as f:
+                obs = f
+                # allow to process data
+                for name, items in mapping.items():
+                    # print(name, ": ",items)
+                    group = obs.create_group(name)
+                    for item in items:
+                        data = self.get_item(name, item)
+                        group.create_dataset(item, data=data)
                     
-            # for controller_name in name:
-            #     controller_group = obs.create_group(controller_name)
-            #     for item in self.episode[0][controller_name].keys():
-            #         data = self.get_item(controller_name, item)
-            #         controller_group.create_dataset(item, data=data)
-        debug_print("collect_any", f"write to {hdf5_path}", "INFO")
+            debug_print("collect_any", f"write to {hdf5_path}", "INFO")
         # reset the episode
         self.episode = []
         self.episode_index += 1

@@ -46,9 +46,9 @@ condition = {
 }
 
 class MyRobot(Robot):
-    def __init__(self, condition=condition, move_check=True, start_episode=0):
+    def __init__(self, condition=condition, move_check=True, start_episode=0):   
         super().__init__(condition=condition, move_check=move_check, start_episode=start_episode)
-        
+
         self.controllers = {
             "arm":{
                 "left_arm": RealmanRosController("left_arm"),
@@ -64,6 +64,8 @@ class MyRobot(Robot):
         }
 
     def set_up(self):
+        super().set_up()
+
         self.controllers["arm"]["left_arm"].set_up("rm_left")
         self.controllers["arm"]["right_arm"].set_up("rm_right")
 

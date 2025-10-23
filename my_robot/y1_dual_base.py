@@ -55,20 +55,22 @@ class Y1Dual(Robot):
             }
         }
         self.sensors = {
-            # "image": {
-            #     "cam_head": RealsenseSensor("cam_head"),
-            #     "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
-            #     "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
-            # },
+            "image": {
+                "cam_head": RealsenseSensor("cam_head"),
+                "cam_left_wrist": RealsenseSensor("cam_left_wrist"),
+                "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
+            },
         }
 
     def set_up(self, teleop=False):
+        super().set_up()
+
         self.controllers["arm"]["left_arm"].set_up("can1", teleop=teleop)
         self.controllers["arm"]["right_arm"].set_up("can0", teleop=teleop)
 
-        # self.sensors["arm"]["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
-        # self.sensors["image"]["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
-        # self.sensors["image"]["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
+        self.sensors["arm"]["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
+        self.sensors["image"]["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
+        self.sensors["image"]["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
 
         self.set_collect_type({"arm": ["joint","qpos","gripper"],
                                "image": ["color"]
