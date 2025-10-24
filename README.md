@@ -5,8 +5,10 @@
 
 # WECHAT
 <p align="center">
-  <img src="imgs/Wechat.jpg" alt="wechat" width="400">
+  <img src="imgs/Wechat.jpg" alt="wechat_group" width="400">
+  <img src="imgs/myWechat.jpg" alt="my_wechat" width="400">
 </p>
+if the wechat group overdue, you could add my wechat to join in.
 
 # (untested on real robot) Data collect pipeline now can choose to save the data into the format you want!
 You can try it by switch to the branch--`newest` to have a try.  
