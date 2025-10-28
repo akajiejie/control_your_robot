@@ -7,6 +7,11 @@ import numpy as np
 import math
 from scipy.spatial.transform import Rotation
 
+'''
+Franka base code from:
+https://github.com/TimSchneider42/franky
+'''
+
 class FrankaFrankyController:
     def __init__(self, name):
         super().__init__()
