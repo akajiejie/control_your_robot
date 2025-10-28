@@ -1,6 +1,7 @@
 import sys
 sys.path.append("./")
 
+from controller.arm_controller import ArmController
 from utils.data_handler import debug_print
 from franky import *
 import numpy as np
@@ -12,7 +13,7 @@ Franka base code from:
 https://github.com/TimSchneider42/franky
 '''
 
-class FrankaFrankyController:
+class FrankaFrankyController(ArmController):
     def __init__(self, name):
         super().__init__()
         self.name = name
