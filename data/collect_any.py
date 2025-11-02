@@ -18,15 +18,14 @@ import glob
 import re
 import time
 
-KEY_BANED = ["timestamp"]
-
 class CollectAny:
-    def __init__(self, condition=None, start_episode=0, move_check=True, resume=False):
+    def __init__(self, condition=None, start_episode=0, move_check=True, resume=False, time_stamp=True):
         self.condition = condition
         self.episode = []
         self.move_check = move_check
         self.last_controller_data = None
         self.resume = resume
+        self.time_stamp = time_stamp
         
         # Initialize episode_index based on resume parameter
         if resume and condition is not None:
