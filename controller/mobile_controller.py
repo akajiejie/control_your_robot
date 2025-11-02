@@ -13,7 +13,7 @@ class MobileController(Controller):
     '''
     对于底盘移动,不进行is_delta的判断, 直接进行移动
     '''
-    def move(self, move_data:Dict[str, Any]):
+    def move(self, move_data:Dict[str, Any], is_delta=False):
         # moving by setting velocity for every joint
         if "move_velocity" in move_data.keys():
             self.set_move_velocity(np.array(move_data["move_velocity"]))

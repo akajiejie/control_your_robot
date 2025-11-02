@@ -9,8 +9,9 @@ import time
 from utils.data_handler import debug_print
 
 class TestMobileController(MobileController):
-    def __init__(self, INFO="DEBUG"):
+    def __init__(self, name, INFO="DEBUG"):
         super().__init__()
+        self.name = name
         self.INFO = INFO
 
     def set_up(self):
@@ -47,7 +48,7 @@ class TestMobileController(MobileController):
             pass
 
 if __name__ == "__main__":
-    controller = TestMobileController()
+    controller = TestMobileController("test_mobile")
     controller.set_up()
     controller.set_collect_info(["move_velocity", "position"])
 
