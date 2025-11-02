@@ -16,6 +16,7 @@ class TestArmController(ArmController):
         self.controller = None
         self.INFO = INFO
         self.DoFs = DoFs
+        self.now_state = {}
     
     def set_up(self, input=None):
         debug_print(self.name, f"setup success",self.INFO)
@@ -28,12 +29,14 @@ class TestArmController(ArmController):
 
     def get_state(self):
         state = {}
-        time.sleep(0.00015)
         # randly return a vaild value  
-        state["joint"] = np.random.rand(self.DoFs) * 3.1515926
-        state["qpos"] = np.random.rand(6)
-        state["gripper"] = np.random.rand(1)
-        debug_print(self.name, f"get state to \n {state}", self.INFO)
+        state["joint"] = np.random.rand(self.DoFs) * 3.1515926 if self.now_state == {} or "joint" not in self.now_state.keys() \
+              else self.now_state["joint"]
+        state["qpos"] = np.random.rand(6) if self.now_state == {}  or "qpos" not in self.now_state.keys() \
+              else self.now_state["qpos"]
+        state["gripper"] = np.random.rand(1) if self.now_state == {}  or "gripper" not in self.now_state.keys() \
+              else self.now_state["gripper"]
+        # debug_print(self.name, f"get state: \n {state}", self.INFO)
         return state
 
     def set_position(self, position):
@@ -43,12 +46,17 @@ class TestArmController(ArmController):
             debug_print(self.name, f"using QUATERNION set position to \n {position}", self.INFO)
         else:
             debug_print(self.name, f"set_position input size should be 6 -> EULER or 7 -> QUATERNION","ERROR")
+        
+        self.now_state["qpos"] = position
     
     def set_joint(self, joint):
         if joint.shape[0] != self.DoFs:
             debug_print(self.name, f"set_joint() input size should be {self.DoFs}","ERROR")   
         else: 
             debug_print(self.name, f"set joint to \n {joint}", self.INFO)
+        
+        self.now_state["joint"] = joint
+
 
     # The input gripper value is in the range [0, 1], representing the degree of opening.
     def set_gripper(self, gripper):
@@ -59,6 +67,9 @@ class TestArmController(ArmController):
                 debug_print(self.name, f"gripper better be 0~1, but get number {gripper}","WARNING")
         else:
             debug_print(self.name, f"gripper should be a number 0~1, but get type {type(gripper)}","ERROR")
+        
+        self.now_state["gripper"] = gripper
+
     
     def __del__(self):
         try:

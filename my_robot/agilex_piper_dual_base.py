@@ -72,7 +72,7 @@ class PiperDual(Robot):
         self.controllers["arm"]["left_arm"].set_up("can0")
         self.controllers["arm"]["right_arm"].set_up("can1")
 
-        self.sensors["arm"]["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
+        self.sensors["image"]["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
         self.sensors["image"]["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
         self.sensors["image"]["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
 

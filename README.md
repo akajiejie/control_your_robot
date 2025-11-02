@@ -3,6 +3,65 @@
 
 [Chinese WIKI](https://tian-nian.github.io/control_your_robot-doc/)
 
+# WECHAT
+<p align="center">
+  <img src="imgs/Wechat.jpg" alt="wechat_group" width="400">
+  <img src="imgs/myWechat.jpg" alt="my_wechat" width="400">
+</p>
+if the wechat group overdue, you could add my wechat to join in.
+
+# (untested on real robot) Data collect pipeline now can choose to save the data into the format you want!
+You can try it by switch to the branch--`newest` to have a try.  
+A function added at `CollectAny` called `_add_data_transform_pipeline()`, add we provide two choice under `utils/data_transofrm_pipeline.py`:
+1. `image_rgb_encode_pipeline`  
+this will encode every egb image in your data, then save it, it will cost lower memory for data saving by using jepg.
+2. `general_hdf5_rdt_format_pipeline`  
+this will save the data into rdt_hdf5 format without instruction.
+
+# RoboTwin depoly pipeline support!
+Now we already support RoboTwin pipeline! You can refer to under step for your Sim2Real experiment!
+1. link `RoboTwin` policy to `control_your_robot` policy
+```bash
+# example
+ln -s path/to/RoboTwin/polciy/pi0 path/to/control_your_robot/policy/
+```
+
+2. modify `deploy.sh`
+By using `RoboTwin` pipeline, you should set `--robotwin` first, then extra info should be set like:
+```bash
+# pi0 eval.sh
+python script/eval_policy.py --config policy/$policy_name/deploy_policy.yml \
+    --overrides \
+    --task_name ${task_name} \
+    --task_config ${task_config} \
+    --train_config_name ${train_config_name} \
+    --model_name ${model_name} \
+    --ckpt_setting ${model_name} \
+    --seed ${seed} \
+    --policy_name ${policy_name} 
+
+# your deploy.sh
+python example/deploy/deploy.py \
+    --base_model_name "openpi"\
+    --base_model_class "None"\
+    --base_model_path "None"\
+    --base_task_name "test"\
+    --base_robot_name "test_robot"\
+    --base_robot_class "TestRobot"\
+    --robotwin \
+    --overrides \
+    --task_name ${task_name} \
+    --task_config ${task_config} \
+    --train_config_name ${train_config_name} \
+    --model_name ${model_name} \
+    --ckpt_setting ${model_name} \
+    --seed ${seed} \
+    --policy_name ${policy_name} 
+```
+By `RoboTwin` pipeline, some of the `base_` index may not make effect, here use None instead. Also some of the RoboTwin setting not take effect, you could ignore it.
+
+Other deploy info you could refer to RoboTwin Document, like some of the model should modify `deploy_policy.yml`.
+
 # Control Your Robot!
 This project aims to provide a comprehensive and ready-to-use pipeline for embodied intelligence research, covering everything from robotic arm control, data collection, to Vision-Language-Action (VLA) model training and deployment.
 
@@ -30,6 +89,8 @@ os.environ["INFO_LEVEL"] = "DEBUG" # DEBUG , INFO, ERROR
 python example/collect/collect_mp_robot.py
 # Multi-process (separate process for each component)
 python example/collect/collect_mp_component.py
+# Multi-process (separate process for each component, and have diffrent save_freq for each, this will save timestamp)
+python example/collect/collect_mp_component_different_time_freq.py
 # Single-threaded (may have accumulated delays due to function execution)
 python example/collect/collect.py
 ```
@@ -82,6 +143,16 @@ python scripts/upload_zip.py path/to/floder --encode
 # decompress.
 python scripts/upload_zip.py path/to/floder
 ```
+
+8. telop by joint/eef
+```bash
+# We provide two general architectures for teleoperation-based data collection. The first one is relatively simple, where the teleoperation control frequency is aligned with the data collection frequency. The second one is slightly more complex, allowing the teleoperation frequency to far exceed the data recording frequency. Both architectures have been validated through real-world robot experiments.
+# same freq
+python example/teleop/master_slave_arm_teleop.py 
+# diff freq
+python example/teleop/master_slave_arm_teleop_fs.py
+```
+
 
 ### 🤖 Supported Devices
 
