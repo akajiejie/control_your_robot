@@ -6,6 +6,7 @@ import numpy as np
 from my_robot.base_robot import Robot
 
 from controller.TestArm_controller import TestArmController
+from controller.TestMobile_controller import TestMobileController
 from sensor.TestVision_sensor import TestVisonSensor
 from utils.data_handler import debug_print
 from data.collect_any import CollectAny
@@ -30,6 +31,9 @@ class TestRobot(Robot):
                 "left_arm": TestArmController("left_arm",DoFs=self.DoFs,INFO=self.INFO),
                 "right_arm": TestArmController("right_arm",DoFs=self.DoFs,INFO=self.INFO),
             },
+            "mobile": {
+                "test_mobile": TestMobileController("test_mobile",INFO=self.INFO),
+            }
         }
         self.sensors = {
             "image": {
@@ -51,10 +55,12 @@ class TestRobot(Robot):
 
         self.controllers["arm"]["left_arm"].set_up()
         self.controllers["arm"]["right_arm"].set_up()
+        self.controllers["mobile"]["test_mobile"].set_up()
         self.sensors["image"]["cam_head"].set_up(is_depth=False)
         self.sensors["image"]["cam_left_wrist"].set_up(is_depth=False)
         self.sensors["image"]["cam_right_wrist"].set_up(is_depth=False)
         self.set_collect_type({"arm": ["joint","qpos","gripper"],
+                               "mobile": ["move_velocity", "position"],
                                "image": ["color"],
                                })
     
