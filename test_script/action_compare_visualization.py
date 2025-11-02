@@ -614,8 +614,8 @@ def calculate_average_curves(joint_data_list, verbose=False):
 
 if __name__ == "__main__":
     # 示例用法
-    folder1 = "/home/usst/kwj/GitCode/control_your_robot_jie/save/real_data/stack_bowls_two_zip/"
-    folder2 = "/home/usst/kwj/GitCode/control_your_robot_jie/test/reload_model_actions/stack_bowls_two/"
+    folder1 = "/home/usst/kwj/GitCode/control_your_robot_jie/save/real_data/feed_test/"
+    folder2 = "/home/usst/kwj/GitCode/control_your_robot_jie/test/reload_model_actions/dp_feed_test/"
     
     # 检查文件夹是否存在
     if not os.path.exists(folder1):

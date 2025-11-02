@@ -5,7 +5,7 @@ sys.path.append('./')
 from utils.data_handler import hdf5_groups_to_dict
 from my_robot.base_robot import dict_to_list
 from data.collect_any import CollectAny
-from policy.ACT.inference_model import MYACT
+from policy.DP.inference_model import MYDP
 import time
 import numpy as np
 import math
@@ -13,6 +13,13 @@ import cv2
 import h5py
 import os
 
+condition = {
+    "save_path": "./test/reload_model_actions/", 
+    "task_name": "dp_feed_test", 
+    "save_format": "hdf5", 
+    "save_freq": 10,
+    "collect_type": "reload",
+}
 def decode_compressed_images(encoded_data):
     """解码压缩的JPEG图像数据
     
@@ -35,13 +42,7 @@ def decode_compressed_images(encoded_data):
         else:
             print("警告：无法解码图像数据")
     return np.array(imgs)
-condition = {
-    "save_path": "./test/reload_model_actions/", 
-    "task_name": "act_stack_bowls_two", 
-    "save_format": "hdf5", 
-    "save_freq": 50,
-    "collect_type": "teleop",
-}
+
 class Replay:
     def __init__(self, hdf5_path, is_compressed=False) -> None:
         self.ptr = 0
@@ -55,43 +56,94 @@ class Replay:
             self.episode = dict_to_list(hdf5_groups_to_dict(hdf5_path))
     
     def _load_compressed_data(self, hdf5_path):
-        """加载压缩格式的HDF5数据"""
+        """加载HDF5数据（支持多种格式）"""
         episode_data = []
         
         with h5py.File(hdf5_path, 'r') as f:
-            obs = f['observations']
+            # 检测HDF5文件的结构
+            top_level_keys = list(f.keys())
+            print(f"检测到的顶层键: {top_level_keys}")
             
-            # 解码压缩的图像数据 - 支持三相机
-            cam_high_encoded = obs['cam_high'][:]
-            cam_high_images = decode_compressed_images(cam_high_encoded)
-            
-            # 检查是否有左右手腕相机
-            cam_left_wrist_images = None
-            cam_right_wrist_images = None
-            cam_wrist_images = None
-            
-            if 'cam_left_wrist' in obs and 'cam_right_wrist' in obs:
-                # 双臂配置：左右手腕相机
-                cam_left_wrist_encoded = obs['cam_left_wrist'][:]
-                cam_right_wrist_encoded = obs['cam_right_wrist'][:]
-                cam_left_wrist_images = decode_compressed_images(cam_left_wrist_encoded)
-                cam_right_wrist_images = decode_compressed_images(cam_right_wrist_encoded)
-            elif 'cam_wrist' in obs:
-                # 单臂配置：单个手腕相机
-                cam_wrist_encoded = obs['cam_wrist'][:]
-                cam_wrist_images = decode_compressed_images(cam_wrist_encoded)
-            
-            # 获取机械臂数据
-            left_arm_joint = obs['left_arm']['joint'][:]
-            left_arm_gripper = obs['left_arm']['gripper'][:]
-            
-            # 检查是否有右臂数据
-            right_arm_joint = None
-            right_arm_gripper = None
-            if 'right_arm' in obs and len(obs['right_arm'].keys()) > 0:
-                if 'joint' in obs['right_arm'] and 'gripper' in obs['right_arm']:
-                    right_arm_joint = obs['right_arm']['joint'][:]
-                    right_arm_gripper = obs['right_arm']['gripper'][:]
+            # 判断数据格式
+            if 'observations' in top_level_keys:
+                # 格式1: 带有observations层的压缩格式
+                obs = f['observations']
+                
+                # 解码压缩的图像数据 - 支持三相机
+                cam_high_encoded = obs['cam_high'][:]
+                cam_high_images = decode_compressed_images(cam_high_encoded)
+                
+                # 检查是否有左右手腕相机
+                cam_left_wrist_images = None
+                cam_right_wrist_images = None
+                cam_wrist_images = None
+                
+                if 'cam_left_wrist' in obs and 'cam_right_wrist' in obs:
+                    # 双臂配置：左右手腕相机
+                    cam_left_wrist_encoded = obs['cam_left_wrist'][:]
+                    cam_right_wrist_encoded = obs['cam_right_wrist'][:]
+                    cam_left_wrist_images = decode_compressed_images(cam_left_wrist_encoded)
+                    cam_right_wrist_images = decode_compressed_images(cam_right_wrist_encoded)
+                elif 'cam_wrist' in obs:
+                    # 单臂配置：单个手腕相机
+                    cam_wrist_encoded = obs['cam_wrist'][:]
+                    cam_wrist_images = decode_compressed_images(cam_wrist_encoded)
+                
+                # 获取机械臂数据
+                left_arm_joint = obs['left_arm']['joint'][:]
+                left_arm_gripper = obs['left_arm']['gripper'][:]
+                
+                # 检查是否有右臂数据
+                right_arm_joint = None
+                right_arm_gripper = None
+                if 'right_arm' in obs and len(obs['right_arm'].keys()) > 0:
+                    if 'joint' in obs['right_arm'] and 'gripper' in obs['right_arm']:
+                        right_arm_joint = obs['right_arm']['joint'][:]
+                        right_arm_gripper = obs['right_arm']['gripper'][:]
+                
+            else:
+                # 格式2: 直接存储的非压缩格式（slave_cam_head, slave_left_arm等）
+                # 读取图像数据（已经是解码后的格式）
+                if 'slave_cam_head' in f:
+                    cam_high_images = f['slave_cam_head']['color'][:]
+                elif 'cam_high' in f:
+                    cam_high_images = f['cam_high']['color'][:]
+                else:
+                    raise KeyError("找不到头部相机数据 (slave_cam_head 或 cam_high)")
+                
+                # 检查手腕相机
+                cam_left_wrist_images = None
+                cam_right_wrist_images = None
+                cam_wrist_images = None
+                
+                if 'slave_cam_wrist' in f:
+                    cam_wrist_images = f['slave_cam_wrist']['color'][:]
+                elif 'cam_wrist' in f:
+                    cam_wrist_images = f['cam_wrist']['color'][:]
+                elif 'cam_left_wrist' in f and 'cam_right_wrist' in f:
+                    cam_left_wrist_images = f['cam_left_wrist']['color'][:]
+                    cam_right_wrist_images = f['cam_right_wrist']['color'][:]
+                
+                # 读取机械臂数据
+                if 'slave_left_arm' in f:
+                    left_arm_joint = f['slave_left_arm']['joint'][:]
+                    left_arm_gripper = f['slave_left_arm']['gripper'][:]
+                elif 'left_arm' in f:
+                    left_arm_joint = f['left_arm']['joint'][:]
+                    left_arm_gripper = f['left_arm']['gripper'][:]
+                else:
+                    raise KeyError("找不到左臂数据 (slave_left_arm 或 left_arm)")
+                
+                # 检查右臂数据
+                right_arm_joint = None
+                right_arm_gripper = None
+                if 'slave_right_arm' in f:
+                    right_arm_joint = f['slave_right_arm']['joint'][:]
+                    right_arm_gripper = f['slave_right_arm']['gripper'][:]
+                elif 'right_arm' in f and len(f['right_arm'].keys()) > 0:
+                    if 'joint' in f['right_arm'] and 'gripper' in f['right_arm']:
+                        right_arm_joint = f['right_arm']['joint'][:]
+                        right_arm_gripper = f['right_arm']['gripper'][:]
             
             # 构建episode数据
             for i in range(len(left_arm_joint)):
@@ -161,13 +213,13 @@ class Replay:
             elif 'cam_wrist' in step_data:
                 # 单臂配置
                 img_data['cam_wrist'] = step_data['cam_wrist']
-            
-            self.ptr += 10
+            #horizon - (n_obs_steps - 1)= 8 - (3 - 1)=6
+            self.ptr += 6
             return arm_data, img_data
         else:
             # 原始格式
             data = self.episode[self.ptr], self.episode[self.ptr]
-            self.ptr += 10
+            self.ptr += 6
             return data
 
     
@@ -279,12 +331,12 @@ def output_transform(data):
 if __name__ == "__main__":
     import os
     os.environ["INFO_LEVEL"] = "INFO"
-    model = MYACT("/home/usst/kwj/GitCode/control_your_robot_jie/policy/ACT/act_ckpt/stack_bowls_two","act-stack_bowls_two")
+    model = MYDP(model_path="policy/DP/checkpoints/feed_test-100-0/300.ckpt", task_name="feed_test", INFO="DEBUG")
     collection=CollectAny(condition=condition,start_episode=0,move_check=True,resume=False)
     time.sleep(1)
 
     # 源文件夹路径 - 修改为压缩数据路径
-    source_folder = "save/stack_bowls_two_zip/"
+    source_folder = "save/real_data/feed_test/"
     
     # 获取文件夹下所有hdf5文件
     hdf5_files = []
@@ -343,8 +395,8 @@ if __name__ == "__main__":
             img_arr, state = input_transform(raw_data)
             
             model.update_observation_window(img_arr, state)
-            action_chunk = model.get_action() 
-            action_chunk = action_chunk[:10]
+            action_chunk = model.get_action(model.observation_window) 
+            # print(action_chunk)
             for action in action_chunk:
                 # 将action数据转换为collect_any期望的格式
                 controllers_data = {

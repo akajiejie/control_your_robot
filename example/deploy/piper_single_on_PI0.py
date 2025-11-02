@@ -297,7 +297,7 @@ if __name__ == "__main__":
     os.environ["INFO_LEVEL"] = "INFO"
     robot = PiperSingle()
     robot.set_up()
-    model = PI0_SINGLE("/home/usst/kwj/GitCode/control_your_robot_jie/policy/openpi/checkpoints/25000/", "pick_place_cup")
+    model = PI0_SINGLE("/home/usst/kwj/GitCode/control_your_robot_jie/policy/openpi/checkpoints/feed_test/25000/", "feed_test")
     collection=CollectAny(condition=condition,start_episode=0,move_check=True,resume=True)
     robot.reset()
     time.sleep(1)
@@ -311,7 +311,7 @@ if __name__ == "__main__":
         task_name="pi0_pick_place_cup",
         resume=True  # 使用自动检测模式
     )
-    max_step = 1000
+    max_step = 600
     num_episode = 6
     for i in range(num_episode):
         step = 0

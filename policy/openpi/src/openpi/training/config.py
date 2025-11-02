@@ -387,7 +387,7 @@ _CONFIGS = [
         name="pi0_single_base_aloha_lora",
         model=pi0.Pi0Config(paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"),
         data=LeRobotLiberoDataConfig(
-            repo_id="pick_place_cup",# your datasets repo_id
+            repo_id="feed_test",# your datasets repo_id
             base_config=DataConfig(
                 local_files_only=True,  # Set to True for local-only datasets.
                 prompt_from_task=True,  # Set to True for prompt by task_name

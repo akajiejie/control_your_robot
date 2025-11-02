@@ -31,3 +31,4 @@ processed_data/
 test/
 test_script/
 task_instructions/
+policy/DP/diffusion_policy.egg-info
