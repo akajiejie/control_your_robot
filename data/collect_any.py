@@ -18,8 +18,6 @@ import glob
 import re
 import time
 
-KEY_BANED = ["timestamp"]
-
 class CollectAny:
     def __init__(self, condition=None, 
                  start_episode=0, 

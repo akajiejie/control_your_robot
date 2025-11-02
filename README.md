@@ -5,8 +5,18 @@
 
 # WECHAT
 <p align="center">
-  <img src="imgs/Wechat.jpg" alt="wechat" width="400">
+  <img src="imgs/Wechat.jpg" alt="wechat_group" width="400">
+  <img src="imgs/myWechat.jpg" alt="my_wechat" width="400">
 </p>
+if the wechat group overdue, you could add my wechat to join in.
+
+# (untested on real robot) Data collect pipeline now can choose to save the data into the format you want!
+You can try it by switch to the branch--`newest` to have a try.  
+A function added at `CollectAny` called `_add_data_transform_pipeline()`, add we provide two choice under `utils/data_transofrm_pipeline.py`:
+1. `image_rgb_encode_pipeline`  
+this will encode every egb image in your data, then save it, it will cost lower memory for data saving by using jepg.
+2. `general_hdf5_rdt_format_pipeline`  
+this will save the data into rdt_hdf5 format without instruction.
 
 # RoboTwin depoly pipeline support!
 Now we already support RoboTwin pipeline! You can refer to under step for your Sim2Real experiment!
