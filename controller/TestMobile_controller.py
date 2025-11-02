@@ -48,6 +48,9 @@ class TestMobileController(MobileController):
             pass
 
 if __name__ == "__main__":
+    import os
+    os.environ["INFO_LEVEL"] = "DEBUG" # DEBUG , INFO, ERROR
+
     controller = TestMobileController("test_mobile")
     controller.set_up()
     controller.set_collect_info(["move_velocity", "position"])

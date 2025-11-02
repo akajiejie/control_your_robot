@@ -97,4 +97,10 @@ if __name__ == "__main__":
     }
     robot.move(move_data)
 
-    
+    move_data = {
+        "mobile":{
+            "test_mobile":{
+                "move_to":np.random.rand(6) * 3.1515926
+            },
+        }
+    }
