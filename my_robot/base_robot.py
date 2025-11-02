@@ -17,6 +17,9 @@ from utils.data_handler import debug_print, hdf5_groups_to_dict
 
 import cv2
 
+# add your controller/sensor type here
+ALLOW_TYPES = ["arm", "mobile","image", "tactile", "teleop"]
+
 condition = {
     "save_path": "./save/", 
     "task_name": "base", 
@@ -29,7 +32,7 @@ class Robot:
                 condition=condition,
                 move_check=True, 
                 start_episode=0) -> None:
-        
+          
         self.name = "base_robot"
         self.controllers = {}
         self.sensors = {}
@@ -38,8 +41,17 @@ class Robot:
         self.collection = CollectAny(condition, move_check=move_check, start_episode=start_episode)
 
     def set_up(self):
-        debug_print(self.name, "set_up() should be realized by your robot class", "ERROR")
-        raise NotImplementedError
+        for controller_type in self.controllers.keys():
+            if controller_type not in ALLOW_TYPES:
+                debug_print(self.name, f"It's recommanded to set your controller type into our format.\nYOUR STPE:{controller_type}\n\
+                            ALLOW_TYPES:{ALLOW_TYPES}", "WARNING")
+        
+        for sensor_type in self.sensors.keys():
+            if sensor_type not in ALLOW_TYPES:
+                debug_print(self.name, f"It's recommanded to set your sensor type into our format.\nYOUR STPE:{sensor_type}\n\
+                            ALLOW_TYPES:{ALLOW_TYPES}", "WARNING")
+        # debug_print(self.name, "set_up() should be realized by your robot class", "ERROR")
+        # raise NotImplementedError
     
     def set_collect_type(self,INFO_NAMES: Dict[str, Any]):
         for key,value in INFO_NAMES.items():
@@ -70,6 +82,19 @@ class Robot:
         self.collection.collect(data[0], data[1])
     
     def finish(self, episode_id=None):
+        extra_info = {}
+        for controller_type in self.controllers.keys():
+            extra_info[controller_type] = []
+            for key in self.controllers[controller_type].keys():
+                extra_info[controller_type].append(key)
+        
+        for sensor_type in self.sensors.keys():
+            extra_info[sensor_type] = []
+            for key in self.sensors[sensor_type].keys():
+                extra_info[sensor_type].append(key)
+
+        self.collection.add_extra_condition_info(extra_info)
+        
         self.collection.write(episode_id)
     
     def move(self, move_data, key_banned=None):
@@ -84,20 +109,17 @@ class Robot:
                     self.controllers[controller_type_name][controller_name].move(controller_action,is_delta=False)
     
     def is_start(self):
-        # debug_print(self.name, "your are using default func: is_start(), this will return True only", "DEBUG")
+        debug_print(self.name, "your are using default func: is_start(), this will return True only", "DEBUG")
         return True
 
     def reset(self):
-        # debug_print(self.name, "your are using default func: reset(), this will return True only", "DEBUG")
+        debug_print(self.name, "your are using default func: reset(), this will return True only", "DEBUG")
         return True
 
     def show_pic(self, data_path, pic_name):
-        parent_dir = os.path.dirname(data_path)
-        config_path = os.path.join(parent_dir, "config.json")
-
         episode = dict_to_list(hdf5_groups_to_dict(data_path))
         for ep in episode:
-            cv2.imshow("pic", ep[pic_name]["color"])
+            cv2.imshow(f"{pic_name}", ep[pic_name]["color"])
             cv2.waitKey(10)
 
     def replay(self, data_path, key_banned=None, is_collect=False, episode_id=None):

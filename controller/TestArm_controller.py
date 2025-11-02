@@ -21,12 +21,6 @@ class TestArmController(ArmController):
     def set_up(self, input=None):
         debug_print(self.name, f"setup success",self.INFO)
 
-    def reset(self, start_state):
-        if start_state.shape[0] == self.DoFs:
-            debug_print(self.name, f"reset success, to start state \n {start_state}",self.INFO)
-        else:
-            debug_print(self.name, f"reset() input should be joint controll which dim is {self.DoFs}","ERROR")
-
     def get_state(self):
         state = {}
         # randly return a vaild value  

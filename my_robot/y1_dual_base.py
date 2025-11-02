@@ -63,6 +63,8 @@ class Y1Dual(Robot):
         }
 
     def set_up(self, teleop=False):
+        super().set_up()
+
         self.controllers["arm"]["left_arm"].set_up("can1", teleop=teleop)
         self.controllers["arm"]["right_arm"].set_up("can0", teleop=teleop)
 

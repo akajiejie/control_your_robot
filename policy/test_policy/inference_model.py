@@ -8,7 +8,7 @@ import time
 from utils.data_handler import debug_print
 
 class TestModel:
-    def __init__(self,model_path, task_name,DoFs=6,is_dual=True, INFO="DEBUG"):
+    def __init__(self,model_path, task_name, DoFs=6, is_dual=True, INFO="DEBUG"):
         self.model_path = model_path
         self.task_name = task_name
         self.INFO = INFO
