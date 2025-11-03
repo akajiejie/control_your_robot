@@ -12,9 +12,9 @@ if __name__ == "__main__":
     my_task = Tasks.build_top({
         "type": "Serial",
         "subtasks": [
-            YmlTask("./config/move_mobile_1.yml", is_block=False),
-            YmlTask("./config/model_infer.yml", is_block=False),
-            YmlTask("./config/move_mobile_2.yml", is_block=True),
+            YmlTask("./config/robot_1_move_mobile_1.yml", is_block=False),
+            YmlTask("./config/robot_1_model_infer.yml", is_block=False),
+            YmlTask("./config/robot_1_move_mobile_2.yml", is_block=True),
         ],
     })
     while not my_task.is_success():
