@@ -259,9 +259,9 @@ class YmlTask(BaseTask):
                 else:
                     self.extras[extra_name] = extra_class()
         
-        # if self.is_block:
-        #     if self.running:
-        #         return
+        if self.is_block:
+            if self.running:
+                return
             
         if self.run_once is None:
             if self.args["run"]["args"] is not None:
@@ -298,6 +298,7 @@ class YmlTask(BaseTask):
             debug_print(self.name, "success!", "INFO")
             self.success = True
             self.robot = None
+            self.running = False
             if self.extras is not None:
                 if self.args["extras"]["release"]:
                     self.extras = None
@@ -332,6 +333,7 @@ class YmlTask(BaseTask):
                 debug_print(self.name, "fail!", "INFO")
                 self.success = False
                 self.robot = None
+                self.running = False
                 if self.extras is not None:
                     if self.args["extras"]["release"]:
                         self.extras = None

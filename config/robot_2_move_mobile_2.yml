@@ -1,4 +1,4 @@
-name: "model_infer"
+name: "robot_2_move_mobile_2"
 robot:
   class:
     class_path: "my_robot.test_robot"
@@ -7,28 +7,18 @@ robot:
 run:
   function:
     function_path: "utils.task_functions"
-    function_name: "infer_once"
-  args: null
+    function_name: "move_mobile_to"
+  args: 
+    target: [0.35, 0.35, 0., 0., 0., -1.]
 success:
   function:
     function_path: "utils.task_functions"
     function_name: "success"
-  args: 
-    threshold: 0.5
-extras:
-  model:
-    class:
-      class_path: "policy.test_policy.inference_model"
-      class_name: "TestModel"
-    args: 
-      model_path: "model/path/"
-      task_name: "test"
-  release: true
+  args:  
+    threshold: 0.8
 fail:
   function:
     function_path: "utils.task_functions"
     function_name: "success"
   args:  
-    threshold: 0.5
-
-    
+    threshold: 0.1
