@@ -30,7 +30,7 @@ class Vitac3D(TouchSensor):
         self.name = name
         
         self.THRESHOLD =12
-        self.NOISE_SCALE =60
+        self.NOISE_SCALE =30
         self.baud=2000000
         
 
@@ -66,7 +66,7 @@ class Vitac3D(TouchSensor):
         data_tac = []
         current = []
         frame_count = 0
-        INIT_FRAMES = 30
+        INIT_FRAMES = 80
         
         print(f"{self.name} sensor reading thread started")
         
@@ -190,10 +190,28 @@ if __name__ == "__main__":
     tac=Vitac3D("leftarm_left_tac")
     tac.set_up("/dev/ttyUSB0",is_show=True)
 
-    tac.set_collect_info("force")
+    tac.set_collect_info(["force"])
+    
+    # 帧数统计变量
+    frame_count = 0
+    start_time = time.time()
+    last_report_time = start_time
+    last_frame_count = 0  # 上次报告时的帧数
+    report_interval = 1.0  # 每1秒报告一次帧率
     
     for i in range(1000):
-        print(i)
         data = tac.get_touch()
+        frame_count += 1
         
-        time.sleep(1/30)
+        # 在同一行显示当前帧数
+        print(f"\r当前帧: {i}/{1000} [{frame_count}]", end='', flush=True)
+        
+        time.sleep(1/100)
+    
+    # 最终统计
+    total_time = time.time() - start_time
+    avg_fps = frame_count / total_time
+    print(f"\n[最终统计]")
+    print(f"  总帧数: {frame_count}")
+    print(f"  总耗时: {total_time:.2f} 秒")
+    print(f"  平均帧率: {avg_fps:.2f} fps")
