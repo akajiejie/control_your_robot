@@ -45,8 +45,8 @@ condition = {
 }
 
 class PiperDual(Robot):
-    def __init__(self, start_episode=0):
-        super().__init__(start_episode)
+    def __init__(self, condition=condition, move_check=True, start_episode=0):
+        super().__init__(condition=condition, move_check=move_check, start_episode=start_episode)
 
         self.controllers = {
             "arm":{
@@ -61,18 +61,17 @@ class PiperDual(Robot):
                 "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
             },
         }
-        self.condition = condition
-        self.collection = CollectAny(condition, start_episode=start_episode)
 
     def reset(self):
         self.controllers["arm"]["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
         self.controllers["arm"]["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
 
     def set_up(self):
+        super().set_up()
         self.controllers["arm"]["left_arm"].set_up("can0")
         self.controllers["arm"]["right_arm"].set_up("can1")
 
-        self.sensors["arm"]["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
+        self.sensors["image"]["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
         self.sensors["image"]["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
         self.sensors["image"]["cam_right_wrist"].set_up(CAMERA_SERIALS['right_wrist'], is_depth=False)
 

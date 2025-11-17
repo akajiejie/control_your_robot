@@ -23,7 +23,6 @@ class DexHandController(Controller):
             hand_info["force"] = self.get_force()
         return hand_info
     
-
     def move(self, move_data:Dict[str, Any],is_delta=False):
         if is_delta:
             now_state = self.get_state()

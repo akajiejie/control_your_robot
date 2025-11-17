@@ -79,7 +79,6 @@ class PI0_DUAL:
             },
             "prompt": self.instruction,
         }
-        # print(state)
 
     def get_action(self):
         assert (self.observation_window is not None), "update observation_window first!"
