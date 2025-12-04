@@ -353,14 +353,11 @@ if __name__ == "__main__":
                 robot.move({"arm": 
                             move_data
                         })
-                
-                # 更新上一个执行的动作（用于下次速度限制）
-                prev_executed_action = action.copy()
-                
                 step += 1
                 data = robot.get()
+                img_arr, state = input_transform(data)
+                model.update_observation_window(img_arr, state)
                 collection.collect(data[0],None)
-                
                 time.sleep(1/robot.condition["save_freq"])
                 print(f"Episode {i}, Step {step}/{max_step} completed.")
         time.sleep(1)
