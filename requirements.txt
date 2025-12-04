@@ -5,3 +5,6 @@ pyrealsense2
 opencv-python
 keyboard
 pyyaml
+rerun-sdk 
+h5py 
+tqdm

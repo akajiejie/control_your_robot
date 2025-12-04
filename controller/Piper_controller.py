@@ -29,6 +29,7 @@ class PiperController(ArmController):
     def reset(self, start_state):
         try:
             self.set_joint(start_state)
+            self.set_gripper(0.2)
         except :
             print(f"reset error")
         return

@@ -81,22 +81,23 @@ class DrAlohaController(ArmController):
         draloha.torque_factors = [1, 0.5, 0.5, 1, 0.5, 1] # 于调节模型扭矩与电机扭矩的比例关系，当重力补偿或零力拖动效果不佳时可用该参数调节
         self.controller=draloha
     def update_gravity(self):
-        # 获取串口标识用于日志（仅在出错时使用）
+        try_times=0
         port_name = getattr(self.controller.uart, 'port', 'unknown')
         arm_side = "左臂" if "ACM0" in port_name else "右臂" if "ACM1" in port_name else "未知"
         
         angle_list = []
         angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
+        try_times+=1
         time.sleep(0.001)
         
         if angle_speed_torque is None:
-            # print(f"[{arm_side}] 首次读取失败，开始重试")
+            
             for i in range(3):
-                # print(f"[{arm_side}] 第{i+1}次重试")
+                
                 angle_speed_torque = self.controller.get_angle_speed_torque_all(id_list=[1,2,3,4,5,6,7])
+                try_times+=1
                 time.sleep(0.001)
                 if angle_speed_torque is not None:
-                    # print(f"[{arm_side}] 第{i+1}次重试成功")
                     break
                 else:
                     print(f"[{arm_side}] 第{i+1}次重试失败")
@@ -109,7 +110,7 @@ class DrAlohaController(ArmController):
                 angle_list.append(angle_speed_torque[i][0])
             
             self.controller.gravity_compensation(angle_list=angle_list)
-            return True
+            return try_times
     def zero_gravity(self):
         self.controller.set_torques(id_list=[1,2,3,4,5,6,7], torque_list=[0, 0, 0, 0, 0, 0, 0], param=0, mode=0) # 设置对应关节扭矩
     def reset(self, start_state):
@@ -156,6 +157,7 @@ class DrAlohaController(ArmController):
         time.sleep(1)
     def apply_calibration(self):
         self.set_joint(joint=START_POSITION_ANGLE_ARM)
+        self.set_gripper(0.2)
         time.sleep(1)
     def __del__(self):
         try:

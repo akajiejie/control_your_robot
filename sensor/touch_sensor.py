@@ -11,14 +11,9 @@ class TouchSensor(Sensor):
         self.collect_info = None
 
     def get_information(self):
-        touch_info = {}
         touch = self.get_touch()
-        if "force" in self.collect_info:
-            touch_info["force"] = touch["force"]
-        if "torque" in self.collect_info:
-            touch_info["torque"] = touch["torque"]
-        
-        return touch_info
+        # 只遍历一次 collect_info，直接从 touch 中提取对应的数据
+        return {key: touch[key] for key in self.collect_info if key in touch}
 
     
     

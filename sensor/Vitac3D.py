@@ -50,8 +50,8 @@ class Vitac3D(TouchSensor):
         print(f"3DVitac sensor set up on {PORT}")
         self.serDev.flush()
         if self.is_show:          
-            cv2.namedWindow("Contact Data_left", cv2.WINDOW_NORMAL)
-            cv2.resizeWindow("Contact Data_left", 480, 480)  # 直接使用480×480尺寸
+            cv2.namedWindow(f"Contact Data_{self.name}", cv2.WINDOW_NORMAL)
+            cv2.resizeWindow(f"Contact Data_{self.name}", 480, 480)  # 直接使用480×480尺寸
         print(f"{self.name} sensor set up complete on {PORT}")
         self.thread = threading.Thread(target=self.readThread)
         self.thread.daemon = True
@@ -166,14 +166,14 @@ class Vitac3D(TouchSensor):
         with self.lock:
             data = self.current_data.copy()
             processed = self.processed_data.copy() if self.processed_data is not None else None
-        if "force" in self.collect_info:
-            tac_data["force"]=np.asanyarray(data).copy()
+        if "tactile" in self.collect_info:
+            tac_data["tactile"]=np.asanyarray(data).copy()
         # 显示图像（如果启用）
         if self.is_show and data is not None:
             # 重新缩放为0-255（如果经过滤波可能超出范围）
             display_data = (processed * 255).astype(np.uint8) if processed is not None else data
             colormap = cv2.applyColorMap(display_data, cv2.COLORMAP_VIRIDIS)
-            cv2.imshow("Contact Data_left", colormap)
+            cv2.imshow(f"Contact Data_{self.name}", colormap)
             cv2.waitKey(1)
         # 返回触摸数据
         return tac_data
@@ -187,10 +187,10 @@ class Vitac3D(TouchSensor):
     def __del__(self):
         self.close()
 if __name__ == "__main__":
-    tac=Vitac3D("leftarm_left_tac")
+    tac=Vitac3D("right_right_tac")
     tac.set_up("/dev/ttyUSB0",is_show=True)
 
-    tac.set_collect_info(["force"])
+    tac.set_collect_info(["tactile"])
     
     # 帧数统计变量
     frame_count = 0
@@ -198,20 +198,26 @@ if __name__ == "__main__":
     last_report_time = start_time
     last_frame_count = 0  # 上次报告时的帧数
     report_interval = 1.0  # 每1秒报告一次帧率
+    total_collect_time = 0.0  # 累积采集时间
     
     for i in range(1000):
+        collect_start = time.time()
         data = tac.get_touch()
+        collect_time = time.time() - collect_start
+        total_collect_time += collect_time
         frame_count += 1
         
         # 在同一行显示当前帧数
         print(f"\r当前帧: {i}/{1000} [{frame_count}]", end='', flush=True)
         
-        time.sleep(1/100)
+        time.sleep(1/70)
     
     # 最终统计
     total_time = time.time() - start_time
     avg_fps = frame_count / total_time
+    avg_collect_time = total_collect_time / frame_count  # 计算平均采集时间
     print(f"\n[最终统计]")
     print(f"  总帧数: {frame_count}")
     print(f"  总耗时: {total_time:.2f} 秒")
     print(f"  平均帧率: {avg_fps:.2f} fps")
+    print(f"  平均采集时间: {avg_collect_time*1000:.2f} 毫秒")
