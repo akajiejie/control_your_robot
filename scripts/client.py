@@ -4,7 +4,7 @@ sys.path.append('./')
 from my_robot.test_robot import TestRobot
 
 from utils.bisocket import BiSocket
-from utils.data_handler import debug_print
+from utils.data_handler import debug_print, is_enter_pressed
 
 import socket
 import time
@@ -74,6 +74,7 @@ class Client:
         for action in action_chunk:
             move_data = output_transform(action)
             self.robot.move(move_data)
+            time.sleep(1 / self.cntrol_freq)
 
     def play_once(self):
         raw_data = self.robot.get()
@@ -84,8 +85,9 @@ class Client:
         }
 
         # send data
-        self.bisocket.send(data_send)
-        time.sleep(1 / self.cntrol_freq)
+        # self.bisocket.send(data_send)
+        self.bisocket.send_and_wait_reply(data_send, timeout=30.)
+        # time.sleep(1 / self.cntrol_freq)
 
     def close(self):
         return
@@ -109,11 +111,20 @@ if __name__ == "__main__":
     bisocket = BiSocket(client_socket, client.move)
     client.set_up(bisocket)
 
-    for i in range(10):
+    while True:
         try:
-            print(f"play once:{i}")
+            if is_enter_pressed():
+                break
             client.play_once()
-            time.sleep(1)
         except:
             client.close()
     client.close()
+
+    # for i in range(10):
+    #     try:
+    #         print(f"play once:{i}")
+    #         client.play_once()
+    #         time.sleep(1)
+    #     except:
+    #         clis_enient.close()
+    # client.close()
