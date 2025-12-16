@@ -4,7 +4,7 @@ sys.path.append('./')
 from my_robot.test_robot import TestRobot
 
 from utils.bisocket import BiSocket
-from utils.data_handler import debug_print, is_enter_pressed
+from utils.data_handler import debug_print
 
 import socket
 import time
@@ -60,36 +60,77 @@ def output_transform(data):
     return move_data
 
 class Client:
-    def __init__(self,robot,cntrol_freq=10):
+    def __init__(self,robot,cntrol_freq=10, jump_threshold=0.1, interp_steps=3):
         self.robot = robot
         self.cntrol_freq = cntrol_freq
+
+        self.action_queue = deque()
+        self.last_action = None
+        self.jump_threshold = jump_threshold
+        self.interp_steps = interp_steps
     
     def set_up(self, bisocket:BiSocket):
         self.bisocket = bisocket
 
-    def move(self, message):
-        action_chunk = message["action_chunk"]
-        action_chunk = np.array(action_chunk)
+    def processor(self, message):
+        action_chunk = np.array(message["action_chunk"])
 
-        for action in action_chunk:
-            move_data = output_transform(action)
-            self.robot.move(move_data)
-            time.sleep(1 / self.cntrol_freq)
+        if self.last_action is None:
+            self.last_action = action_chunk[0]
 
-    def play_once(self):
+        safe_actions = []
+
+        first_action = action_chunk[0]
+        diff = np.linalg.norm(first_action - self.last_action)
+
+        if diff > self.jump_threshold:
+            interp_actions = np.linspace(self.last_action, first_action, self.interp_steps)
+            for interp_act in interp_actions:
+                safe_actions.append(interp_act)
+        else:
+            safe_actions.append(first_action)
+
+        for i in range(1, len(action_chunk)):
+            safe_actions.append(action_chunk[i])
+
+        self.action_queue.clear()
+        for a in safe_actions:
+            self.action_queue.append(a)
+
+    def step(self):
+        """
+        控制循环调用：
+        - 从队列取一个动作
+        - 执行 robot.move()
+        - 将此动作作为 last_action
+        """
+
+        if len(self.action_queue) == 0:
+            return  # 空队列则等待下一帧
+
+        action = self.action_queue.popleft()
+
+        move_data = output_transform(action)
+        self.robot.move(move_data)
+
+        # 在这里更新 last_action，保证跳变判断基于真实执行动作
+        self.last_action = action
+
+    def play_once(self, instruction):
         raw_data = self.robot.get()
         img_arr, state = input_transform(raw_data)
         data_send = {
             "img_arr": img_arr,
-            "state": state
+            "state": state,
+            "instruction": instruction,
         }
 
         # send data
-        # self.bisocket.send(data_send)
-        self.bisocket.send_and_wait_reply(data_send, timeout=30.)
-        # time.sleep(1 / self.cntrol_freq)
+        self.bisocket.send(data_send)
+        time.sleep(1 / self.cntrol_freq)
 
     def close(self):
+        self.bisocket.close()
         return
 
 if __name__ == "__main__":
@@ -108,23 +149,16 @@ if __name__ == "__main__":
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((ip, port))
 
-    bisocket = BiSocket(client_socket, client.move)
+    bisocket = BiSocket(client_socket, client.processor)
     client.set_up(bisocket)
 
     while True:
         try:
             if is_enter_pressed():
-                break
-            client.play_once()
+                exit()
+            client.play_once("test")
+            for i in range(20):
+                client.step()
+                time.sleep(1/30)
         except:
             client.close()
-    client.close()
-
-    # for i in range(10):
-    #     try:
-    #         print(f"play once:{i}")
-    #         client.play_once()
-    #         time.sleep(1)
-    #     except:
-    #         clis_enient.close()
-    # client.close()
