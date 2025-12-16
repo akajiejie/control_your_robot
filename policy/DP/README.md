@@ -77,17 +77,4 @@ python example/deploy/piper_single_on_DP.py
 - Check if the model path is correct
 - It is recommended to verify the model performance in a test environment before deployment
 
-## Available Dependency Groups
-
-The `pyproject.toml` provides several optional dependency groups:
-
-- **`training`**: Training related packages (wandb, tensorboard, ray, etc.)
-- **`simulation`**: Simulation environments (gym, pybullet, robomimic, etc.)
-- **`video`**: Video processing (av, pytorchvideo, etc.)
-- **`cloud`**: Cloud storage (boto3)
-- **`utils`**: Additional utilities (atomics, pynput, etc.)
-- **`dev`**: Development tools (pytest, black, mypy, etc.)
-- **`docs`**: Documentation generation (sphinx)
-- **`notebook`**: Jupyter notebook support
-- **`all`**: All optional dependencies
 
