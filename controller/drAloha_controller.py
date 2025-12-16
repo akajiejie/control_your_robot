@@ -147,7 +147,7 @@ class DrAlohaController(ArmController):
         joints_list=joints.tolist()
         self.controller.set_joints(angle_list=joints_list,speed=speed)#控制1~6关节运动
         self.controller.pose_done()#等待关节运动到位
-        time.sleep(1)
+        time.sleep(0.1)
     
     # 输入的是0~1的张合度
     def set_gripper(self, gripper):
@@ -158,7 +158,6 @@ class DrAlohaController(ArmController):
     def apply_calibration(self):
         self.set_joint(joint=START_POSITION_ANGLE_ARM)
         self.set_gripper(0.2)
-        time.sleep(1)
     def __del__(self):
         try:
             if hasattr(self, 'controller'):
@@ -174,32 +173,32 @@ if __name__=="__main__":
     fps=30
     gravity_update_hz = 10  # 固定10Hz更新重力补偿
     controller=DrAlohaController("test Dr")
-    controller.set_up("/dev/ttyACM1")
+    controller.set_up("/dev/ttyACM0")
     # controller.apply_calibration() #测试校准函数
-    test_joint_position = [ 0.0,  7.17971573e-01, -2.36931078e+00, 0.0,
-       -7.88627899e-01, 0.0]
-    controller.set_joint(test_joint_position)
-
-    controller.set_gripper(0)
+    # test_joint_position = [ 0.0,  7.17971573e-01, -2.36931078e+00, 0.0,
+    #    -7.88627899e-01, 0.0]
+    # controller.set_joint(test_joint_position)
+    # controller.apply_calibration()
+    # controller.set_gripper(0)
     state=controller.get_state()
     print(state)
-    controller.zero_gravity()
-    tele_time=30
-    start_time = time.time()
-    last_gravity_update = time.time()
-    gravity_update_interval = 1.0 / gravity_update_hz  # 0.1秒间隔
+    # controller.zero_gravity()
+    # tele_time=30
+    # start_time = time.time()
+    # last_gravity_update = time.time()
+    # gravity_update_interval = 1.0 / gravity_update_hz  # 0.1秒间隔
     
-    while True:
-        current_time = time.time()
-        if current_time - start_time > tele_time:
-            break
+    # while True:
+    #     current_time = time.time()
+    #     if current_time - start_time > tele_time:
+    #         break
             
-        # 固定10Hz更新重力补偿
-        if current_time - last_gravity_update >= gravity_update_interval:
-            controller.update_gravity()
-            last_gravity_update = current_time
+    #     # 固定10Hz更新重力补偿
+    #     if current_time - last_gravity_update >= gravity_update_interval:
+    #         controller.update_gravity()
+    #         last_gravity_update = current_time
             
-        state = controller.get_state()
-        # print(state)
-        time.sleep(1/fps)
+    #     state = controller.get_state()
+    #     # print(state)
+    #     time.sleep(1/fps)
 

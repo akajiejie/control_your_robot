@@ -110,7 +110,7 @@ def enable_fun(piper:C_PiperInterface_V2):
 
 if __name__=="__main__":
     controller = PiperController("test_piper")
-    controller.set_up("can0")
+    controller.set_up("can_right")
     print(controller.get_state())
     
     controller.set_gripper(0.2)
@@ -120,6 +120,7 @@ if __name__=="__main__":
     print(controller.get_state())
 
     controller.set_position(np.array([0.057, 0.0, 0.260, 0.0, 0.085, 0.0]))
+    controller.set_gripper(0.0)
     time.sleep(1)
     # print(controller.get_gripper())
     print(controller.get_state())

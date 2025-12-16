@@ -200,7 +200,7 @@ if __name__ == "__main__":
     report_interval = 1.0  # 每1秒报告一次帧率
     total_collect_time = 0.0  # 累积采集时间
     
-    for i in range(1000):
+    for i in range(10000):
         collect_start = time.time()
         data = tac.get_touch()
         collect_time = time.time() - collect_start

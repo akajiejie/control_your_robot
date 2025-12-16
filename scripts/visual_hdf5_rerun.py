@@ -234,7 +234,8 @@ def log_timeseries_data(entity_path, data, frame_idx, name_prefix="value"):
     记录时间序列数据到Rerun
     自动处理标量、向量和多维数据
     """
-    if data is None or frame_idx >= len(data):
+    # 如果数据为None或空，直接返回，不记录任何内容
+    if data is None or len(data) == 0 or frame_idx >= len(data):
         return
     
     frame_data = data[frame_idx]
@@ -268,11 +269,11 @@ def visualize_act_format(f, verbose=False):
     for key in left_arm_keys:
         if key in f:
             left_arm_group = f[key]
-            if 'joint' in left_arm_group:
+            if 'joint' in left_arm_group and len(left_arm_group['joint']) > 0:
                 left_arm_data['joints'] = left_arm_group['joint'][:]
-            if 'gripper' in left_arm_group:
+            if 'gripper' in left_arm_group and len(left_arm_group['gripper']) > 0:
                 left_arm_data['gripper'] = left_arm_group['gripper'][:]
-            if 'eefort' in left_arm_group:
+            if 'eefort' in left_arm_group and len(left_arm_group['eefort']) > 0:
                 left_arm_data['eefort'] = left_arm_group['eefort'][:]
             break
     
@@ -282,11 +283,11 @@ def visualize_act_format(f, verbose=False):
     for key in right_arm_keys:
         if key in f:
             right_arm_group = f[key]
-            if 'joint' in right_arm_group:
+            if 'joint' in right_arm_group and len(right_arm_group['joint']) > 0:
                 right_arm_data['joints'] = right_arm_group['joint'][:]
-            if 'gripper' in right_arm_group:
+            if 'gripper' in right_arm_group and len(right_arm_group['gripper']) > 0:
                 right_arm_data['gripper'] = right_arm_group['gripper'][:]
-            if 'eefort' in right_arm_group:
+            if 'eefort' in right_arm_group and len(right_arm_group['eefort']) > 0:
                 right_arm_data['eefort'] = right_arm_group['eefort'][:]
             break
     
@@ -296,12 +297,17 @@ def visualize_act_format(f, verbose=False):
         if (key.startswith('cam_') or key.startswith('camera_') or 
             key.startswith('slave_cam_') or key.startswith('master_cam_')):
             if key in f:
+                cam_dataset = None
                 if 'color' in f[key]:
-                    camera_data[key] = f[key]['color']
+                    cam_dataset = f[key]['color']
                 elif 'rgb' in f[key]:
-                    camera_data[key] = f[key]['rgb']
+                    cam_dataset = f[key]['rgb']
                 elif 'image' in f[key]:
-                    camera_data[key] = f[key]['image']
+                    cam_dataset = f[key]['image']
+                
+                # 只添加非空的相机数据集
+                if cam_dataset is not None and len(cam_dataset) > 0:
+                    camera_data[key] = cam_dataset
     
     # 读取触觉数据
     tactile_data = {}
@@ -317,8 +323,9 @@ def visualize_act_format(f, verbose=False):
             # 检查是否匹配触觉关键词
             if any(keyword in key.lower() for keyword in tactile_keywords):
                 if isinstance(item, h5py.Dataset):
-                    # 直接是Dataset，添加到tactile_data
-                    tactile_data[full_path] = item
+                    # 直接是Dataset，只添加非空数据集
+                    if len(item) > 0:
+                        tactile_data[full_path] = item
                 elif isinstance(item, h5py.Group):
                     # 是Group，继续递归搜索其子项
                     search_tactile_data(item, full_path)
@@ -328,6 +335,15 @@ def visualize_act_format(f, verbose=False):
                 search_tactile_data(item, full_path)
     
     search_tactile_data(f)
+    
+    # 调试：打印找到的触觉数据
+    if verbose:
+        if tactile_data:
+            debug_print("ACT_FORMAT", f"找到 {len(tactile_data)} 个触觉数据集:", "DEBUG")
+            for tac_name, tac_dataset in tactile_data.items():
+                debug_print("ACT_FORMAT", f"  - {tac_name}: 长度={len(tac_dataset)}", "DEBUG")
+        else:
+            debug_print("ACT_FORMAT", "未找到触觉数据", "DEBUG")
     
     # 确定最大帧数
     max_frames = 0
@@ -355,17 +371,17 @@ def visualize_openpi_format(f, verbose=False):
         obs_group = f['observations']
         
         # 处理qpos（关节位置）
-        if 'qpos' in obs_group:
+        if 'qpos' in obs_group and len(obs_group['qpos']) > 0:
             robot_data['qpos'] = obs_group['qpos'][:]
             max_frames = max(max_frames, len(robot_data['qpos']))
         
         # 处理qvel（关节速度）
-        if 'qvel' in obs_group:
+        if 'qvel' in obs_group and len(obs_group['qvel']) > 0:
             robot_data['qvel'] = obs_group['qvel'][:]
             max_frames = max(max_frames, len(robot_data['qvel']))
         
         # 处理effort（关节力矩）
-        if 'effort' in obs_group:
+        if 'effort' in obs_group and len(obs_group['effort']) > 0:
             robot_data['effort'] = obs_group['effort'][:]
             max_frames = max(max_frames, len(robot_data['effort']))
         
@@ -373,11 +389,13 @@ def visualize_openpi_format(f, verbose=False):
         if 'images' in obs_group:
             img_group = obs_group['images']
             for img_key in img_group.keys():
-                camera_data[img_key] = img_group[img_key]
-                max_frames = max(max_frames, len(img_group[img_key]))
+                # 只添加非空的图像数据集
+                if len(img_group[img_key]) > 0:
+                    camera_data[img_key] = img_group[img_key]
+                    max_frames = max(max_frames, len(img_group[img_key]))
     
     # 处理action
-    if 'action' in f:
+    if 'action' in f and len(f['action']) > 0:
         robot_data['action'] = f['action'][:]
         max_frames = max(max_frames, len(robot_data['action']))
     
@@ -450,12 +468,24 @@ def visualize_custom_format(f, verbose=False):
                             images[full_path] = data
                 
                 if not is_image:
-                    datasets[full_path] = data[:]
+                    # 只存储非空数据
+                    data_array = data[:]
+                    if data_array is not None and len(data_array) > 0:
+                        datasets[full_path] = data_array
                     
             elif isinstance(item, h5py.Group):
                 explore_group(item, full_path)
     
     explore_group(f)
+    
+    # 调试：打印找到的数据
+    if verbose:
+        if tactile_images:
+            debug_print("CUSTOM_FORMAT", f"找到 {len(tactile_images)} 个触觉图像数据集:", "DEBUG")
+            for tac_name in tactile_images.keys():
+                debug_print("CUSTOM_FORMAT", f"  - {tac_name}", "DEBUG")
+        else:
+            debug_print("CUSTOM_FORMAT", "未找到触觉图像数据", "DEBUG")
     
     return datasets, images, tactile_images, max_frames
 
@@ -491,8 +521,16 @@ def visualize_hdf5_with_rerun(hdf5_path, verbose=False):
             
             if verbose:
                 debug_print("DATA_STATS", f"总帧数: {max_frames}", "DEBUG")
-                debug_print("DATA_STATS", f"相机数量: {len(camera_data)}", "DEBUG")
-                debug_print("DATA_STATS", f"触觉传感器: {len(tactile_data)}", "DEBUG")
+                if camera_data:
+                    debug_print("DATA_STATS", f"相机数量: {len(camera_data)}", "DEBUG")
+                    for cam_name in camera_data.keys():
+                        debug_print("DATA_STATS", f"  - {cam_name}", "DEBUG")
+                if tactile_data:
+                    debug_print("DATA_STATS", f"触觉传感器: {len(tactile_data)}", "DEBUG")
+                    for tac_name, tac_dataset in tactile_data.items():
+                        debug_print("DATA_STATS", f"  - {tac_name}: 长度={len(tac_dataset)}", "DEBUG")
+                else:
+                    debug_print("DATA_STATS", "触觉传感器: 0 (无触觉数据)", "DEBUG")
                 if left_arm_data['joints'] is not None:
                     debug_print("DATA_STATS", f"左臂关节: {left_arm_data['joints'].shape}", "DEBUG")
                 if right_arm_data['joints'] is not None:
@@ -500,52 +538,71 @@ def visualize_hdf5_with_rerun(hdf5_path, verbose=False):
             
             # 记录ACT格式数据
             debug_print("VISUALIZE", "正在记录数据到Rerun...", "INFO")
+            if verbose:
+                debug_print("VISUALIZE", f"将要记录的数据类型:", "DEBUG")
+                debug_print("VISUALIZE", f"  - 左臂: {left_arm_data['joints'] is not None}", "DEBUG")
+                debug_print("VISUALIZE", f"  - 右臂: {right_arm_data['joints'] is not None}", "DEBUG")
+                debug_print("VISUALIZE", f"  - 相机: {len(camera_data) if camera_data else 0}", "DEBUG")
+                debug_print("VISUALIZE", f"  - 触觉: {len(tactile_data) if tactile_data else 0}", "DEBUG")
+            
             for frame_idx in tqdm(range(max_frames), desc="记录帧数据", disable=not verbose):
                 rr.set_time("frame", sequence=frame_idx)
                 
-                # 左臂数据
-                log_timeseries_data("robot/left_arm/joints", left_arm_data['joints'], frame_idx, "joint")
-                log_timeseries_data("robot/left_arm/gripper", left_arm_data['gripper'], frame_idx, "gripper")
-                log_timeseries_data("robot/left_arm/eefort", left_arm_data['eefort'], frame_idx, "force")
+                # 左臂数据 - 只在数据存在时记录
+                if left_arm_data['joints'] is not None and len(left_arm_data['joints']) > 0:
+                    log_timeseries_data("robot/left_arm/joints", left_arm_data['joints'], frame_idx, "joint")
+                if left_arm_data['gripper'] is not None and len(left_arm_data['gripper']) > 0:
+                    log_timeseries_data("robot/left_arm/gripper", left_arm_data['gripper'], frame_idx, "gripper")
+                if left_arm_data['eefort'] is not None and len(left_arm_data['eefort']) > 0:
+                    log_timeseries_data("robot/left_arm/eefort", left_arm_data['eefort'], frame_idx, "force")
                 
-                # 右臂数据
-                log_timeseries_data("robot/right_arm/joints", right_arm_data['joints'], frame_idx, "joint")
-                log_timeseries_data("robot/right_arm/gripper", right_arm_data['gripper'], frame_idx, "gripper")
-                log_timeseries_data("robot/right_arm/eefort", right_arm_data['eefort'], frame_idx, "force")
+                # 右臂数据 - 只在数据存在时记录
+                if right_arm_data['joints'] is not None and len(right_arm_data['joints']) > 0:
+                    log_timeseries_data("robot/right_arm/joints", right_arm_data['joints'], frame_idx, "joint")
+                if right_arm_data['gripper'] is not None and len(right_arm_data['gripper']) > 0:
+                    log_timeseries_data("robot/right_arm/gripper", right_arm_data['gripper'], frame_idx, "gripper")
+                if right_arm_data['eefort'] is not None and len(right_arm_data['eefort']) > 0:
+                    log_timeseries_data("robot/right_arm/eefort", right_arm_data['eefort'], frame_idx, "force")
                 
-                # 相机图像
-                for camera_name, cam_dataset in camera_data.items():
-                    if frame_idx < len(cam_dataset):
-                        image = extract_images_from_dataset(cam_dataset, frame_idx)
-                        if image is not None:
-                            # 确保图像格式正确
-                            if image.dtype != np.uint8:
-                                if image.max() > 0:
-                                    image = (image - image.min()) / (image.max() - image.min()) * 255
-                                image = image.astype(np.uint8)
-                            
-                            # Rerun期望RGB格式
-                            if len(image.shape) == 2:
-                                image = np.stack([image, image, image], axis=-1)
-                            elif len(image.shape) == 3 and image.shape[2] == 4:
-                                image = image[:, :, :3]
-                            
-                            rr.log(f"cameras/{camera_name}", rr.Image(image))
+                # 相机图像 - 只在有相机数据时记录
+                if camera_data:
+                    for camera_name, cam_dataset in camera_data.items():
+                        if frame_idx < len(cam_dataset):
+                            image = extract_images_from_dataset(cam_dataset, frame_idx)
+                            if image is not None:
+                                # 确保图像格式正确
+                                if image.dtype != np.uint8:
+                                    if image.max() > 0:
+                                        image = (image - image.min()) / (image.max() - image.min()) * 255
+                                    image = image.astype(np.uint8)
+                                
+                                # Rerun期望RGB格式
+                                if len(image.shape) == 2:
+                                    image = np.stack([image, image, image], axis=-1)
+                                elif len(image.shape) == 3 and image.shape[2] == 4:
+                                    image = image[:, :, :3]
+                                
+                                rr.log(f"cameras/{camera_name}", rr.Image(image))
                 
-                # 触觉数据
-                for tactile_name, tactile_dataset in tactile_data.items():
-                    if frame_idx < len(tactile_dataset):
-                        # 检测是否为触觉图像数据
-                        if is_tactile_image_data(tactile_dataset, frame_idx):
-                            tactile_frame = tactile_dataset[frame_idx]
-                            # 应用热力图颜色映射
-                            tactile_colored = apply_tactile_colormap(tactile_frame)
-                            rr.log(f"tactile/{tactile_name}_heatmap", rr.Image(tactile_colored))
-                            # 同时记录原始数据的张量表示
-                            rr.log(f"tactile/{tactile_name}_raw", rr.Tensor(tactile_frame))
-                        else:
-                            # 非图像格式的触觉数据，使用时间序列显示
-                            log_timeseries_data(f"tactile/{tactile_name}", tactile_dataset, frame_idx)
+                # 触觉数据 - 只在有触觉数据时记录
+                if tactile_data:
+                    # 在第一帧时记录调试信息
+                    if frame_idx == 0 and verbose:
+                        debug_print("VISUALIZE", f"开始记录 {len(tactile_data)} 个触觉数据集", "DEBUG")
+                    
+                    for tactile_name, tactile_dataset in tactile_data.items():
+                        if frame_idx < len(tactile_dataset):
+                            # 检测是否为触觉图像数据
+                            if is_tactile_image_data(tactile_dataset, frame_idx):
+                                tactile_frame = tactile_dataset[frame_idx]
+                                # 应用热力图颜色映射
+                                tactile_colored = apply_tactile_colormap(tactile_frame)
+                                rr.log(f"tactile/{tactile_name}_heatmap", rr.Image(tactile_colored))
+                                # 同时记录原始数据的张量表示
+                                rr.log(f"tactile/{tactile_name}_raw", rr.Tensor(tactile_frame))
+                            else:
+                                # 非图像格式的触觉数据，使用时间序列显示
+                                log_timeseries_data(f"tactile/{tactile_name}", tactile_dataset, frame_idx)
         
         elif data_format == 'openpi':
             robot_data, camera_data, max_frames = visualize_openpi_format(f, verbose)
@@ -556,35 +613,40 @@ def visualize_hdf5_with_rerun(hdf5_path, verbose=False):
             
             if verbose:
                 debug_print("DATA_STATS", f"总帧数: {max_frames}", "DEBUG")
-                debug_print("DATA_STATS", f"机器人数据: {list(robot_data.keys())}", "DEBUG")
-                debug_print("DATA_STATS", f"相机数量: {len(camera_data)}", "DEBUG")
+                if robot_data:
+                    debug_print("DATA_STATS", f"机器人数据: {list(robot_data.keys())}", "DEBUG")
+                if camera_data:
+                    debug_print("DATA_STATS", f"相机数量: {len(camera_data)}", "DEBUG")
             
             # 记录OpenPI格式数据
             debug_print("VISUALIZE", "正在记录数据到Rerun...", "INFO")
             for frame_idx in tqdm(range(max_frames), desc="记录帧数据", disable=not verbose):
                 rr.set_time("frame", sequence=frame_idx)
                 
-                # 机器人数据
-                for data_name, data_array in robot_data.items():
-                    log_timeseries_data(f"robot/{data_name}", data_array, frame_idx, "dim")
+                # 机器人数据 - 只在有数据时记录
+                if robot_data:
+                    for data_name, data_array in robot_data.items():
+                        if data_array is not None and len(data_array) > 0:
+                            log_timeseries_data(f"robot/{data_name}", data_array, frame_idx, "dim")
                 
-                # 相机图像
-                for camera_name, cam_dataset in camera_data.items():
-                    if frame_idx < len(cam_dataset):
-                        image = extract_images_from_dataset(cam_dataset, frame_idx)
-                        if image is not None:
-                            # 确保图像格式正确
-                            if image.dtype != np.uint8:
-                                if image.max() > 0:
-                                    image = (image - image.min()) / (image.max() - image.min()) * 255
-                                image = image.astype(np.uint8)
-                            
-                            if len(image.shape) == 2:
-                                image = np.stack([image, image, image], axis=-1)
-                            elif len(image.shape) == 3 and image.shape[2] == 4:
-                                image = image[:, :, :3]
-                            
-                            rr.log(f"cameras/{camera_name}", rr.Image(image))
+                # 相机图像 - 只在有相机数据时记录
+                if camera_data:
+                    for camera_name, cam_dataset in camera_data.items():
+                        if frame_idx < len(cam_dataset):
+                            image = extract_images_from_dataset(cam_dataset, frame_idx)
+                            if image is not None:
+                                # 确保图像格式正确
+                                if image.dtype != np.uint8:
+                                    if image.max() > 0:
+                                        image = (image - image.min()) / (image.max() - image.min()) * 255
+                                    image = image.astype(np.uint8)
+                                
+                                if len(image.shape) == 2:
+                                    image = np.stack([image, image, image], axis=-1)
+                                elif len(image.shape) == 3 and image.shape[2] == 4:
+                                    image = image[:, :, :3]
+                                
+                                rr.log(f"cameras/{camera_name}", rr.Image(image))
         
         else:  # custom format
             datasets, images, tactile_images, max_frames = visualize_custom_format(f, verbose)
@@ -595,67 +657,81 @@ def visualize_hdf5_with_rerun(hdf5_path, verbose=False):
             
             if verbose:
                 debug_print("DATA_STATS", f"总帧数: {max_frames}", "DEBUG")
-                debug_print("DATA_STATS", f"数据集数量: {len(datasets)}", "DEBUG")
-                debug_print("DATA_STATS", f"图像数量: {len(images)}", "DEBUG")
-                debug_print("DATA_STATS", f"触觉图像数量: {len(tactile_images)}", "DEBUG")
                 if datasets:
+                    debug_print("DATA_STATS", f"数据集数量: {len(datasets)}", "DEBUG")
                     debug_print("DATA_STATS", "数据集:", "DEBUG")
                     for name, data in list(datasets.items())[:10]:  # 只显示前10个
                         debug_print("DATA_STATS", f"  - {name}: {data.shape}", "DEBUG")
                 if images:
+                    debug_print("DATA_STATS", f"图像数量: {len(images)}", "DEBUG")
                     debug_print("DATA_STATS", "图像:", "DEBUG")
                     for name in list(images.keys())[:10]:
                         debug_print("DATA_STATS", f"  - {name}", "DEBUG")
                 if tactile_images:
+                    debug_print("DATA_STATS", f"触觉图像数量: {len(tactile_images)}", "DEBUG")
                     debug_print("DATA_STATS", "触觉图像:", "DEBUG")
                     for name in list(tactile_images.keys())[:10]:
                         debug_print("DATA_STATS", f"  - {name}", "DEBUG")
             
             # 记录自定义格式数据
             debug_print("VISUALIZE", "正在记录数据到Rerun...", "INFO")
+            if verbose:
+                debug_print("VISUALIZE", f"将要记录的数据类型:", "DEBUG")
+                debug_print("VISUALIZE", f"  - 数值数据: {len(datasets) if datasets else 0}", "DEBUG")
+                debug_print("VISUALIZE", f"  - 普通图像: {len(images) if images else 0}", "DEBUG")
+                debug_print("VISUALIZE", f"  - 触觉图像: {len(tactile_images) if tactile_images else 0}", "DEBUG")
+            
             for frame_idx in tqdm(range(max_frames), desc="记录帧数据", disable=not verbose):
                 rr.set_time("frame", sequence=frame_idx)
                 
-                # 数值数据
-                for data_name, data_array in datasets.items():
-                    log_timeseries_data(f"data/{data_name}", data_array, frame_idx, "value")
+                # 数值数据 - 只在有数据时记录
+                if datasets:
+                    for data_name, data_array in datasets.items():
+                        if data_array is not None and len(data_array) > 0:
+                            log_timeseries_data(f"data/{data_name}", data_array, frame_idx, "value")
                 
-                # 普通图像数据
-                for img_name, img_dataset in images.items():
-                    if frame_idx < len(img_dataset):
-                        image = extract_images_from_dataset(img_dataset, frame_idx)
-                        if image is not None:
-                            # 确保图像格式正确
-                            if image.dtype != np.uint8:
-                                if image.max() > 0:
-                                    image = (image - image.min()) / (image.max() - image.min()) * 255
-                                image = image.astype(np.uint8)
-                            
-                            if len(image.shape) == 2:
-                                image = np.stack([image, image, image], axis=-1)
-                            elif len(image.shape) == 3 and image.shape[2] == 4:
-                                image = image[:, :, :3]
-                            
-                            rr.log(f"images/{img_name}", rr.Image(image))
+                # 普通图像数据 - 只在有图像数据时记录
+                if images:
+                    for img_name, img_dataset in images.items():
+                        if frame_idx < len(img_dataset):
+                            image = extract_images_from_dataset(img_dataset, frame_idx)
+                            if image is not None:
+                                # 确保图像格式正确
+                                if image.dtype != np.uint8:
+                                    if image.max() > 0:
+                                        image = (image - image.min()) / (image.max() - image.min()) * 255
+                                    image = image.astype(np.uint8)
+                                
+                                if len(image.shape) == 2:
+                                    image = np.stack([image, image, image], axis=-1)
+                                elif len(image.shape) == 3 and image.shape[2] == 4:
+                                    image = image[:, :, :3]
+                                
+                                rr.log(f"images/{img_name}", rr.Image(image))
                 
-                # 触觉图像数据（用热力图显示）
-                for tactile_name, tactile_dataset in tactile_images.items():
-                    if frame_idx < len(tactile_dataset):
-                        tactile_frame = extract_images_from_dataset(tactile_dataset, frame_idx)
-                        if tactile_frame is not None:
-                            # 如果是2D数据，应用热力图
-                            if len(tactile_frame.shape) == 2:
-                                tactile_colored = apply_tactile_colormap(tactile_frame)
-                                rr.log(f"tactile/{tactile_name}_heatmap", rr.Image(tactile_colored))
-                                # 同时记录原始数据
-                                rr.log(f"tactile/{tactile_name}_raw", rr.Tensor(tactile_frame))
-                            else:
-                                # 如果已经是彩色图像，直接显示
-                                if tactile_frame.dtype != np.uint8:
-                                    if tactile_frame.max() > 0:
-                                        tactile_frame = (tactile_frame - tactile_frame.min()) / (tactile_frame.max() - tactile_frame.min()) * 255
-                                    tactile_frame = tactile_frame.astype(np.uint8)
-                                rr.log(f"tactile/{tactile_name}", rr.Image(tactile_frame))
+                # 触觉图像数据（用热力图显示） - 只在有触觉数据时记录
+                if tactile_images:
+                    # 在第一帧时记录调试信息
+                    if frame_idx == 0 and verbose:
+                        debug_print("VISUALIZE", f"开始记录 {len(tactile_images)} 个触觉图像数据集", "DEBUG")
+                    
+                    for tactile_name, tactile_dataset in tactile_images.items():
+                        if frame_idx < len(tactile_dataset):
+                            tactile_frame = extract_images_from_dataset(tactile_dataset, frame_idx)
+                            if tactile_frame is not None:
+                                # 如果是2D数据，应用热力图
+                                if len(tactile_frame.shape) == 2:
+                                    tactile_colored = apply_tactile_colormap(tactile_frame)
+                                    rr.log(f"tactile/{tactile_name}_heatmap", rr.Image(tactile_colored))
+                                    # 同时记录原始数据
+                                    rr.log(f"tactile/{tactile_name}_raw", rr.Tensor(tactile_frame))
+                                else:
+                                    # 如果已经是彩色图像，直接显示
+                                    if tactile_frame.dtype != np.uint8:
+                                        if tactile_frame.max() > 0:
+                                            tactile_frame = (tactile_frame - tactile_frame.min()) / (tactile_frame.max() - tactile_frame.min()) * 255
+                                        tactile_frame = tactile_frame.astype(np.uint8)
+                                    rr.log(f"tactile/{tactile_name}", rr.Image(tactile_frame))
         
         if verbose:
             debug_print("VISUALIZE", f"完成记录 {max_frames} 帧数据", "INFO")
@@ -730,6 +806,7 @@ def explore_hdf5_structure(hdf5_path):
 
 
 def main():
+    os.environ["INFO_LEVEL"] = "INFO"
     parser = argparse.ArgumentParser(
         description='使用Rerun进行HDF5机器人数据可视化',
         formatter_class=argparse.RawDescriptionHelpFormatter,

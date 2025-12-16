@@ -12,29 +12,29 @@ from data.collect_any import CollectAny
 
 # setting your realsense serial
 CAMERA_SERIALS = {
-    'head': '1111',  # Replace with actual serial number
-    'left_wrist': '1111',   # Replace with actual serial number
-    'right_wrist': '1111',   # Replace with actual serial number
+    'head': '337122301391',  # Replace with actual serial number
+    'left_wrist': '420122070816',   # Replace with actual serial number
+    'right_wrist': '338622074268',   # Replace with actual serial number
 }
 
 # Define start position (in degrees)
 START_POSITION_ANGLE_LEFT_ARM = [
-    0,   # Joint 1
-    0,    # Joint 2
-    0,  # Joint 3
-    0,   # Joint 4
-    0,  # Joint 5
-    0,    # Joint 6
+    0.0,   # Joint 1
+    0.85220935,    # Joint 2
+    -0.68542569,  # Joint 3
+    0.,   # Joint 4
+    0.78588684,  # Joint 5
+    0.0,    # Joint 6
 ]
 
 # Define start position (in degrees)
 START_POSITION_ANGLE_RIGHT_ARM = [
-    0,   # Joint 1
-    0,    # Joint 2
-    0,  # Joint 3
-    0,   # Joint 4
-    0,  # Joint 5
-    0,    # Joint 6
+    0.0,   # Joint 1
+    0.85220935,    # Joint 2
+    -0.68542569,  # Joint 3
+    0.,   # Joint 4
+    0.78588684,  # Joint 5
+    0.0,    # Joint 6
 ]
 
 condition = {
@@ -63,13 +63,13 @@ class PiperDual(Robot):
         }
 
     def reset(self):
-        self.controllers["arm"]["left_arm"].reset(START_POSITION_ANGLE_LEFT_ARM)
-        self.controllers["arm"]["right_arm"].reset(START_POSITION_ANGLE_RIGHT_ARM)
+        self.controllers["arm"]["left_arm"].reset(np.array(START_POSITION_ANGLE_LEFT_ARM))
+        self.controllers["arm"]["right_arm"].reset(np.array(START_POSITION_ANGLE_RIGHT_ARM))
 
     def set_up(self):
         super().set_up()
-        self.controllers["arm"]["left_arm"].set_up("can0")
-        self.controllers["arm"]["right_arm"].set_up("can1")
+        self.controllers["arm"]["left_arm"].set_up("can_left")
+        self.controllers["arm"]["right_arm"].set_up("can_right")
 
         self.sensors["image"]["cam_head"].set_up(CAMERA_SERIALS['head'], is_depth=False)
         self.sensors["image"]["cam_left_wrist"].set_up(CAMERA_SERIALS['left_wrist'], is_depth=False)
@@ -95,23 +95,49 @@ if __name__ == "__main__":
         time.sleep(0.1)
     robot.finish()
     
+    robot.reset()
     # moving test
-    move_data = {
-        "arm":{
-            "left_arm":{
-            "qpos":[0.057, 0.0, 0.216, 0.0, 0.085, 0.0, 0.057, 0.0, 0.216, 0.0, 0.085, 0.0],
-            "gripper":0.2,
-            },
-        }
-    }
-    robot.move(move_data)
+    # move_data = {
+    #     "arm":{
+    #         "left_arm":{
+    #         "joint":[
+    #                 0.0,   # Joint 1
+    #                 0.85220935,    # Joint 2
+    #                 -0.68542569,  # Joint 3
+    #                 0.,   # Joint 4
+    #                 0.78588684,  # Joint 5
+    #                 0.0,    # Joint 6
+    #                 ],
+    #         "gripper":0.2,
+    #         },
+    #         "right_arm":{
+    #         "joint":[
+    #                 0.0,   # Joint 1
+    #                 0.85220935,    # Joint 2
+    #                 -0.68542569,  # Joint 3
+    #                 0.,   # Joint 4
+    #                 0.78588684,  # Joint 5
+    #                 0.0,    # Joint 6
+    #                 ],
+    #         "gripper":0.2,
+    #         },
+    #     }
+    # }
+    # robot.move(move_data)
     
-    move_data = {
-        "arm":{
-            "left_arm":{
-            "qpos":[0.060, 0.0, 0.260, 0.0, 0.085, 0.0, 0.060, 0.0, 0.260, 0.0, 0.085, 0.0],
-            "gripper":0.2,
-            },
-        }
-    }
-    robot.move(move_data)
+    # move_data = {
+    #     "arm":{
+    #         "right_arm":{
+    #         "joint":[
+    #                 0.0,   # Joint 1
+    #                 0.85220935,    # Joint 2
+    #                 -0.68542569,  # Joint 3
+    #                 0.,   # Joint 4
+    #                 0.78588684,  # Joint 5
+    #                 0.0,    # Joint 6
+    #                 ],
+    #         "gripper":0.2,
+    #         },
+    #     }
+    # }
+    # robot.move(move_data)
