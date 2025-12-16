@@ -1,5 +1,5 @@
 [![中文](https://img.shields.io/badge/中文-简体-blue)](./README_CN.md)  
-[![English](https://img.shields.io/badge/English-English-green)](./README_EN.md)
+[![English](https://img.shields.io/badge/English-English-green)](./README.md)
 
 # DP (Diffusion Policy) 模型部署指南
 
