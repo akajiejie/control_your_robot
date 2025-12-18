@@ -7,17 +7,18 @@ from utils.data_handler import debug_print
 
 class CvSensor(VisionSensor):
     def __init__(self, name):
-        super().__init__()
+        super().__init__(encode_rgb=encode_rgb)
         self.name = name
         self.cap = None
         self.is_depth = False
 
-    def set_up(self, device_index=0, is_depth=False):
+    def set_up(self, device_index=0, is_depth=False, encode_rgb=False):
         """
         初始化摄像头
         :param device_index: 摄像头索引号（0 为默认摄像头）
         :param is_depth: 是否为深度摄像头（True 时必须外部提供深度数据）
         """
+        self.encode_rgb = encode_rgb
         self.is_depth = is_depth
         try:
             self.cap = cv2.VideoCapture(device_index, cv2.CAP_ANY)

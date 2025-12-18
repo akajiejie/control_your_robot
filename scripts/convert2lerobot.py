@@ -140,7 +140,7 @@ if __name__== '__main__':
     
     if not multi:
         data_config = json.load(os.path.join(data_path, "config.json"))
-        inst_path = f"./task_instructions/{data_config["task_name"]}.json"
+        inst_path = f"./task_instructions/{data_config['task_name']}.json"
     else:
         inst_path = None
     lerobot = MyLerobotDataset(repo_id, "piper", 10 ,features, feature_map, inst_path)

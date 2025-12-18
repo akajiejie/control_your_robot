@@ -25,7 +25,8 @@ class RealsenseSensor(VisionSensor):
         self.exit_event = threading.Event()
         self.thread = None
         
-    def set_up(self,CAMERA_SERIAL,is_depth = False):
+    def set_up(self,CAMERA_SERIAL,is_depth = False, encode_rgb=False):
+        self.encode_rgb = encode_rgb
         self.is_depth = is_depth
         try:
             # Initialize RealSense context and check for connected devices

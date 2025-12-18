@@ -45,10 +45,6 @@ class TestRobot(Robot):
 
         # self.collection._add_data_transform_pipeline(image_rgb_encode_pipeline)
         # self.collection._add_data_transform_pipeline(general_hdf5_rdt_format_pipeline)
-
-    def reset(self):
-        self.controllers["arm"]["left_arm"].reset(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
-        self.controllers["arm"]["right_arm"].reset(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     
     def set_up(self):
         super().set_up()

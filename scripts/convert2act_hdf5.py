@@ -100,11 +100,29 @@ def convert(hdf5_paths, output_path, start_index=0):
             images = obs.create_group("images")
             
             # Retrieve data based on your camera/view names, then encode and compress it for storage.
+            def decode(imgs):
+                if isinstance(imgs, np.ndarray) and imgs.ndim == 4:
+                    return imgs
 
-            cam_high = input_data["cam_high"]
-            cam_left_wrist = input_data["cam_left_wrist"]
-            cam_right_wrist = input_data["cam_right_wrist"]
+                imgs_array = []
 
+                for data in imgs:
+                    if isinstance(data, (bytes, bytearray)):
+                        data = np.frombuffer(data, dtype=np.uint8)
+
+                    img = cv2.imdecode(data, cv2.IMREAD_COLOR)
+                    if img is None:
+                        raise ValueError("Failed to decode JPEG image")
+
+                    imgs_array.append(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+                return np.stack(imgs_array, axis=0)
+
+
+            cam_high = decode(input_data["cam_high"])
+            cam_left_wrist = decode(input_data["cam_left_wrist"])
+            cam_right_wrist = decode(input_data["cam_right_wrist"])
+            
             images.create_dataset("cam_high", data=np.stack(cam_high), dtype=np.uint8)
             images.create_dataset("cam_right_wrist", data=np.stack(cam_right_wrist), dtype=np.uint8)
             images.create_dataset("cam_left_wrist", data=np.stack(cam_left_wrist), dtype=np.uint8)

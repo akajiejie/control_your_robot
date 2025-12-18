@@ -176,7 +176,6 @@ class CollectAny:
                     for item in items:
                         data = self.get_item(name, item)
                         group.create_dataset(item, data=data)
-                    
             debug_print("collect_any", f"write to {hdf5_path}", "INFO")
         # reset the episode
         self.episode = []

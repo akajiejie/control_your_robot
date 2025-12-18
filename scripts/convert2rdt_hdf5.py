@@ -40,18 +40,24 @@ map = {
 }
 
 def images_encoding(imgs):
-    encode_data = []
-    padded_data = []
-    max_len = 0
-    for i in range(len(imgs)):
-        success, encoded_image = cv2.imencode('.jpg', imgs[i])
-        jpeg_data = encoded_image.tobytes()
-        encode_data.append(jpeg_data)
-        max_len = max(max_len, len(jpeg_data))
-    # padding
-    for i in range(len(imgs)):
-        padded_data.append(encode_data[i].ljust(max_len, b'\0'))
-    return encode_data, max_len
+    if isinstance(imgs, np.ndarray) and imgs.ndim == 4:
+        encode_data = []
+        padded_data = []
+        max_len = 0
+        for i in range(len(imgs)):
+            success, encoded_image = cv2.imencode('.jpg', imgs[i])
+            jpeg_data = encoded_image.tobytes()
+            encode_data.append(jpeg_data)
+            max_len = max(max_len, len(jpeg_data))
+        # padding
+        for i in range(len(imgs)):
+            padded_data.append(encode_data[i].ljust(max_len, b'\0'))
+        return encode_data, max_len
+    else:
+        max_len = -1
+        for img in imgs:
+            max_len = max(max_len, len(img))
+        return imgs, max_len
 
 def convert(hdf5_paths, output_path, start_index=0):
     if not os.path.exists(output_path):

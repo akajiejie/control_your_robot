@@ -19,8 +19,9 @@ class RealsenseSensor(VisionSensor):
         super().__init__()
         self.name = name
     
-    def set_up(self,CAMERA_SERIAL,is_depth = False):
+    def set_up(self,CAMERA_SERIAL,is_depth = False, encode_rgb=False):
         self.is_depth = is_depth
+        self.encode_rgb = encode_rgb
         try:
             # Initialize RealSense context and check for connected devices
             self.context = rs.context()
