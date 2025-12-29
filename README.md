@@ -153,6 +153,17 @@ python example/teleop/master_slave_arm_teleop.py
 python example/teleop/master_slave_arm_teleop_fs.py
 ```
 
+## On real robot!
+1. 实现你的机器人配置
+``` python
+必要:
+__init__(self): 初始化所有的controller和sensor
+set_up(self): 执行对应controller和sensor的set_up参数
+可选:
+is_start(self): 判断是否机械臂正在运动
+reset(self): 让机械臂回到初始位置
+```
+
 
 ### 🤖 Supported Devices
 

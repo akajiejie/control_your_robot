@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.lines import Line2D
 
-from utils.data_handler import debug_print, is_enter_pressed, hdf5_groups_to_dict
+from robot.utils.data_handler import debug_print, is_enter_pressed, hdf5_groups_to_dict
 from my_robot.base_robot import dict_to_list
 
 ### =========THE PLACE YOU COULD MODIFY=========
@@ -285,7 +285,7 @@ def init():
     data_path = args.data_path
     episode_num = args.episode_num
 
-    model_class = get_class(f"policy.{model_name}.inference_model", model_class)
+    model_class = get_class(f"robot.policy.{model_name}.inference_model", model_class)
     model = model_class(model_path, task_name)
 
     if os.path.isfile(data_path):

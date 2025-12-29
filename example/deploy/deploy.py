@@ -9,7 +9,7 @@ import time
 import yaml
 import json
 
-from utils.data_handler import debug_print, is_enter_pressed
+from robot.utils.data_handler import debug_print, is_enter_pressed
 
 # START ================ you could modify to your format ================ 
 video_path="save/videos/"
@@ -178,11 +178,11 @@ def init():
     is_video = args["video"]
 
     if not is_robotwin:
-        base_model_class = get_class(f"policy.{args['base_model_name']}.inference_model", args["base_model_class"])
+        base_model_class = get_class(f"robot.policy.{args['base_model_name']}.inference_model", args["base_model_class"])
         model = base_model_class(args["base_model_path"], args["base_task_name"])
     else:
-        get_model = get_class(f"policy.{args['base_model_name']}.deploy_policy", "get_model")
-        encode_obs = get_class(f"policy.{args['base_model_name']}.deploy_policy", "encode_obs")
+        get_model = get_class(f"robot.policy.{args['base_model_name']}.deploy_policy", "get_model")
+        encode_obs = get_class(f"robot.policy.{args['base_model_name']}.deploy_policy", "encode_obs")
         base_model = get_model(args)
         model = RoboTwinModel(base_model, encode_obs, args["base_task_name"])
         

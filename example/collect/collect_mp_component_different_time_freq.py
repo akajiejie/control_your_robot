@@ -4,11 +4,11 @@ import time
 
 from multiprocessing import Process, Manager, Event, Semaphore, Barrier
 
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
-from utils.time_scheduler import TimeScheduler
-from utils.component_worker import ComponentWorker
-from utils.data_handler import is_enter_pressed
+from robot.utils.time_scheduler import TimeScheduler
+from robot.utils.component_worker import ComponentWorker
+from robot.utils.data_handler import is_enter_pressed
 
 from typing import Dict, List
 

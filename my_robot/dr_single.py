@@ -1,11 +1,11 @@
 
 import numpy as np
 
-from controller.Piper_controller import PiperController
-from sensor.Realsense_sensor import RealsenseSensor
-# from sensor.Vitac3D import Vitac3D
-from data.collect_any import CollectAny
-from controller.drAloha_controller import DrAlohaController
+from robot.controller.Piper_controller import PiperController
+from robot.sensor.Realsense_sensor import RealsenseSensor
+# from robot.sensor.Vitac3D import Vitac3D
+from robot.data.collect_any import CollectAny
+from robot.controller.drAloha_controller import DrAlohaController
 from my_robot.base_robot import Robot
 from typing import Dict, Any
 import math

@@ -6,9 +6,9 @@ from my_robot.test_robot import TestRobot
 import time
 import numpy as np
 
-from policy.openpi.inference_model import PI0_DUAL
+from robot.policy.openpi.inference_model import PI0_DUAL
 
-from utils.data_handler import is_enter_pressed, debug_print
+from robot.utils.data_handler import is_enter_pressed, debug_print
 
 def input_transform(data):
     state = np.concatenate([

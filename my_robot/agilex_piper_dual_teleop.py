@@ -5,13 +5,13 @@ import numpy as np
 
 from my_robot.base_robot import Robot
 
-from controller.Piper_controller import PiperController
-from sensor.Realsense_sensor import RealsenseSensor
+from robot.controller.Piper_controller import PiperController
+from robot.sensor.Realsense_sensor import RealsenseSensor
 from control_your_robot.sensor.PikaRos_sensor import PikaRosSensor
 
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
-from utils.data_handler import debug_print, matrix_to_xyz_rpy, apply_local_delta_pose 
+from robot.utils.data_handler import debug_print, matrix_to_xyz_rpy, apply_local_delta_pose 
 
 
 CAMERA_SERIALS = {

@@ -7,7 +7,7 @@ from my_robot.test_robot import TestRobot
 
 import time
 
-from utils.data_handler import is_enter_pressed,debug_print
+from robot.utils.data_handler import is_enter_pressed,debug_print
 
 
 if __name__ == "__main__":

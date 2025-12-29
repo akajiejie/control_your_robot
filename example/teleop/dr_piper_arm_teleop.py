@@ -7,11 +7,11 @@ sys.path.append("./")
 import time
 from multiprocessing import Manager, Event
 
-from utils.data_handler import is_enter_pressed
-from utils.time_scheduler import TimeScheduler
-from utils.worker import Worker
-from data.collect_any import CollectAny
-from controller.drAloha_controller import DrAlohaController
+from robot.utils.data_handler import is_enter_pressed
+from robot.utils.time_scheduler import TimeScheduler
+from robot.utils.worker import Worker
+from robot.data.collect_any import CollectAny
+from robot.controller.drAloha_controller import DrAlohaController
 from my_robot.agilex_piper_single_base import PiperSingle
 import math
 from typing import Dict, Any

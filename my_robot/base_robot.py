@@ -8,12 +8,12 @@ import time
 import json
 import h5py
 
-from controller.TestArm_controller import TestArmController
-from sensor.TestVision_sensor import TestVisonSensor
+from robot.controller.TestArm_controller import TestArmController
+from robot.sensor.TestVision_sensor import TestVisonSensor
 
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
-from utils.data_handler import debug_print, hdf5_groups_to_dict
+from robot.utils.data_handler import debug_print, hdf5_groups_to_dict
 
 import cv2
 

@@ -5,10 +5,10 @@ import numpy as np
 
 from my_robot.base_robot import Robot
 
-from controller.Piper_controller import PiperController
-from sensor.Realsense_sensor import RealsenseSensor
+from robot.controller.Piper_controller import PiperController
+from robot.sensor.Realsense_sensor import RealsenseSensor
 
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
 CAMERA_SERIALS = {
     'head': '111',  # Replace with actual serial number

@@ -36,7 +36,7 @@ PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from utils.data_handler import debug_print
+from robot.utils.data_handler import debug_print
 
 try:
     import rerun as rr

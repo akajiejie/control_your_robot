@@ -8,9 +8,9 @@ import time
 import keyboard
 import numpy as np 
 import math
-from policy.RDT.inference_model import RDT
+from robot.policy.RDT.inference_model import RDT
 import pdb
-from utils.data_handler import is_enter_pressed
+from robot.utils.data_handler import is_enter_pressed
 import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime

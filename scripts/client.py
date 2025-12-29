@@ -3,8 +3,8 @@ sys.path.append('./')
 
 from my_robot.test_robot import TestRobot
 
-from utils.bisocket import BiSocket
-from utils.data_handler import debug_print, is_enter_pressed
+from robot.utils.bisocket import BiSocket
+from robot.utils.data_handler import debug_print, is_enter_pressed
 
 import socket
 import time
