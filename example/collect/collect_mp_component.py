@@ -67,8 +67,8 @@ if __name__ == "__main__":
         # 数量为组件进程数+时间控制器数(默认1个时间控制器)
         worker_barrier = Barrier(2 + 1)
 
-        vision_process = Process(target=ComponentWorker, args=("sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, worker_barrier, start_event, finish_event, "vision_worker"))
-        arm_process = Process(target=ComponentWorker, args=("controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, worker_barrier, start_event, finish_event, "arm_worker"))
+        vision_process = Process(target=ComponentWorker, args=("robot.sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, worker_barrier, start_event, finish_event, "vision_worker"))
+        arm_process = Process(target=ComponentWorker, args=("robot.controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, worker_barrier, start_event, finish_event, "arm_worker"))
         time_scheduler = TimeScheduler(work_barrier=worker_barrier, time_freq=30) # 可以给多个进程同时上锁
         
         processes.append(vision_process)
@@ -105,12 +105,14 @@ if __name__ == "__main__":
         
         # print(shared_data_buffer)
         data = shared_data_buffer.copy()
-        data = dict2list(dict(data))
+
+        controller_data = dict(data)["test_arm"]
+        sensor_data = dict(data)["test_vision"]
 
         shared_data_buffer = manager.dict()
 
         for i in range(len(data)):
-            collection.collect(data[i], None)
+            collection.collect(controller_data[i], sensor_data[i])
         collection.write()
         
         extra_info = {}

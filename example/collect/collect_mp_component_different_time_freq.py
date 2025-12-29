@@ -68,8 +68,8 @@ if __name__ == "__main__":
         worker_barrier_vision = Barrier(1 + 1)
         worker_barrier_arm = Barrier(1 + 1)
 
-        vision_process = Process(target=ComponentWorker, args=("sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, worker_barrier_vision, start_event, finish_event, "vision_worker"))
-        arm_process = Process(target=ComponentWorker, args=("controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, worker_barrier_arm, start_event, finish_event, "arm_worker"))
+        vision_process = Process(target=ComponentWorker, args=("robot.sensor.TestVision_sensor", "TestVisonSensor", "test_vision", None, ["color"], shared_data_buffer, worker_barrier_vision, start_event, finish_event, "vision_worker"))
+        arm_process = Process(target=ComponentWorker, args=("robot.controller.TestArm_controller", "TestArmController", "test_arm", None, ["joint", "qpos", "gripper"], shared_data_buffer, worker_barrier_arm, start_event, finish_event, "arm_worker"))
         
         time_scheduler_vision = TimeScheduler(work_barrier=worker_barrier_vision, time_freq=30) # 可以给多个进程同时上锁
         time_scheduler_arm = TimeScheduler(work_barrier=worker_barrier_arm, time_freq=300) # 可以给多个进程同时上锁

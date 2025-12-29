@@ -2,7 +2,9 @@ import sys
 sys.path.append('./')
 
 import socket
+import numpy as np
 import time
+import cv2
 
 from robot.utils.base.bisocket import BiSocket
 from robot.policy.test_policy.inference_model import TestModel
@@ -22,6 +24,7 @@ class Server:
 
         img_arr, state = message["img_arr"], message["state"]
 
+        imgs_array = []
         for data in img_arr:
             jpeg_bytes = np.array(data).tobytes().rstrip(b"\0")
             nparr = np.frombuffer(jpeg_bytes, dtype=np.uint8)

@@ -39,8 +39,10 @@ def input_transform(data, size=256):
         data[1]["cam_right_wrist"]["color"],
         data[1]["cam_left_wrist"]["color"],
     ]
-
-    img_enc, img_enc_len = images_encoding(img_arr)
+    if isinstance(img_arr[0], bytes):
+        img_enc = img_arr
+    else:
+        img_enc, img_enc_len = images_encoding(img_arr)
 
     return img_enc, state
 

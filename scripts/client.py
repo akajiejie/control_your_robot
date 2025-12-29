@@ -9,6 +9,7 @@ from robot.utils.base.data_handler import debug_print, is_enter_pressed
 import socket
 import time
 import numpy as np
+import cv2
 
 def images_encoding(imgs):
     encode_data = []
@@ -39,8 +40,10 @@ def input_transform(data, size=256):
         data[1]["cam_right_wrist"]["color"],
         data[1]["cam_left_wrist"]["color"],
     ]
-
-    img_enc, img_enc_len = images_encoding(img_arr)
+    if isinstance(img_arr[0], bytes):
+        img_enc = img_arr
+    else:
+        img_enc, img_enc_len = images_encoding(img_arr)
 
     return img_enc, state
 
@@ -94,7 +97,7 @@ class Client:
 
 if __name__ == "__main__":
     import os
-    os.environ["INFO_LEVEL"] = "DEBUG"
+    os.environ["INFO_LEVEL"] = "INFO"
     
     ip = "127.0.0.1"
     port = 10000
@@ -108,23 +111,11 @@ if __name__ == "__main__":
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((ip, port))
 
-    bisocket = BiSocket(client_socket, client.move)
+    bisocket = BiSocket(client_socket, client.move, enable_loop=False)
     client.set_up(bisocket)
 
     while True:
-        try:
-            if is_enter_pressed():
-                break
-            client.play_once()
-        except:
-            client.close()
+        if is_enter_pressed():
+            break
+        client.play_once()
     client.close()
-
-    # for i in range(10):
-    #     try:
-    #         print(f"play once:{i}")
-    #         client.play_once()
-    #         time.sleep(1)
-    #     except:
-    #         clis_enient.close()
-    # client.close()

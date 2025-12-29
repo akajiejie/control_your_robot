@@ -93,8 +93,6 @@ if __name__=="__main__":
     controller.set_position(np.array([0.057, 0.0, 0.260, 0.0, 0.085, 0.0]))
     time.sleep(0.1)
 
-    controller.reset(np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
-
     controller.get()
 
     move_data = {
