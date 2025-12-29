@@ -71,6 +71,9 @@ Because no hardware is needed, you can install the environment simply by running
 
 ```
  pip install -r requirements.txt
+ # or
+ GIT_LFS_SKIP_SMUDGE=1 uv sync
+GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 ```  
 This project provides special debug levels: `"DEBUG"`, `"INFO"`, and `"ERROR"`. To fully observe the data flow, set it to `"DEBUG"`:
 ```bash

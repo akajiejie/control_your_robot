@@ -2,7 +2,7 @@ import sys
 sys.path.append("./")
 import time
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 class Sensor:
     def __init__(self, timestamp=True):

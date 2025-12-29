@@ -2,8 +2,8 @@ import sys
 sys.path.append("./")
 
 from robot.sensor.touch_sensor import TouchSensor
-from robot.utils.ros2_subscriber import ROS2Subscriber 
-from robot.utils.data_handler import is_enter_pressed
+from robot.utils.ros.ros2_subscriber import ROS2Subscriber 
+from robot.utils.base.data_handler import is_enter_pressed
 
 import rclpy
 from rclpy.node import Node

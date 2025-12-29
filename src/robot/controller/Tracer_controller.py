@@ -6,7 +6,7 @@ from robot.controller.mobile_controller import MobileController
 import rospy
 
 # ros
-from robot.utils.ros_publisher import ROSPublisher, start_publishing
+from robot.utils.ros.ros_publisher import ROSPublisher, start_publishing
 from robot.utils.ros_subscriber import ROSSubscriber 
 
 from tracer_msgs.msg import TracerRsStatus

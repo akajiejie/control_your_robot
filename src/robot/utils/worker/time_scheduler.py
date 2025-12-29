@@ -7,7 +7,7 @@ import numpy as np
 DEBUG = False
 Release = True
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 TIME_SLEEP = 0.00001
 

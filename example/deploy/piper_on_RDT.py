@@ -10,7 +10,7 @@ import numpy as np
 import math
 from robot.policy.RDT.inference_model import RDT
 import pdb
-from robot.utils.data_handler import is_enter_pressed
+from robot.utils.base.data_handler import is_enter_pressed
 import matplotlib.pyplot as plt
 import pandas as pd
 from datetime import datetime

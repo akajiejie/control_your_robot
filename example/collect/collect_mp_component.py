@@ -6,9 +6,9 @@ from multiprocessing import Process, Manager, Event, Semaphore, Barrier
 
 from robot.data.collect_any import CollectAny
 
-from robot.utils.time_scheduler import TimeScheduler
-from robot.utils.component_worker import ComponentWorker
-from robot.utils.data_handler import is_enter_pressed
+from robot.utils.worker.time_scheduler import TimeScheduler
+from robot.utils.worker.component_worker import ComponentWorker
+from robot.utils.base.data_handler import is_enter_pressed
 
 from typing import Dict, List
 

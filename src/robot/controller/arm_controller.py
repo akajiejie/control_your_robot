@@ -4,7 +4,7 @@ sys.path.append("./")
 import numpy as np
 
 from robot.controller.controller import Controller
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 from typing import Dict, Any
 
 class ArmController(Controller):

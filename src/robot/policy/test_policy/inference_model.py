@@ -5,7 +5,9 @@ import numpy as np
 import json
 import time
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
+
+import cv2
 
 class TestModel:
     def __init__(self,model_path, task_name, DoFs=6, is_dual=True, INFO="DEBUG"):
@@ -39,7 +41,17 @@ class TestModel:
     
     # Update the observation window buffer
     def update_observation_window(self, img_arr, state):
-        img_front, img_right, img_left, _ = img_arr[0], img_arr[1], img_arr[2], state
+        imgs_array = []
+
+        if isinstance(img_arr[0], bytes):
+            for data in img_arr:
+                jpeg_bytes = np.array(data).tobytes().rstrip(b"\0")
+                nparr = np.frombuffer(jpeg_bytes, dtype=np.uint8)
+                imgs_array.append(cv2.imdecode(nparr, 1))
+        else:
+            imgs_array = img_arr
+        
+        img_front, img_right, img_left, _ = imgs_array[0], imgs_array[1], imgs_array[2], state
         img_front = np.transpose(img_front, (2, 0, 1))
         img_right = np.transpose(img_right, (2, 0, 1))
         img_left = np.transpose(img_left, (2, 0, 1))

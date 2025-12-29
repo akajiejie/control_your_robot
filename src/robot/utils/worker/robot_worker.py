@@ -6,7 +6,7 @@ from typing import *
 
 from multiprocessing import Event, Manager, Barrier
 
-from robot.utils.data_handler import debug_print, DataBuffer
+from robot.utils.base.data_handler import debug_print, DataBuffer
 
 def RobotWorker(robot_class, start_episode,
                 time_lock: Barrier, start_event: Event, finish_event: Event, process_name: str, 

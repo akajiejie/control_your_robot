@@ -2,7 +2,7 @@ import sys
 sys.path.append("./")
 
 from robot.controller.arm_controller import ArmController
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 from franky import *
 import numpy as np
 import math

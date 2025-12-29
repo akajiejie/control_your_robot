@@ -1,7 +1,7 @@
 import sys
 sys.path.append("./")
 
-from robot.utils.task import YmlTask, Tasks
+from robot.utils.task.task import YmlTask, Tasks
 
 import numpy as np
 import time

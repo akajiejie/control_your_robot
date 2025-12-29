@@ -16,7 +16,7 @@ import psutil
 from tqdm import tqdm
 from typing import Generator, Tuple, Optional
 
-from robot.utils.data_handler import hdf5_groups_to_dict, get_files, get_item
+from robot.utils.base.data_handler import hdf5_groups_to_dict, get_files, get_item
 
 '''
     usage: python process_data.py <source_dir> <output_dir> <num_episodes>

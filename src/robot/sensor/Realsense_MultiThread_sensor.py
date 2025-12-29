@@ -5,7 +5,7 @@ from robot.sensor.vision_sensor import VisionSensor
 from copy import copy
 import threading
 from collections import deque
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 
 def find_device_by_serial(devices, serial):

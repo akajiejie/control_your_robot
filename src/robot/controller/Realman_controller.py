@@ -6,7 +6,7 @@ import time
 import numpy as np
 from robot.controller.arm_controller import ArmController
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 '''
 RealMan base code from:
 https://develop.realman-robotics.com/robot/apipython/getStarted/

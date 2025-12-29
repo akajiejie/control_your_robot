@@ -6,7 +6,7 @@ sys.path.append("./")
 import time
 
 from multiprocessing import Event, Process
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 class Worker:
     def __init__(self, process_name: str, start_event, end_event):
@@ -138,7 +138,7 @@ class TestWorker_2(Worker):
         debug_print("TestComponent_2","finish!", "INFO")
 
 if __name__ == "__main__":
-    from robot.utils.time_scheduler import TimeScheduler
+    from robot.utils.worker.time_scheduler import TimeScheduler
 
     lock, start_event, end_event = Event(), Event(), Event()
     worker_1 = TestWorker_1("test_1", start_event, end_event)

@@ -3,7 +3,7 @@ sys.path.append("./")
 
 from robot.sensor.touch_sensor import TouchSensor
 from robot.utils.ros_subscriber import ROSSubscriber 
-from robot.utils.data_handler import is_enter_pressed
+from robot.utils.base.data_handler import is_enter_pressed
 from robot.utils.tactile_hand import draw
 import rospy
 import numpy as np

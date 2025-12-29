@@ -5,7 +5,7 @@ current_file_path = os.path.abspath(__file__)
 parent_directory = os.path.dirname(current_file_path)
 sys.path.append(parent_directory)
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 class TestModel:
     def __init__(self, test_1, test_2, info_level="INFO"):

@@ -2,7 +2,7 @@ import socket
 import pickle
 from threading import Thread, Event
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 class BiSocket:
     '''

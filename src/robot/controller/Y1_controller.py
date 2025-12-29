@@ -2,7 +2,7 @@ import sys
 sys.path.append("./")
 
 from robot.controller.arm_controller import ArmController
-from robot.utils.data_handler import debug_print, is_enter_pressed
+from robot.utils.base.data_handler import debug_print, is_enter_pressed
 from my_robot.base_robot import dict_to_list
 
 from y1_sdk import Y1SDKInterface, ControlMode
@@ -96,7 +96,7 @@ if __name__=="__main__":
     time.sleep(2)
 
 
-    from robot.utils.data_handler import hdf5_groups_to_dict
+    from robot.utils.base.data_handler import hdf5_groups_to_dict
     data_path = "save/test/0.hdf5"
     episode = dict_to_list(hdf5_groups_to_dict(data_path))
     for ep in episode:

@@ -6,7 +6,7 @@ from typing import *
 
 from multiprocessing import Event, Semaphore, Process, Value, Manager, Barrier
 
-from robot.utils.data_handler import debug_print, DataBuffer
+from robot.utils.base.data_handler import debug_print, DataBuffer
 
 import importlib
 
@@ -87,8 +87,8 @@ if __name__ == "__main__":
 
     from robot.sensor.TestVision_sensor import TestVisonSensor
     from robot.controller.TestArm_controller import TestArmController
-    from robot.utils.time_scheduler import TimeScheduler
-    from robot.utils.data_handler import is_enter_pressed
+    from robot.utils.worker.time_scheduler import TimeScheduler
+    from robot.utils.base.data_handler import is_enter_pressed
 
     # 初始化共享操作
     processes = []

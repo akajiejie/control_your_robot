@@ -6,7 +6,7 @@ import json
 import time
 import math
 # 修改导入路径，使用正确的相对路径
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 from robot.policy.ACT.act_policy import ACT
             

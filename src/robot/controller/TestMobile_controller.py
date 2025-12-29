@@ -6,7 +6,7 @@ from robot.controller.mobile_controller import MobileController
 import numpy as np
 import time
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 class TestMobileController(MobileController):
     def __init__(self, name, INFO="DEBUG"):

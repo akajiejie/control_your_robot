@@ -1,6 +1,6 @@
 import sys
 sys.path.append("./")
-from robot.utils.data_handler import hdf5_groups_to_dict
+from robot.utils.base.data_handler import hdf5_groups_to_dict
 import os
 import random
 import numpy as np

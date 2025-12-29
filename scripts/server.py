@@ -4,9 +4,9 @@ sys.path.append('./')
 import socket
 import time
 
-from robot.utils.bisocket import BiSocket
+from robot.utils.base.bisocket import BiSocket
 from robot.policy.test_policy.inference_model import TestModel
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 class Server:
     def __init__(self, model, control_freq=10):

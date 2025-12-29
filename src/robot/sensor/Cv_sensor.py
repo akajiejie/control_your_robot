@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import time
 from robot.sensor.vision_sensor import VisionSensor
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 
 class CvSensor(VisionSensor):

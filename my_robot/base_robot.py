@@ -13,7 +13,7 @@ from robot.sensor.TestVision_sensor import TestVisonSensor
 
 from robot.data.collect_any import CollectAny
 
-from robot.utils.data_handler import debug_print, hdf5_groups_to_dict
+from robot.utils.base.data_handler import debug_print, hdf5_groups_to_dict
 
 import cv2
 

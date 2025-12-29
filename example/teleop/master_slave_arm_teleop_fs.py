@@ -4,9 +4,9 @@ sys.path.append("./")
 import time
 from multiprocessing import Manager, Event
 
-from robot.utils.data_handler import is_enter_pressed
-from robot.utils.time_scheduler import TimeScheduler
-from robot.utils.worker import Worker
+from robot.utils.base.data_handler import is_enter_pressed
+from robot.utils.worker.time_scheduler import TimeScheduler
+from robot.utils.worker.worker import Worker
 from robot.controller.TestArm_controller import TestArmController
 from robot.sensor.TestVision_sensor import TestVisonSensor
 from robot.data.collect_any import CollectAny

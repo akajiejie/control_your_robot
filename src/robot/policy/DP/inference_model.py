@@ -6,7 +6,7 @@ import json
 import time
 import math
 import yaml
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 from robot.policy.DP.dp_model import DP
 
 class MYDP:

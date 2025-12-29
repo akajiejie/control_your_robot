@@ -5,7 +5,7 @@ from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
 import numpy as np
 import json
 
-from robot.utils.data_handler import *
+from robot.utils.base.data_handler import *
 
 '''
 Define a mapping to translate default data format keys into corresponding LeRobot feature keys.

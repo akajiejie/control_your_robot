@@ -8,7 +8,7 @@ sys.path.append("./")
 
 import threading, os
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 import os
 import numpy as np

@@ -1,7 +1,7 @@
 import sys
 sys.path.append('./')
 
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 import h5py
 import numpy as np

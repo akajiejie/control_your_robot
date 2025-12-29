@@ -5,7 +5,7 @@ from robot.sensor.vision_sensor import VisionSensor
 from copy import copy
 import cv2
 from cv_bridge import CvBridge
-from robot.utils.data_handler import debug_print
+from robot.utils.base.data_handler import debug_print
 
 from robot.utils.ros_subscriber import ROSSubscriber 
 
