@@ -5,13 +5,13 @@ import numpy as np
 
 from my_robot.base_robot import Robot
 
-from controller.TestArm_controller import TestArmController
-from controller.TestMobile_controller import TestMobileController
-from sensor.TestVision_sensor import TestVisonSensor
-from utils.data_handler import debug_print
-from data.collect_any import CollectAny
+from robot.controller.TestArm_controller import TestArmController
+from robot.controller.TestMobile_controller import TestMobileController
+from robot.sensor.TestVision_sensor import TestVisonSensor
+from robot.utils.base.data_handler import debug_print
+from robot.data.collect_any import CollectAny
 
-from utils.data_transofrm_pipeline import image_rgb_encode_pipeline, general_hdf5_rdt_format_pipeline
+from robot.utils.base.data_transofrm_pipeline import image_rgb_encode_pipeline, general_hdf5_rdt_format_pipeline
 
 condition = {
     "save_path": "./save/", 

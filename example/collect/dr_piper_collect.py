@@ -5,10 +5,10 @@ import select
 
 from my_robot.test_robot import TestRobot
 from my_robot.agilex_piper_single_base import PiperSingle
-from controller.drAloha_controller import DrAlohaController
+from robot.controller.drAloha_controller import DrAlohaController
 import time
 import math
-from utils.data_handler import is_enter_pressed,debug_print
+from robot.utils.base.data_handler import is_enter_pressed,debug_print
 from typing import Dict, Any
 
 condition = {

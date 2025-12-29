@@ -7,11 +7,11 @@ from multiprocessing import Process, Event, Barrier
 
 from my_robot.test_robot import TestRobot, condition
 
-from utils.time_scheduler import TimeScheduler
-from utils.robot_worker import RobotWorker
-from utils.data_handler import is_enter_pressed
+from robot.utils.worker.time_scheduler import TimeScheduler
+from robot.utils.worker.robot_worker import RobotWorker
+from robot.utils.base.data_handler import is_enter_pressed
 
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
 
 if __name__ == "__main__":

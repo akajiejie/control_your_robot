@@ -7,9 +7,9 @@ import time
 import keyboard
 import numpy as np 
 
-from policy.RDT.inference_model import RDT
+from robot.policy.RDT.inference_model import RDT
 
-from utils.data_handler import is_enter_pressed, debug_print
+from robot.utils.base.data_handler import is_enter_pressed, debug_print
 
 
 def input_transform(data):

@@ -1,7 +1,7 @@
 import sys
 sys.path.append("./")
 
-from utils.task import YmlTask, Tasks, ShareSpace
+from robot.utils.task.task import YmlTask, Tasks, ShareSpace
 from my_robot.test_robot import TestRobot
 import numpy as np
 import os

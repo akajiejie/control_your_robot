@@ -7,9 +7,9 @@ import time
 import keyboard
 import numpy as np
 
-from policy.test_policy.inference_model import TestModel
+from robot.policy.test_policy.inference_model import TestModel
 
-from utils.data_handler import is_enter_pressed, debug_print
+from robot.utils.base.data_handler import is_enter_pressed, debug_print
 
 def input_transform(data):
     state = np.concatenate([

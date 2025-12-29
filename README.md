@@ -71,6 +71,9 @@ Because no hardware is needed, you can install the environment simply by running
 
 ```
  pip install -r requirements.txt
+ # or
+ GIT_LFS_SKIP_SMUDGE=1 uv sync
+GIT_LFS_SKIP_SMUDGE=1 uv pip install -e .
 ```  
 This project provides special debug levels: `"DEBUG"`, `"INFO"`, and `"ERROR"`. To fully observe the data flow, set it to `"DEBUG"`:
 ```bash
@@ -102,6 +105,7 @@ python example/deploy/robot_on_test.py
 # General deployment script
 bash deploy.sh
 # Offline data replay consistency test
+# you should generate data at least 3 data first by running: python example/collect/collect.py
 bash eval_offline.sh
 ```
 
@@ -123,8 +127,8 @@ python scripts/collect_moving_ckpt.py
 5. Debug Scripts
 ```bash
 # Because controller and sensor packages have __init__.py, execute with -m
-python -m controller.TestArm_controller
-python -m sensor.TestVision_sensor
+python -m src.robot.controller.TestArm_controller
+python -m src.robot.sensor.TestVision_sensor
 python -m my_robot.test_robot
 ```
 
@@ -135,6 +139,10 @@ python scripts/convert2rdt_hdf5.py save/test_robot/ save/rdt/
 ```
 
 7. upload data
+**Important!!!**
+
+sensor.vision_sensor already set encode_rgb=True by DEFAULT, you do not need to use encode and decode.
+
 ```bash
 # In the original dataset, image files occupy a large amount of storage space, which is unfavorable for data transmission. Therefore, a compression and decompression script is provided. It performs JPEG processing on the images to enable faster transfer. The script is configured by default for a dual-arm, three-view setup, but it can be adjusted according to specific needs.
 # compress. will make a new floder: path/to/floder/_zip/
@@ -153,6 +161,29 @@ python example/teleop/master_slave_arm_teleop.py
 python example/teleop/master_slave_arm_teleop_fs.py
 ```
 
+## On real robot!
+1. Implement Your Robot Configuration
+``` python
+Required:
+__init__(self): Initialize all controllers and sensors
+set_up(self): Execute the set_up parameters for each controller and sensor
+
+Optional:
+is_start(self): Check if the robot arm is currently moving
+reset(self): Reset the robot arm to its initial position
+```
+2. Some Additional Functions
+``` python
+replay(self, hdf5_path, key_banned, is_collect, episode_id):
+    Replay previously collected trajectories.
+    Note: key_banned must be set. If you are replaying based on joints, ban 'qpos'; otherwise, ban the other key.
+    is_collect and episode_id are linked: they indicate that the replayed trajectory data is being collected and saved under the given episode_id.
+    If episode_id is not set, you might overwrite the originally collected trajectories.
+
+show_pic(self, data_path, pic_name):
+    Replay video from a specified camera.
+    Can be used directly and will automatically decode compressed images in the raw data.
+```
 
 ### 🤖 Supported Devices
 

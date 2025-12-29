@@ -3,11 +3,11 @@ sys.path.append("./")
 
 from my_robot.base_robot import Robot
 
-from controller.RealmanRos_controller import RealmanRosController
-from sensor.Realsense_sensor import RealsenseSensor
+from robot.controller.RealmanRos_controller import RealmanRosController
+from robot.sensor.Realsense_sensor import RealsenseSensor
 from control_your_robot.sensor.PikaRos_sensor import PikaRosSensor
-from data.collect_any import CollectAny
-from utils.data_handler import debug_print, matrix_to_xyz_rpy, apply_local_delta_pose 
+from robot.data.collect_any import CollectAny
+from robot.utils.base.data_handler import debug_print, matrix_to_xyz_rpy, apply_local_delta_pose 
 
 from Robotic_Arm.rm_robot_interface import rm_thread_mode_e
 import numpy as np

@@ -6,9 +6,9 @@ from my_robot.agilex_piper_dual import PiperDual
 import time
 import numpy as np
 import math
-from policy.openpi.inference_model import PI0_DUAL
+from robot.policy.openpi.inference_model import PI0_DUAL
 
-from utils.data_handler import is_enter_pressed
+from robot.utils.base.data_handler import is_enter_pressed
 
 joint_limits_rad = [
         (math.radians(-150), math.radians(150)),   # joint1

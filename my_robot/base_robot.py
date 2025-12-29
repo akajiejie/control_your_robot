@@ -8,12 +8,12 @@ import time
 import json
 import h5py
 
-from controller.TestArm_controller import TestArmController
-from sensor.TestVision_sensor import TestVisonSensor
+from robot.controller.TestArm_controller import TestArmController
+from robot.sensor.TestVision_sensor import TestVisonSensor
 
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
-from utils.data_handler import debug_print, hdf5_groups_to_dict
+from robot.utils.base.data_handler import debug_print, hdf5_groups_to_dict
 
 import cv2
 
@@ -119,7 +119,13 @@ class Robot:
     def show_pic(self, data_path, pic_name):
         episode = dict_to_list(hdf5_groups_to_dict(data_path))
         for ep in episode:
-            cv2.imshow(f"{pic_name}", ep[pic_name]["color"])
+            cam = ep[pic_name]["color"]
+            if isinstance(cam, bytes):
+                jpeg_bytes = np.array(cam).tobytes().rstrip(b"\0")
+                nparr = np.frombuffer(jpeg_bytes, dtype=np.uint8)
+                cam = cv2.imdecode(nparr, 1)
+            
+            cv2.imshow(f"{pic_name}", cam)
             cv2.waitKey(10)
 
     def replay(self, data_path, key_banned=None, is_collect=False, episode_id=None):
@@ -186,3 +192,7 @@ def dict_to_list(data: Dict[str, Any]) -> List[Dict[str, Any]]:
 # def remove_duplicate_keys(source_dict: dict[str, any], keys_to_remove: list[str]) -> dict[str, any]:
 def remove_duplicate_keys(source_dict, keys_to_remove):
     return {k: v for k, v in source_dict.items() if k not in keys_to_remove}
+
+if __name__ == "__main__":
+    robot = Robot()
+    robot.show_pic("save/test_robot/0.hdf5","cam_head")

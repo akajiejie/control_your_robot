@@ -8,16 +8,16 @@ import select
 import numpy as np
 
 from my_robot.test_robot import TestRobot
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
-from utils.time_scheduler import TimeScheduler
-from utils.robot_worker import RobotWorker
-from utils.data_handler import debug_print
+from robot.utils.worker.time_scheduler import TimeScheduler
+from robot.utils.worker.robot_worker import RobotWorker
+from robot.utils.base.data_handler import debug_print
 
 ARM_INFO_NAME = ["qpos", "gripper"]
 
 condition = {
-    "save_path": "./datasets/ckpt",
+    "save_path": "./save/ckpt",
     "task_name": "saving_move_path",
 }
 
@@ -42,16 +42,17 @@ class PathCollector:
 
         # transform numpy array to list
         for index, episode in enumerate(self.collecter.episode):
-            episode_data = episode.copy() 
-            if isinstance(episode_data.get("left_arm", {}).get("qpos"), np.ndarray):
-                episode_data["left_arm"]["qpos"] = episode_data["left_arm"]["qpos"].tolist()
-            if isinstance(episode_data.get("left_arm", {}).get("gripper"), np.ndarray):
-                episode_data["left_arm"]["gripper"] = episode_data["left_arm"]["gripper"].tolist()
+            episode_data = {"left_arm": {}, "right_arm": {}}
+            print(episode.keys())
+            if isinstance(episode.get("left_arm", {}).get("qpos"), np.ndarray):
+                episode_data["left_arm"]["qpos"] = episode["left_arm"]["qpos"].tolist()
+            if isinstance(episode.get("left_arm", {}).get("gripper"), np.ndarray):
+                episode_data["left_arm"]["gripper"] = episode["left_arm"]["gripper"].tolist()
 
-            if isinstance(episode_data.get("right_arm", {}).get("qpos"), np.ndarray):
-                episode_data["right_arm"]["qpos"] = episode_data["right_arm"]["qpos"].tolist()
-            if isinstance(episode_data.get("right_arm", {}).get("gripper"), np.ndarray):
-                episode_data["right_arm"]["gripper"] = episode_data["right_arm"]["gripper"].tolist()
+            if isinstance(episode.get("right_arm", {}).get("qpos"), np.ndarray):
+                episode_data["right_arm"]["qpos"] = episode["right_arm"]["qpos"].tolist()
+            if isinstance(episode.get("right_arm", {}).get("gripper"), np.ndarray):
+                episode_data["right_arm"]["gripper"] = episode["right_arm"]["gripper"].tolist()
             
             json_data[index] = episode_data
         
@@ -73,14 +74,12 @@ class PathCollector:
         except:
             debug_print("path_controller", f"{path} does not exist!", "ERROR")
             return
-        
-        i = 0 
-        for episode in json_data.values():
-            
+        i = 0
+        for episode in json_data.values():    
             debug_print("path_controller", f"move {i}: {episode}", "INFO")
-            i += 1
             robot.play_once(episode)
-            
+            i += 1
+
             if not is_block:
                 time.sleep(2)
             
@@ -89,7 +88,7 @@ class PathCollector:
         debug_print("path_controller","play finished!", "INFO")
             
 if __name__ == "__main__":
-    os.environ["INFO_LEVEL"] = "DEBUG"
+    os.environ["INFO_LEVEL"] = "INFO"
 
     robot = TestRobot(DoFs=6,INFO="DEBUG",start_episode=0)
     robot.set_up()
@@ -98,7 +97,7 @@ if __name__ == "__main__":
     ARM_INFO_NAME = ["qpos", "gripper"]
 
     robot.set_collect_type({"arm":ARM_INFO_NAME, 
-                           "image": None}) 
+                           "image": []}) 
     collector = PathCollector(robot, condition, episode_index=0)
     '''
     按Enter键进行采集
@@ -123,16 +122,16 @@ if __name__ == "__main__":
     
     # If your robotic arm can only establish communication within a single script, 
     # you can add a set of data collectors in this script and comment out the collector.play() above.
-    from multiprocessing import Semaphore, Event, Process
+    from multiprocessing import Barrier, Event, Process
 
     is_start = False
     
     # reset process
-    time_lock = Semaphore(0)
+    time_lock = Barrier(2)
     start_event = Event()
     finish_event = Event()
     robot_process = Process(target=RobotWorker, args=(TestRobot, 0, time_lock, start_event, finish_event, "robot_worker"))
-    time_scheduler = TimeScheduler([time_lock], time_freq=10) # set lock
+    time_scheduler = TimeScheduler(work_barrier=time_lock, time_freq=10) # set lock
 
     robot_process.start()
 

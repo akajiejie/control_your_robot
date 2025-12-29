@@ -5,10 +5,10 @@ import numpy as np
 
 from my_robot.base_robot import Robot
 
-from controller.Y1_controller import Y1Controller
-from sensor.Realsense_sensor import RealsenseSensor
+from robot.controller.Y1_controller import Y1Controller
+from robot.sensor.Realsense_sensor import RealsenseSensor
 
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
 # setting your realsense serial
 CAMERA_SERIALS = {
@@ -75,6 +75,7 @@ class Y1Dual(Robot):
         self.set_collect_type({"arm": ["joint","qpos","gripper"],
                                "image": ["color"]
                                })
+        
         print("set up success!")
 
 if __name__ == "__main__":

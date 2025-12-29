@@ -7,5 +7,6 @@ python example/deploy/deploy.py \
     --base_robot_class "TestRobot"\
     --robotwin \
     --overrides \
-    --test_info_1 1
+    --test_info_1 1 \
+    --test_info_2 2
     # --video "cam_head"\

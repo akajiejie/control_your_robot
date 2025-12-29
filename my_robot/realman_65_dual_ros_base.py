@@ -3,10 +3,10 @@ sys.path.append("./")
 
 from my_robot.base_robot import Robot
 
-from controller.RealmanRos_controller import RealmanRosController
-from sensor.Realsense_sensor import RealsenseSensor
+from robot.controller.RealmanRos_controller import RealmanRosController
+from robot.sensor.Realsense_sensor import RealsenseSensor
 
-from data.collect_any import CollectAny
+from robot.data.collect_any import CollectAny
 
 import numpy as np
 

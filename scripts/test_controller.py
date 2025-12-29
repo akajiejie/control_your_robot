@@ -2,9 +2,9 @@ import sys
 sys.path.append('./')
 
 # change to your controller and test_controller
-# from controller.Piper_controller import PiperController
-from controller.TestArm_controller import TestArmController
-from utils.data_handler import debug_print
+# from robot.controller.Piper_controller import PiperController
+from robot.controller.TestArm_controller import TestArmController
+from robot.utils.base.data_handler import debug_print
 
 if __name__ == "__main__":
     import os
