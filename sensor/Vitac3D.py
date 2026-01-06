@@ -47,16 +47,16 @@ class Vitac3D(TouchSensor):
         self.serDev = serial.Serial(PORT, self.baud, timeout=1)
         if not self.serDev.is_open:
             raise Exception(f"无法打开串口: {PORT}")
-        print(f"3DVitac sensor set up on {PORT}")
+        # print(f"3DVitac sensor set up on {PORT}")
         self.serDev.flush()
         if self.is_show:          
             cv2.namedWindow(f"Contact Data_{self.name}", cv2.WINDOW_NORMAL)
             cv2.resizeWindow(f"Contact Data_{self.name}", 480, 480)  # 直接使用480×480尺寸
-        print(f"{self.name} sensor set up complete on {PORT}")
+        # print(f"{self.name} sensor set up complete on {PORT}")
         self.thread = threading.Thread(target=self.readThread)
         self.thread.daemon = True
         self.thread.start()
-        print(f"wait {self.name} sensor initialized")
+        print(f"wait {self.name} sensor initialized on {PORT}")
         while not self.initialized:
             time.sleep(0.1)
         
@@ -66,9 +66,9 @@ class Vitac3D(TouchSensor):
         data_tac = []
         current = []
         frame_count = 0
-        INIT_FRAMES = 80
+        INIT_FRAMES = 30
         
-        print(f"{self.name} sensor reading thread started")
+        # print(f"{self.name} sensor reading thread started")
         
         while not self.initialized and not self.exit_flag.is_set():
             if self.serDev.in_waiting > 0:
@@ -110,7 +110,7 @@ class Vitac3D(TouchSensor):
         
         # 实时处理阶段
         prev_frame = np.zeros((16, 16))
-        print(f"{self.name} entering real-time processing")
+        # print(f"{self.name} entering real-time processing")
         
         while not self.exit_flag.is_set():
             if self.serDev.in_waiting > 0:
@@ -188,7 +188,7 @@ class Vitac3D(TouchSensor):
         self.close()
 if __name__ == "__main__":
     tac=Vitac3D("right_right_tac")
-    tac.set_up("/dev/ttyUSB0",is_show=True)
+    tac.set_up("/dev/ttyUSB2",is_show=True)
 
     tac.set_collect_info(["tactile"])
     
@@ -200,7 +200,7 @@ if __name__ == "__main__":
     report_interval = 1.0  # 每1秒报告一次帧率
     total_collect_time = 0.0  # 累积采集时间
     
-    for i in range(10000):
+    for i in range(500):
         collect_start = time.time()
         data = tac.get_touch()
         collect_time = time.time() - collect_start
@@ -208,9 +208,9 @@ if __name__ == "__main__":
         frame_count += 1
         
         # 在同一行显示当前帧数
-        print(f"\r当前帧: {i}/{1000} [{frame_count}]", end='', flush=True)
+        print(f"\r当前帧: {i}/{500} [{frame_count}]", end='', flush=True)
         
-        time.sleep(1/70)
+        time.sleep(1/30)
     
     # 最终统计
     total_time = time.time() - start_time

@@ -62,7 +62,10 @@ class PiperSingle(Robot):
                 "cam_right_wrist": RealsenseSensor("cam_right_wrist"),
             },
             "tactile":{
-                "right_arm_tac": Vitac3D("right_arm_tac"),
+                "right_arm_left_tac": Vitac3D("right_left_tac"),
+                # "right_arm_right_tac": Vitac3D("right_right_tac"),
+                # "left_arm_left_tac": Vitac3D("left_left_tac"),
+                # "left_arm_right_tac": Vitac3D("left_right_tac"),
             },
         }
 
@@ -76,7 +79,10 @@ class PiperSingle(Robot):
         self.controllers["arm"]["right_arm"].set_up("can0")
         self.sensors["image"]["cam_head"].set_up(CAMERA_SERIALS["head"])
         self.sensors["image"]["cam_right_wrist"].set_up(CAMERA_SERIALS["wrist"])
-        self.sensors["tactile"]["right_arm_tac"].set_up("/dev/ttyUSB0",is_show=False)
+        self.sensors["tactile"]["right_arm_left_tac"].set_up("/dev/ttyUSB0",is_show=False)
+        # self.sensors["tactile"]["right_arm_right_tac"].set_up("/dev/ttyUSB1",is_show=False)
+        # self.sensors["tactile"]["left_arm_left_tac"].set_up("/dev/ttyUSB2",is_show=False)
+        # self.sensors["tactile"]["left_arm_right_tac"].set_up("/dev/ttyUSB3",is_show=False)
 
         self.set_collect_type({"arm": ["joint","qpos","gripper"],
                                "image": ["color"],

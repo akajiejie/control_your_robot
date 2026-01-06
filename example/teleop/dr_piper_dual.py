@@ -5,7 +5,8 @@ from h5py._hl.dataset import sel
 sys.path.append("./")
 
 import time
-from multiprocessing import Manager, Event
+from multiprocessing import Manager, Event, Queue
+from concurrent.futures import ThreadPoolExecutor
 
 from utils.data_handler import is_enter_pressed
 from utils.time_scheduler import TimeScheduler
@@ -35,16 +36,45 @@ class MasterWorker(Worker):
         self.start_gravity = False
         self.zero_gravity_flag = self.manager.Value('b', False)
         self.gravity_update_error = self.manager.Value('b', False)  # 重力补偿更新错误标志
+        # 创建线程池用于并行读取左右臂数据（每个控制器使用独立串口，READ_FLAG是实例变量，可安全并行）
+        self.executor = ThreadPoolExecutor(max_workers=2)
+    
+    def _get_left_arm_data(self):
+        """线程任务：获取左臂数据"""
+        return self.component_left.get()
+    
+    def _get_right_arm_data(self):
+        """线程任务：获取右臂数据"""
+        return self.component_right.get()
+    
+    def _update_left_gravity(self):
+        """线程任务：更新左臂重力补偿"""
+        return self.component_left.update_gravity()
+    
+    def _update_right_gravity(self):
+        """线程任务：更新右臂重力补偿"""
+        return self.component_right.update_gravity()
+    
     def handler(self):
+        start_time = time.time()  # 记录方法开始时间
+        
         # 检查是否需要执行零重力（只在启动时调用一次）
         if self.zero_gravity_flag.value:
-            self.component_left.zero_gravity()
-            self.component_right.zero_gravity()
+            # 零重力也可以并行执行
+            future_left_zero = self.executor.submit(self.component_left.zero_gravity)
+            future_right_zero = self.executor.submit(self.component_right.zero_gravity)
+            future_left_zero.result()
+            future_right_zero.result()
             self.zero_gravity_flag.value = False
             self.start_gravity = True  # 零重力调用后开启重力补偿
-            
-        left_arm_data = self.component_left.get()
-        right_arm_data = self.component_right.get()
+        
+        # 并行读取左右臂数据（每个控制器使用独立串口和独立的READ_FLAG实例变量）
+        future_left = self.executor.submit(self._get_left_arm_data)
+        future_right = self.executor.submit(self._get_right_arm_data)
+        
+        # 等待两个线程完成并获取结果
+        left_arm_data = future_left.result()
+        right_arm_data = future_right.result()
         
         # 分别对左右臂数据进行转换
         left_action = self.action_transform(left_arm_data)
@@ -56,11 +86,15 @@ class MasterWorker(Worker):
             "right_arm": right_action
         }
 
-        if self.start_gravity :
+        if self.start_gravity:
             current_time = time.time()
             if current_time - self.last_gravity_update >= self.gravity_update_interval:
-                result_left = self.component_left.update_gravity()
-                result_right = self.component_right.update_gravity()
+                # 并行执行重力补偿更新（每个控制器使用独立串口）
+                future_gravity_left = self.executor.submit(self._update_left_gravity)
+                future_gravity_right = self.executor.submit(self._update_right_gravity)
+                
+                result_left = future_gravity_left.result()
+                result_right = future_gravity_right.result()
                 self.last_gravity_update = current_time
                 
                 # 检查update_gravity是否报错（返回None表示重试多次后失败）
@@ -69,12 +103,13 @@ class MasterWorker(Worker):
                     self.gravity_update_error.value = True
                 else:
                     self.gravity_update_error.value = False
-        else:
-            pass
-        
         
         for key, value in data.items():
             self.data_buffer[key] = value
+        
+        end_time = time.time()  # 记录方法结束时间
+        elapsed_time = (end_time - start_time) * 1000  # 转换为毫秒
+        print(f"[MasterWorker] handler 耗时: {elapsed_time:.2f} ms")
 
     def component_init(self):
         self.component_left = DrAlohaController(name="left_arm")
@@ -128,6 +163,8 @@ class MasterWorker(Worker):
         for i in range(1,7):
             self.component_left.controller.estop(i)
             self.component_right.controller.estop(i)
+        # 关闭线程池
+        self.executor.shutdown(wait=False)
         return super().finish()
 class SlaveWorker(Worker):
     def __init__(self, process_name: str, start_event, end_event, move_data_buffer: Manager, gravity_update_error):
@@ -138,6 +175,8 @@ class SlaveWorker(Worker):
         self.data_buffer = self.manager.dict()
     
     def handler(self):
+        start_time = time.time()  # 记录方法开始时间
+        
         move_data = dict(self.move_data_buffer)
      
         # 当主臂重力补偿更新重试次数>1时，打印move_data用于调试
@@ -147,6 +186,7 @@ class SlaveWorker(Worker):
         if move_data is not None or self.gravity_update_error.value is not False:
             left_move_data = move_data["left_arm"]
             right_move_data = move_data["right_arm"]
+            
             self.component.move({"arm": 
                                     {
                                         "left_arm": left_move_data,
@@ -157,18 +197,16 @@ class SlaveWorker(Worker):
 
         data = self.component.get()
 
-        self.data_buffer["controller"] = self.manager.dict()
-        self.data_buffer["sensor"] = self.manager.dict()
-        # self.data_buffer["controller"]["master_left_arm"] = self.manager.dict()
-
-        for key, value in data[0].items():
-            self.data_buffer["controller"]["slave_"+key] = value
+        # 直接构造普通dict，然后一次性赋值（避免嵌套manager.dict()的开销）
+        controller_data = {f"slave_{key}": value for key, value in data[0].items()}
+        sensor_data = {f"slave_{key}": value for key, value in data[1].items()}
         
-        for key, value in data[1].items():
-            self.data_buffer["sensor"]["slave_"+key] = value
-
-        # for key, value in move_data.items():
-        #     self.data_buffer["controller"]["master_left_arm"][key] = value
+        self.data_buffer["controller"] = controller_data
+        self.data_buffer["sensor"] = sensor_data
+        
+        end_time = time.time()  # 记录方法结束时间
+        elapsed_time = (end_time - start_time) * 1000  # 转换为毫秒
+        print(f"[SlaveWorker] handler 耗时: {elapsed_time:.2f} ms")
     
     def component_init(self):
         self.component = PiperDual()
